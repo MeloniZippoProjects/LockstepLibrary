@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="xeviousvs.ImpostazioniXml">
+		<xs:complexType>
+			<xs:sequence>
+			
+				<xs:element name="associazioniTasti">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="tastoDestra" type="xs:string"/>
+							<xs:element name="tastoSinistra" type="xs:string"/>
+							<xs:element name="tastoFuoco" type="xs:string"/>
+							<xs:element name="tastoPausa" type="xs:string"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>			
+				
+				<xs:element name="portaAscoltoClient">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="porta" type="xs:short"/>
+						</xs:sequence>
+						<xs:attribute name="portaMinima" type="xs:short"/>
+						<xs:attribute name="portaMassima" type="xs:short"/>
+					</xs:complexType>
+				</xs:element>
+
+				<xs:element name="indirizzoDatabase" type="IndirizzoServer"/>
+				<xs:element name="indirizzoServerLog" type="IndirizzoServer"/>
+				
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:complexType name="IndirizzoServer">
+		<xs:sequence>
+			<xs:element name="indirizzoIP" type="xs:string"/>
+			<xs:element name="porta" type="xs:short"/>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

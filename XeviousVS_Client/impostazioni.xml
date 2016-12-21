@@ -1,0 +1,19 @@
+<xeviousvs.ImpostazioniXml>
+  <associazioniTasti>
+    <tastoDestra>D</tastoDestra>
+    <tastoSinistra>A</tastoSinistra>
+    <tastoFuoco>S</tastoFuoco>
+    <tastoPausa>Q</tastoPausa>
+  </associazioniTasti>
+  <portaAscoltoClient portaMinima="9000" portaMassima="9100">
+    <porta>9000</porta>
+  </portaAscoltoClient>
+  <indirizzoDatabase>
+    <indirizzoIP>localhost</indirizzoIP>
+    <porta>3306</porta>
+  </indirizzoDatabase>
+  <indirizzoServerLog>
+    <indirizzoIP>localhost</indirizzoIP>
+    <porta>9200</porta>
+  </indirizzoServerLog>
+</xeviousvs.ImpostazioniXml>
