@@ -5,11 +5,15 @@
  */
 package lockstep;
 
+import java.io.Serializable;
+
 /**
  *
  * @author Raff
+ * @param <Command>
  */
-class FrameQueue
+public class FrameInput<Command extends Serializable> implements Serializable 
 {
-    
+    int FrameNumber;
+    Command cmd;
 }

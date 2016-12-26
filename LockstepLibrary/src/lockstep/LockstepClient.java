@@ -14,7 +14,7 @@ public abstract class LockstepClient
     // Methods left to be implemented by an application-specific subclass
     protected abstract void suspendSimulation();
     protected abstract void resumeSimulation();
-    protected abstract void executeFrame(Frame f);
+    protected abstract void executeFrame(FrameInput f);
     
     
 }
