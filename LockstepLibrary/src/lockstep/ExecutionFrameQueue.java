@@ -70,12 +70,12 @@ class ExecutionFrameQueue
      */
     public int push(FrameInput input)
     {
-        if(input.FrameNumber >= this.baseFrameNumber && input.FrameNumber <= this.baseFrameNumber + this.bufferSize -1)
+        if(input.frameNumber >= this.baseFrameNumber && input.frameNumber <= this.baseFrameNumber + this.bufferSize -1)
         {
-            int bufferIndex = (input.FrameNumber - this.baseFrameNumber + this.bufferHead) % this.bufferSize;
+            int bufferIndex = (input.frameNumber - this.baseFrameNumber + this.bufferHead) % this.bufferSize;
             this.frameBuffer[bufferIndex] = input;
             
-            if(input.FrameNumber == this.lastInOrder + 1)
+            if(input.frameNumber == this.lastInOrder + 1)
                 this.lastInOrder++;
         }
         
