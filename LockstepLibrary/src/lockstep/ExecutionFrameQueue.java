@@ -73,7 +73,8 @@ class ExecutionFrameQueue
         if(input.frameNumber >= this.baseFrameNumber && input.frameNumber <= this.baseFrameNumber + this.bufferSize -1)
         {
             int bufferIndex = (input.frameNumber - this.baseFrameNumber + this.bufferHead) % this.bufferSize;
-            this.frameBuffer[bufferIndex] = input;
+            if(this.frameBuffer[bufferIndex] == null)
+                this.frameBuffer[bufferIndex] = input;
             
             if(input.frameNumber == this.lastInOrder + 1)
                 this.lastInOrder++;
