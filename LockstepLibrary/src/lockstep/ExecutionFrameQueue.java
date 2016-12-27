@@ -5,7 +5,7 @@
  */
 package lockstep;
 
-import java.util.ArrayList;
+import java.util.concurrent.ConcurrentSkipListSet;
 import lockstep.messages.FrameACK;
 
 /**
@@ -29,9 +29,11 @@ class ExecutionFrameQueue
     int bufferSize;
     int bufferHead;
     int baseFrameNumber;
-    int lastInOrder;
     FrameInput[] frameBuffer;
-    
+
+    int lastInOrder;
+    ConcurrentSkipListSet<Integer> selectiveACKsSet;
+        
     /**
      * 
      * @param bufferSize Size of the internal buffer. It's important to
@@ -50,85 +52,6 @@ class ExecutionFrameQueue
     }
     
     /**
-     * Inserts all the inputs passed, provided they're in the interval currently
-     * accepted. If a FrameInput it's out of the interval it's discarded. 
-     * 
-     * @param inputs the FrameInputs to insert
-     * @return the number of the most recent in order input. Used for ACKs
-     */
-    public FrameACK push(FrameInput[] inputs)
-    {
-        ArrayList<Integer> selectiveAckList = new ArrayList<Integer>();
-        
-        for(FrameInput input : inputs)
-        {
-            int acked = put(input);
-            if(acked != -1)
-                selectiveAckList.add(acked);
-        }   
-        
-        int[] selectiveACKs = new int[selectiveAckList.size()];
-        
-        int i = 0;
-        for(int ack : selectiveAckList)
-        {
-            selectiveACKs[i] = ack;
-            ++i;
-        }
-        
-        return new FrameACK(lastInOrder, selectiveACKs);
-    }
-    
-    
-    /**
-     * Inserts the input passed, provided it is in the interval currently
-     * accepted. Otherwise it's discarded.
-     * 
-     * @param input the FrameInput to insert
-     * @return the number of the most recent in order input. Used for ACKs
-     */
-    public FrameACK push(FrameInput input)
-    {
-        int ack = put(input);
-        
-        int[] selectiveAck;
-        
-        if(ack != -1)
-        {
-            selectiveAck = new int[1];
-            selectiveAck[0] = ack;
-        }
-        else
-        {
-            selectiveAck = new int[0];
-        }
-        
-        return new FrameACK(lastInOrder, selectiveAck);
-    }
-    
-    
-    
-    private int put(FrameInput input)
-    {
-        int toAck = -1;
-        
-        if(input.frameNumber >= this.baseFrameNumber && input.frameNumber <= this.baseFrameNumber + this.bufferSize -1)
-        {
-            int bufferIndex = (input.frameNumber - this.baseFrameNumber + this.bufferHead) % this.bufferSize;
-            if(this.frameBuffer[bufferIndex] == null)
-                this.frameBuffer[bufferIndex] = input;
-            
-            if(input.frameNumber == this.lastInOrder + 1)
-                this.lastInOrder++;
-            else
-                toAck = input.frameNumber;
-            
-        }
-        
-        return toAck;
-    }
-    
-    /**
      * Extracts the next frame input only if it's in order. 
      * @return the next in order frame input, or null if not present
      */
@@ -141,5 +64,85 @@ class ExecutionFrameQueue
             this.bufferHead = (this.bufferHead + 1) % this.bufferSize;
         }
         return nextInput;
+    }
+    
+    /**
+     * Inserts all the inputs passed, provided they're in the interval currently
+     * accepted. If a FrameInput it's out of the interval it's discarded. 
+     * 
+     * @param inputs the FrameInputs to insert
+     * @return tthe FrameACK to send back
+     */
+    public FrameACK push(FrameInput[] inputs)
+    {
+        for(FrameInput input : inputs)
+        {
+            boolean toSelectivelyACK = _push(input);
+            if(toSelectivelyACK)
+                selectiveACKsSet.add(input.frameNumber);
+        }
+        
+        return new FrameACK(lastInOrder, _getSelectiveACKs());
+    }
+        
+    /**
+     * Inserts the input passed, provided it is in the interval currently
+     * accepted. Otherwise it's discarded.
+     * 
+     * @param input the FrameInput to insert
+     * @return the FrameACK to send back
+     */
+    public FrameACK push(FrameInput input)
+    {
+        boolean toSelectivelyACK = _push(input);
+        if(toSelectivelyACK)
+            this.selectiveACKsSet.add(input.frameNumber);
+        
+        return new FrameACK(lastInOrder, _getSelectiveACKs());
+    }
+        
+    /**
+     * Internal method to push a single input into the queue.
+     * 
+     * @param input the input to push into the queue
+     * @return A boolean indicating whether the input should be selectively ACKed
+     */
+    private boolean _push(FrameInput input)
+    {
+        if(input.frameNumber >= this.baseFrameNumber && input.frameNumber <= this.baseFrameNumber + this.bufferSize -1)
+        {
+            int bufferIndex = (input.frameNumber - this.baseFrameNumber + this.bufferHead) % this.bufferSize;
+            if(this.frameBuffer[bufferIndex] == null)
+                this.frameBuffer[bufferIndex] = input;
+            
+            if(input.frameNumber == this.lastInOrder + 1)
+            {
+                this.lastInOrder++;
+                this.selectiveACKsSet.removeAll(this.selectiveACKsSet.headSet(lastInOrder + 1));
+                return false;
+            }
+            else
+                return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+        
+    private int[] _getSelectiveACKs()
+    {
+        Integer[] selectiveACKsIntegerArray = (Integer[]) this.selectiveACKsSet.toArray();
+        if(selectiveACKsIntegerArray.length > 0)
+        {
+            int[] selectiveACKs = new int[selectiveACKsIntegerArray.length];
+            for (int i = 0; i < selectiveACKsIntegerArray.length; i++)
+            {
+                selectiveACKs[i] = selectiveACKsIntegerArray[i];
+            }
+            return selectiveACKs;
+        }
+        else
+            return null;
     }
 }

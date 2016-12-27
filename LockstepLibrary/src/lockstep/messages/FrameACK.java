@@ -6,7 +6,11 @@
 package lockstep.messages;
 
 /**
- *
+ * Data structure to contain an ACKnowledgement response.
+ * It consists of a cumulativeACK, indicating the number of the latest in order 
+ * frame received; and a selectiveACKs array indicating the frame received out
+ * of order. The selectiveACKs array can be null
+ * 
  * @author Raff
  */
 public class FrameACK implements java.io.Serializable

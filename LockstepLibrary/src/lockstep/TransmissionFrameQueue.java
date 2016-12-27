@@ -96,9 +96,12 @@ public class TransmissionFrameQueue
             this.lastACKed = ack.cumulativeACK;
         }
         
-        for(int frameNumber : ack.selectiveACKs)
+        if(ack.selectiveACKs != null)
         {
-            this.frameBuffer.remove(frameNumber);
+            for(int frameNumber : ack.selectiveACKs)
+            {
+                this.frameBuffer.remove(frameNumber);
+            }
         }
     }
 }
