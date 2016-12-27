@@ -15,7 +15,7 @@ import lockstep.messages.FrameACK;
  * This frame queue supports out of order insertions, while extractions get the 
  * whole queue. pop() does not remove items, as they are removed only after the
  * relative ACK is received.
- * <p>
+ *
  * It's thread safe, as producer and consumer access different locations of this
  * data structure.
  * @author Raff

@@ -11,7 +11,7 @@ package lockstep.messages;
  */
 public class FrameACK implements java.io.Serializable
 {
-    public final int hostID;
+    public int hostID;
     public final int cumulativeACK;
     public final int[] selectiveACKs;
     
@@ -20,5 +20,22 @@ public class FrameACK implements java.io.Serializable
         this.hostID = hostID;
         this.cumulativeACK = cumulativeACK;
         this.selectiveACKs = selectiveACKs;
+    }
+    
+    public FrameACK(int cumulativeACK, int[] selectiveACKs)
+    {
+        this.cumulativeACK = cumulativeACK;
+        this.selectiveACKs = selectiveACKs;
+        this.hostID = -1;
+    }
+    
+    public int getHostID()
+    {
+        return hostID;
+    }
+    
+    public void setHostID(int hostID)
+    {
+        this.hostID = hostID;
     }
 }

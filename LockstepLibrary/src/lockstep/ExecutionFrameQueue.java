@@ -5,10 +5,13 @@
  */
 package lockstep;
 
+import java.util.ArrayList;
+import lockstep.messages.FrameACK;
+
 /**
  * This frame queue supports out of order and simultaneous insertion, but only 
  * in order single extraction.
- * <p>
+ *
  * It's thread safe, as producer and consumer access different locations of this
  * data structure.
  * 
@@ -53,13 +56,29 @@ class ExecutionFrameQueue
      * @param inputs the FrameInputs to insert
      * @return the number of the most recent in order input. Used for ACKs
      */
-    public int push(FrameInput[] inputs)
+    public FrameACK push(FrameInput[] inputs)
     {
-        for(FrameInput input : inputs)
-            push(input);
+        ArrayList<Integer> selectiveAckList = new ArrayList<Integer>();
         
-        return this.lastInOrder;
+        for(FrameInput input : inputs)
+        {
+            int acked = put(input);
+            if(acked != -1)
+                selectiveAckList.add(acked);
+        }   
+        
+        int[] selectiveACKs = new int[selectiveAckList.size()];
+        
+        int i = 0;
+        for(int ack : selectiveAckList)
+        {
+            selectiveACKs[i] = ack;
+            ++i;
+        }
+        
+        return new FrameACK(lastInOrder, selectiveACKs);
     }
+    
     
     /**
      * Inserts the input passed, provided it is in the interval currently
@@ -68,8 +87,31 @@ class ExecutionFrameQueue
      * @param input the FrameInput to insert
      * @return the number of the most recent in order input. Used for ACKs
      */
-    public int push(FrameInput input)
+    public FrameACK push(FrameInput input)
     {
+        int ack = put(input);
+        
+        int[] selectiveAck;
+        
+        if(ack != -1)
+        {
+            selectiveAck = new int[1];
+            selectiveAck[0] = ack;
+        }
+        else
+        {
+            selectiveAck = new int[0];
+        }
+        
+        return new FrameACK(lastInOrder, selectiveAck);
+    }
+    
+    
+    
+    private int put(FrameInput input)
+    {
+        int toAck = -1;
+        
         if(input.frameNumber >= this.baseFrameNumber && input.frameNumber <= this.baseFrameNumber + this.bufferSize -1)
         {
             int bufferIndex = (input.frameNumber - this.baseFrameNumber + this.bufferHead) % this.bufferSize;
@@ -78,9 +120,12 @@ class ExecutionFrameQueue
             
             if(input.frameNumber == this.lastInOrder + 1)
                 this.lastInOrder++;
+            else
+                toAck = input.frameNumber;
+            
         }
         
-        return this.lastInOrder;
+        return toAck;
     }
     
     /**

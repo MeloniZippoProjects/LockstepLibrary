@@ -6,8 +6,10 @@
 package lockstep;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Map;
@@ -87,7 +89,10 @@ public class Receiver implements Runnable
     private void processInput(InputMessage input)
     {
         ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(input.hostID);
-        executionFrameQueue.push(input.frame);
+        FrameACK frameAck = executionFrameQueue.push(input.frame);
+        
+        frameAck.setHostID(input.hostID);
+        sendACK(frameAck);
     }
     
     private void processACK(FrameACK ack)
@@ -95,5 +100,21 @@ public class Receiver implements Runnable
         TransmissionFrameQueue transmissionFrameQueue = this.transmissionFrameQueues.get(ack.hostID);
         transmissionFrameQueue.processACK(ack);
     }
-    
+
+    private void sendACK(FrameACK ack)
+    {
+        try(
+            ByteArrayOutputStream baout = new ByteArrayOutputStream();
+            ObjectOutputStream oout = new ObjectOutputStream(baout);
+        )
+        {
+            oout.writeObject(ack);
+            byte[] data = baout.toByteArray();
+            this.dgramSocket.send(new DatagramPacket(data, data.length));
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
 }
