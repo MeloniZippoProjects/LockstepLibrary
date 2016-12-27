@@ -41,7 +41,7 @@ public class TransmissionFrameQueue
      */
     public TransmissionFrameQueue(int bufferSize, int initialFrameNumber)
     {
-        this.frameBuffer = new ConcurrentSkipListMap<Integer, FrameInput>();
+        this.frameBuffer = new ConcurrentSkipListMap<>();
         this.lastACKed = initialFrameNumber - 1;
     }
     
