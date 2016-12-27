@@ -12,8 +12,9 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import lockstep.messages.FrameACK;
 
 /**
- * This frame queue supports in order and single insertion, but only 
- * in order single extraction.
+ * This frame queue supports out of order insertions, while extractions get the 
+ * whole queue. pop() does not remove items, as they are removed only after the
+ * relative ACK is received.
  * <p>
  * It's thread safe, as producer and consumer access different locations of this
  * data structure.
@@ -59,8 +60,10 @@ public class TransmissionFrameQueue
     }
     
     /**
-     * Extracts the next frame input only if it's in order. 
-     * @return the next in order frame input, or null if not present
+     * Extracts the all frame inputs to send. This method is not destructive,
+     * as items are removed only after the relative ACK is received.
+     * 
+     * @return an array containing the frame input to send
      */
     public FrameInput[] pop()
     {
@@ -77,8 +80,8 @@ public class TransmissionFrameQueue
     }
     
     /**
-     * Process the received ACKwnoledgement to remove packets received from the
-     * transmitting queue.
+     * Process the received ACKwnoledgement to remove packets successfully
+     * delivered from the transmitting queue.
      * 
      * @param ack the ACKwnoledgement received
      */
