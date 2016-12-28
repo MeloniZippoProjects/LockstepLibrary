@@ -11,7 +11,6 @@ import java.io.Serializable;
  * To be implemented: collects application inputs during frames and transforms
  * them in FrameInput at the end of the frame, then sends it to the other objects. * 
  * 
- * @author Raff
  * @param <Command>
  */
 public abstract class LockstepInputCollector<Command extends Serializable> implements Runnable
@@ -28,8 +27,10 @@ public abstract class LockstepInputCollector<Command extends Serializable> imple
     
     /**
      * Must be defined. It has to read input from user, and return a Command 
-     * object to be executed. If there is no input in a frame, a Command object
-     * must be returned, explicitly stating that there is no input
+     * object to be executed. If there is no input in a frame a Command object
+     * must still be returned, possibly representing the lack of an user input
+     * in application jargon
+     * 
      * @return the Command object collected in the current frame
      */
     protected abstract Command readInput();
