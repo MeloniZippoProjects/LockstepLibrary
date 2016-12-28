@@ -16,4 +16,10 @@ public class FrameInput<Command extends Serializable> implements Serializable
 {
     int frameNumber;
     Command cmd;
+    
+    public FrameInput(int frameNumber, Command cmd)
+    {
+        this.frameNumber = frameNumber;
+        this.cmd = cmd;
+    }
 }

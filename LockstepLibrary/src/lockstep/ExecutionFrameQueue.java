@@ -53,7 +53,8 @@ class ExecutionFrameQueue
     
     /**
      * Extracts the next frame input only if it's in order. 
-     * @return the next in order frame input, or null if not present
+     * This method will change the queue, extracting the head if it's present.
+     * @return the next in order frame input, or null if not present. 
      */
     public FrameInput pop()
     {
@@ -64,6 +65,16 @@ class ExecutionFrameQueue
             this.bufferHead = (this.bufferHead + 1) % this.bufferSize;
         }
         return nextInput;
+    }
+    
+    /**
+     * Shows the head of the buffer. This method won't modify the queue.
+     * @return next in order frame input, or null if not present.
+     * 
+     */
+    public FrameInput head()
+    {
+        return this.frameBuffer[this.bufferHead];
     }
     
     /**

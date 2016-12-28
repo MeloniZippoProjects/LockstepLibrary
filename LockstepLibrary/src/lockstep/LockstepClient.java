@@ -74,7 +74,7 @@ public abstract class LockstepClient implements Runnable
         int idx = 0;
         for(ExecutionFrameQueue frameQueue : this.frameQueues)
         {
-            if(inputs[idx] == null)
+            if(frameQueue.head()== null)
                 return null;
             else
             {
