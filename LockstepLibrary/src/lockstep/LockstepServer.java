@@ -6,6 +6,8 @@
 package lockstep;
 
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 
 /**
  *
@@ -20,10 +22,11 @@ public class LockstepServer implements Runnable
     Map<Integer, ExecutionFrameQueue> executionFrameQueues;
     
     /**
-     * Buffer for frame input to sent to clients. 
-     * One for each client participating in the session.
+     * Buffers for frame input to sent to clients. 
+     * For each client partecipating in the session there's a queue for each of
+     * the other clients.
      */
-    Map<Integer, TransmissionFrameQueue> transmissionFrameQueue;
+    Map<Integer, Map<Integer, TransmissionFrameQueue>> transmissionFrameQueueTree;
     
     /**
      * Threads used for receiving and transmitting of frames. 
@@ -37,12 +40,60 @@ public class LockstepServer implements Runnable
         //Inizializzazione campi, avvio thread...
     }
 
+    /**
+     * The server simply cycles collecting a complete set of frame inputs and
+     * forwarding them to all the clients. Differently from the clients, it doesn't
+     * wait any interframe time to process the executionFrameQueues.
+     * If a frame lacks any input from any client, the server stops waiting for
+     * them eventually forcing the client to stop for synchronization.
+     */
     @Override
     public void run()
     {
         while(true)
         {
-            
+            Map<Integer, FrameInput> frameInputs = collectFrames();
+            distributeFrameInputs(frameInputs);
+        }
+    }
+
+    private Map<Integer, FrameInput> collectFrames()
+    {
+        //Proper waiting scheme!
+        while(!checkFrameInputs())
+        {}
+
+        Map<Integer, FrameInput> frameInputs = new TreeMap<>();
+        for(Entry<Integer, ExecutionFrameQueue> entry : this.executionFrameQueues.entrySet())
+        {
+            frameInputs.put(entry.getKey(), entry.getValue().pop());
+        }
+        return frameInputs;
+    }
+
+    private boolean checkFrameInputs()
+    {
+        for(Entry<Integer, ExecutionFrameQueue> entry : this.executionFrameQueues.entrySet())
+        {
+            if(entry.getValue().head() == null)
+                return false;
+        }
+        return true;
+    }
+
+    private void distributeFrameInputs(Map<Integer, FrameInput> frameInputs)
+    {
+        for(Entry<Integer, FrameInput> frameInputEntry : frameInputs.entrySet())
+        {
+            for(Entry<Integer, Map<Integer, TransmissionFrameQueue>> transmissionFrameQueueMapEntry : this.transmissionFrameQueueTree.entrySet())
+            {
+                if(transmissionFrameQueueMapEntry.getKey() != frameInputEntry.getKey())
+                {
+                    Map<Integer, TransmissionFrameQueue> transmissionFrameQueueMap = transmissionFrameQueueMapEntry.getValue();
+                    TransmissionFrameQueue transmissionFrameQueue = transmissionFrameQueueMap.get(frameInputEntry.getKey());
+                    transmissionFrameQueue.push(frameInputEntry.getValue());
+                }
+            }
         }
     }
 }
