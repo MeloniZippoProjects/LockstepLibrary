@@ -55,13 +55,13 @@ class ExecutionFrameQueue
     
     /**
      * Extracts the next frame input only if it's in order. 
-     * This method will change the queue, extracting the head if it's present.
+     * This method will change the queue, extracting the head, only if it's present.
      * @return the next in order frame input, or null if not present. 
      */
     public FrameInput pop()
     {
         FrameInput nextInput = this.frameBuffer[this.bufferHead];
-        if( nextInput != null)
+        if( nextInput != null )
         {
             this.frameBuffer[this.bufferHead] = null;
             this.bufferHead = (this.bufferHead + 1) % this.bufferSize;
@@ -72,7 +72,6 @@ class ExecutionFrameQueue
     /**
      * Shows the head of the buffer. This method won't modify the queue.
      * @return next in order frame input, or null if not present.
-     * 
      */
     public FrameInput head()
     {
@@ -82,9 +81,8 @@ class ExecutionFrameQueue
     /**
      * Inserts all the inputs passed, provided they're in the interval currently
      * accepted. If a FrameInput it's out of the interval it's discarded. 
-     * 
      * @param inputs the FrameInputs to insert
-     * @return tthe FrameACK to send back
+     * @return the FrameACK to send back
      */
     public FrameACK push(FrameInput[] inputs)
     {

@@ -22,7 +22,7 @@ public class LockstepServer implements Runnable
     Map<Integer, ExecutionFrameQueue> executionFrameQueues;
     
     /**
-     * Buffers for frame input to sent to clients. 
+     * Buffers for frame input to send to clients. 
      * For each client partecipating in the session there's a queue for each of
      * the other clients.
      */

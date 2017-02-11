@@ -17,12 +17,12 @@ import lockstep.messages.InputMessage;
  * 
  * @author Raff
  */
-public class Transmitter implements Runnable
+public class LockstepTransmitter implements Runnable
 {
     DatagramSocket dgramSocket;
     Map<Integer, TransmissionFrameQueue> transmissionFrameQueues;
     
-    public Transmitter(DatagramSocket socket, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues)
+    public LockstepTransmitter(DatagramSocket socket, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues)
     {
         //initialize members...
     }
