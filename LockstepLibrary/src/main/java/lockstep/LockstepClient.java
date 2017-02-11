@@ -5,6 +5,8 @@
  */
 package lockstep;
 
+import java.net.Socket;
+
 /**
  *
  * @author Raff
@@ -15,9 +17,13 @@ public abstract class LockstepClient implements Runnable
     ExecutionFrameQueue[] frameQueues;    
     //Input collector...
     
-    public LockstepClient()
+    /**
+     * 
+     * @param socket socket to the LockstepServer
+     */
+    public LockstepClient(Socket socket)
     {
-        //Inizializzazione campi...
+        
     }
 
     /**
@@ -79,7 +85,7 @@ public abstract class LockstepClient implements Runnable
             else
             {
                 inputs[idx] = frameQueue.pop();
-                idx++;
+                ++idx;
             }
         }        
         return inputs;

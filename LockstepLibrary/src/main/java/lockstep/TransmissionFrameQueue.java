@@ -67,7 +67,7 @@ public class TransmissionFrameQueue
      */
     public FrameInput[] pop()
     {
-        Set<Entry<Integer, FrameInput>> entries = this.frameBuffer.entrySet();
+        Set< Entry<Integer, FrameInput> > entries = this.frameBuffer.entrySet();
         FrameInput[] toRet = new FrameInput[entries.size()];
         int i = 0;
         

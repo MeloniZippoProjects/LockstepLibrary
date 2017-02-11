@@ -46,7 +46,7 @@ public class LockstepTransmitter implements Runnable
                     }
                 }
                 
-                Thread.sleep(50); ///placeholder: think about timings, notification schemes, ect.
+                Thread.sleep(50); ///placeholder: think about timings, notification schemes, etc.
             }
             catch(InterruptedException e)
             {

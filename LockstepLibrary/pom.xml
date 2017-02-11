@@ -1,7 +1,7 @@
 <project>
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.zippo.meloni</groupId>
-  <artifactId>lockstep.library</artifactId>
+  <artifactId>lockstep_library</artifactId>
   <version>1</version>
     <name>Lockstep Library</name>
     <dependencies>
@@ -9,6 +9,12 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.5</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <properties>

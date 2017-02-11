@@ -51,6 +51,7 @@ class ExecutionFrameQueue
         this.bufferHead = 0;
         this.baseFrameNumber = initialFrameNumber;
         this.lastInOrder = initialFrameNumber - 1;
+        this.selectiveACKsSet = new ConcurrentSkipListSet<>();
     }
     
     /**
@@ -143,20 +144,7 @@ class ExecutionFrameQueue
         
     private int[] _getSelectiveACKs()
     {
-//        Integer[] selectiveACKsIntegerArray = (Integer[]) this.selectiveACKsSet.toArray();
-//        if(selectiveACKsIntegerArray.length > 0)
-//        {
-//            int[] selectiveACKs = new int[selectiveACKsIntegerArray.length];
-//            for (int i = 0; i < selectiveACKsIntegerArray.length; i++)
-//            {
-//                selectiveACKs[i] = selectiveACKsIntegerArray[i];
-//            }
-//            return selectiveACKs;
-//        }
-//        else
-//            return null;
-        
-        Integer[] selectiveACKsIntegerArray = (Integer[]) this.selectiveACKsSet.toArray();
+        Integer[] selectiveACKsIntegerArray = this.selectiveACKsSet.toArray(new Integer[0]);
         if(selectiveACKsIntegerArray.length > 0)
         {
             int[] selectiveACKs = ArrayUtils.toPrimitive(selectiveACKsIntegerArray);
