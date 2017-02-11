@@ -34,6 +34,11 @@ public class LockstepServer implements Runnable
      */
     Map<Integer, LockstepTransmitter> transmitters;
     Map<Integer, LockstepReceiver> receivers;
+
+    /**
+     * Used for synchronization between server and executionFrameQueues
+     */
+    Object executionQueuesUpdateMonitor = new Object();
     
     public LockstepServer()
     {
@@ -59,9 +64,11 @@ public class LockstepServer implements Runnable
 
     private Map<Integer, FrameInput> collectFrames()
     {
-        //Proper waiting scheme!
-        while(!checkFrameInputs())
-        {}
+        synchronized(executionQueuesUpdateMonitor)
+        {
+            while(!checkFrameInputs())
+                await();
+        }
 
         Map<Integer, FrameInput> frameInputs = new TreeMap<>();
         for(Entry<Integer, ExecutionFrameQueue> entry : this.executionFrameQueues.entrySet())

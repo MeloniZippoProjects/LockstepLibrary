@@ -13,6 +13,12 @@ public abstract class LockstepClient implements Runnable
 {
     int interframeTime;
     ExecutionFrameQueue[] frameQueues;    
+
+    /**
+     * Used for synchronization between server and executionFrameQueues
+     */
+    Map<Integer, Boolean> executionQueuesHeadsAvailability;
+
     //Input collector...
     
     public LockstepClient()
@@ -44,6 +50,17 @@ public abstract class LockstepClient implements Runnable
         {
             try
             {
+                synchronized(executionQueuesHeadsAvailability)
+                {
+                    while(executionQueuesHeadsAvailability.contains(Boolean.FALSE))
+                    {
+                        suspendSimulation();
+                        synchronized(inputCollectionMonitor)
+                        wait();
+                    }
+                }  
+
+
                 FrameInput[] inputs = collectInputs();
                 if(inputs == null)
                 {
@@ -56,7 +73,7 @@ public abstract class LockstepClient implements Runnable
                 else
                 {
                     for(FrameInput input : inputs)
-                        executeFrameInput(input);
+                        executeFrameInput(input);+
                 }
                 
                 Thread.sleep(interframeTime);
@@ -87,6 +104,6 @@ public abstract class LockstepClient implements Runnable
 
     private void waitResync()
     {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+      
     }
 }

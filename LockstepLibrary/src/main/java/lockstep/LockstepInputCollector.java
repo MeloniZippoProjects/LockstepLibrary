@@ -23,8 +23,7 @@ public abstract class LockstepInputCollector<Command extends Serializable> imple
     
     //transmission queue for the remote clients or server
     TransmissionFrameQueue[] transmissionFrameQueues;
-    
-    
+        
     /**
      * Must be defined. It has to read input from user, and return a Command 
      * object to be executed. If there is no input in a frame a Command object

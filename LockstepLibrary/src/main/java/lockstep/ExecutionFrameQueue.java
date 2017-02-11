@@ -35,7 +35,15 @@ class ExecutionFrameQueue
 
     int lastInOrder;
     ConcurrentSkipListSet<Integer> selectiveACKsSet;
+
+    int hostID;
+    Map<Integer, Boolean> executionQueuesHeadsAvailability;
         
+    /**
+     * Used for synchronization between a client or server and executionFrameQueues
+     */
+    Object executionQueuesUpdateMonitor = new Object();
+
     /**
      * Creates a new ExecutionFrameQueue
      * @param bufferSize Size of the internal buffer. It's important to
@@ -128,8 +136,22 @@ class ExecutionFrameQueue
             
             if(input.frameNumber == this.lastInOrder + 1)
             {
+                synchronized(executionQueuesHeadsAvailability)
+                {
+                    Boolean queueHeadAvailability = executionQueuesHeadsAvailability.getValue(hostID);           
+                    if(queueHeadAvailability == Boolean.FALSE)
+                    {
+                        queueHeadAvailability = Boolean.TRUE;
+                        notify();
+                    }
+                }
+
                 this.lastInOrder++;
-                this.selectiveACKsSet.removeAll(this.selectiveACKsSet.headSet(lastInOrder + 1));
+                while(this.selectiveACK.first() == this.lastInOrder + 1)
+                {
+                    this.lastInOrder++;
+                    this.selectiveACK.remove(this.selectiveACK.first());
+                }
                 return false;
             }
             else
