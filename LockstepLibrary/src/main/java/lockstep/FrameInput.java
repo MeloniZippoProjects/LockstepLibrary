@@ -10,7 +10,8 @@ import java.io.Serializable;
 /**
  *
  * @author Raff
- * @param <Command>
+ * @param <Command> user defined class. Must extend serializable. Represents an 
+ * input command for the server.
  */
 public class FrameInput<Command extends Serializable> implements Serializable 
 {

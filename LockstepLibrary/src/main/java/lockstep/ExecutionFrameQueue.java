@@ -7,12 +7,14 @@ package lockstep;
 
 import java.util.concurrent.ConcurrentSkipListSet;
 import lockstep.messages.FrameACK;
+import org.apache.commons.lang3.ArrayUtils;
+
 
 /**
  * This frame queue supports out of order and simultaneous insertion, but only 
  * in order single extraction.
  *
- * It's thread safe, as producer and consumer access different locations of this
+ * It is thread safe, as producer and consumer access different locations of this
  * data structure.
  * 
  * @author Raff
@@ -35,7 +37,7 @@ class ExecutionFrameQueue
     ConcurrentSkipListSet<Integer> selectiveACKsSet;
         
     /**
-     * 
+     * Creates a new ExecutionFrameQueue
      * @param bufferSize Size of the internal buffer. It's important to
      * dimension this large enough to store the received frames without forcing
      * retransmissions
@@ -120,7 +122,7 @@ class ExecutionFrameQueue
      */
     private boolean _push(FrameInput input)
     {
-        if(input.frameNumber >= this.baseFrameNumber && input.frameNumber <= this.baseFrameNumber + this.bufferSize -1)
+        if(input.frameNumber >= this.baseFrameNumber && input.frameNumber <= this.baseFrameNumber + this.bufferSize - 1)
         {
             int bufferIndex = (input.frameNumber - this.baseFrameNumber + this.bufferHead) % this.bufferSize;
             if(this.frameBuffer[bufferIndex] == null)
@@ -143,14 +145,23 @@ class ExecutionFrameQueue
         
     private int[] _getSelectiveACKs()
     {
+//        Integer[] selectiveACKsIntegerArray = (Integer[]) this.selectiveACKsSet.toArray();
+//        if(selectiveACKsIntegerArray.length > 0)
+//        {
+//            int[] selectiveACKs = new int[selectiveACKsIntegerArray.length];
+//            for (int i = 0; i < selectiveACKsIntegerArray.length; i++)
+//            {
+//                selectiveACKs[i] = selectiveACKsIntegerArray[i];
+//            }
+//            return selectiveACKs;
+//        }
+//        else
+//            return null;
+        
         Integer[] selectiveACKsIntegerArray = (Integer[]) this.selectiveACKsSet.toArray();
         if(selectiveACKsIntegerArray.length > 0)
         {
-            int[] selectiveACKs = new int[selectiveACKsIntegerArray.length];
-            for (int i = 0; i < selectiveACKsIntegerArray.length; i++)
-            {
-                selectiveACKs[i] = selectiveACKsIntegerArray[i];
-            }
+            int[] selectiveACKs = ArrayUtils.toPrimitive(selectiveACKsIntegerArray);
             return selectiveACKs;
         }
         else
