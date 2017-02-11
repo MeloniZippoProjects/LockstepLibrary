@@ -20,13 +20,13 @@ import lockstep.messages.InputMessage;
  *
  * @author Raff
  */
-public class Receiver implements Runnable
+public class LockstepReceiver implements Runnable
 {
     DatagramSocket dgramSocket;
     Map<Integer, ExecutionFrameQueue> executionFrameQueues;
     Map<Integer, TransmissionFrameQueue> transmissionFrameQueues;
     
-    public Receiver(DatagramSocket socket, Map<Integer, ExecutionFrameQueue> executionFrameQueues, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues)
+    public LockstepReceiver(DatagramSocket socket, Map<Integer, ExecutionFrameQueue> executionFrameQueues, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues)
     {
         //initialize members...
     }
@@ -63,22 +63,15 @@ public class Receiver implements Runnable
             InputMessage input = (InputMessage)obj;
             this.processInput(input);
         }
-        else if(obj instanceof InputMessage[])
+        else if(obj instanceof InputMessageArray)
         {
-            InputMessage[] inputs = (InputMessage[])obj;
-            for(InputMessage input : inputs)
-                this.processInput(input);
+            InputMessageArray inputs = (InputMessageArray)obj;
+            this.processInput(inputs);
         }
         else if(obj instanceof FrameACK)
         {
             FrameACK ack = (FrameACK)obj;
             this.processACK(ack);
-        }
-        else if(obj instanceof FrameACK[])
-        {
-            FrameACK[] acks = (FrameACK[])obj;
-            for(FrameACK ack : acks)
-                this.processACK(ack);
         }
         else 
         {
@@ -86,12 +79,19 @@ public class Receiver implements Runnable
         }
     }
     
-    private void processInput(InputMessage input)
+    private void processInput(InputMessage inputs)
     {
         ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(input.hostID);
         FrameACK frameAck = executionFrameQueue.push(input.frame);
-        
         frameAck.setHostID(input.hostID);
+        sendACK(frameAck);
+    }
+
+    private void processInput(InputMessageArray inputs)
+    {
+        ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(inputs.hostID);
+        FrameACK frameAck = executionFrameQueue.push(inputs.frames);
+        frameAck.setHostID(inputs.hostID);
         sendACK(frameAck);
     }
     
