@@ -29,7 +29,7 @@ public abstract class LockstepInputCollector<Command extends Serializable> imple
      * Must be defined. It has to read input from user, and return a Command 
      * object to be executed. If there is no input in a frame a Command object
      * must still be returned, possibly representing the lack of an user input
-     * in application jargon
+     * in the semantic of the application
      * 
      * @return the Command object collected in the current frame
      */

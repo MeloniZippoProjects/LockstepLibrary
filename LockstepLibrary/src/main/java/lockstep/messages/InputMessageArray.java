@@ -16,7 +16,7 @@ public class InputMessageArray
     public final int hostID;
     public final FrameInput[] frames;
     
-    public InputMessage(int hostID, FrameInput[] frames)
+    public InputMessageArray(int hostID, FrameInput[] frames)
     {
         this.hostID = hostID;
         this.frames = frames;

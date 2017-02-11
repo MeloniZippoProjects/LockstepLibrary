@@ -32,8 +32,8 @@ public class LockstepServer implements Runnable
      * Threads used for receiving and transmitting of frames. 
      * A pair for each client partecipating in the session.
      */
-    Map<Integer, Transmitter> transmitters;
-    Map<Integer, Receiver> receivers;
+    Map<Integer, LockstepTransmitter> transmitters;
+    Map<Integer, LockstepReceiver> receivers;
     
     public LockstepServer()
     {

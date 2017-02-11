@@ -14,7 +14,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Map;
 import lockstep.messages.FrameACK;
-import lockstep.messages.InputMessage;
+import lockstep.messages.*;
 
 /**
  *
@@ -79,7 +79,7 @@ public class LockstepReceiver implements Runnable
         }
     }
     
-    private void processInput(InputMessage inputs)
+    private void processInput(InputMessage input)
     {
         ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(input.hostID);
         FrameACK frameAck = executionFrameQueue.push(input.frame);
