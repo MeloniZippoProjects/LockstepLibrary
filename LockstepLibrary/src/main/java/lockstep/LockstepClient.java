@@ -88,7 +88,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     /**
      * Provides the first commands to bootstart the simulation.
      * 
-     * @return 
+     * @return array of commands to bootstart the simulation
      */
     protected abstract Command[] fillCommands();
         

@@ -63,6 +63,8 @@ public class LockstepServer implements Runnable
      */
     Map<Integer, Boolean> executionQueuesHeadsAvailability;
     
+    CountDownLatch inputLatch;
+    
     int tcpPort;
     int clientsNumber;
     
@@ -90,6 +92,8 @@ public class LockstepServer implements Runnable
     @Override
     public void run()
     {
+        handshake();
+        
         while(true)
         {
             try
@@ -108,6 +112,7 @@ public class LockstepServer implements Runnable
                         }
                     }
                 }
+                
 
                 Map<Integer, FrameInput> frameInputs = collectFrameInputs();
                 distributeFrameInputs(frameInputs);
@@ -177,7 +182,7 @@ public class LockstepServer implements Runnable
             announcement.hostIDs = ArrayUtils.toPrimitive(this.hostIDs.toArray(new Integer[0]));
             oout.writeObject(announcement);
             
-            clientTransmittionSetup(assignedHostID, firstFrameNumber, udpSocket, clientTransmissionFrameQueues);
+            clientTransmissionSetup(assignedHostID, firstFrameNumber, udpSocket, clientTransmissionFrameQueues);
             
             //Wait for other handshakes to reach final step
             barrier.await();
@@ -210,7 +215,7 @@ public class LockstepServer implements Runnable
         executorService.submit(receiver);
     }
     
-    private void clientTransmittionSetup(int clientID, int firstFrameNumber, DatagramSocket udpSocket, Map<Integer, TransmissionFrameQueue> clientTransmissionFrameQueues)
+    private void clientTransmissionSetup(int clientID, int firstFrameNumber, DatagramSocket udpSocket, Map<Integer, TransmissionFrameQueue> clientTransmissionFrameQueues)
     {
         for(int hostID : hostIDs)
         {
