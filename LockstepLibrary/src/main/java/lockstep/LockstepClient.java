@@ -37,8 +37,6 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     
     InetSocketAddress serverTCPAddress;
     
-    static final int UDPStartingPort = 12000;
-    
     static final int executionQueueBufferSize = 1024;
     
     ExecutorService executorService;
