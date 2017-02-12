@@ -123,9 +123,7 @@ public class ExecutionFrameQueueTest {
         
         ack = efq.push(createFrame(5,1,1));
         assertEquals("Check cumulative ACK", 7, ack.cumulativeACK);
-        assertArrayEquals("Check selective ACKs", new int[]{}, ack.selectiveACKs);
-        
-        
+        assertArrayEquals("Check selective ACKs", null, ack.selectiveACKs);    
     }
     
     private FrameInput<Command> createFrame(int n, int upd,int rl)

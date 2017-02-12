@@ -8,6 +8,8 @@ package lockstep;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -34,6 +36,11 @@ public class LockstepServer implements Runnable
      */
     Map<Integer, LockstepTransmitter> transmitters;
     Map<Integer, LockstepReceiver> receivers;
+
+    /**
+     * Used for synchronization between server and executionFrameQueues
+     */
+    Object executionQueuesUpdateMonitor = new Object();
     
     public LockstepServer()
     {
@@ -59,9 +66,15 @@ public class LockstepServer implements Runnable
 
     private Map<Integer, FrameInput> collectFrames()
     {
-        //Proper waiting scheme!
-        while(!checkFrameInputs())
-        {}
+        synchronized(executionQueuesUpdateMonitor)
+        {
+            while(!checkFrameInputs())
+                try {
+                    wait();
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(LockstepServer.class.getName()).log(Level.SEVERE, null, ex);
+                }
+        }
 
         Map<Integer, FrameInput> frameInputs = new TreeMap<>();
         for(Entry<Integer, ExecutionFrameQueue> entry : this.executionFrameQueues.entrySet())

@@ -31,7 +31,6 @@ public class LockstepReceiver implements Runnable
         //initialize members...
     }
     
-    
     @Override
     public void run()
     {

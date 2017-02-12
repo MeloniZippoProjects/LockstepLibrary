@@ -5,6 +5,8 @@
  */
 package lockstep;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListSet;
 import lockstep.messages.FrameACK;
 import org.apache.commons.lang3.ArrayUtils;
@@ -35,7 +37,15 @@ class ExecutionFrameQueue
 
     int lastInOrder;
     ConcurrentSkipListSet<Integer> selectiveACKsSet;
+
+    int hostID;
+    Map<Integer, Boolean> executionQueuesHeadsAvailability;
         
+    /**
+     * Used for synchronization between a client or server and executionFrameQueues
+     */
+    Object executionQueuesUpdateMonitor = new Object();
+
     /**
      * Creates a new ExecutionFrameQueue
      * @param bufferSize Size of the internal buffer. It's important to
@@ -52,6 +62,7 @@ class ExecutionFrameQueue
         this.baseFrameNumber = initialFrameNumber;
         this.lastInOrder = initialFrameNumber - 1;
         this.selectiveACKsSet = new ConcurrentSkipListSet<>();
+        //this.executionQueuesHeadsAvailability = new HashMap<>();
     }
     
     /**
@@ -129,8 +140,22 @@ class ExecutionFrameQueue
             
             if(input.frameNumber == this.lastInOrder + 1)
             {
+                /*synchronized(executionQueuesHeadsAvailability)
+                {
+                    Boolean queueHeadAvailability = executionQueuesHeadsAvailability.get(hostID);           
+                    if(queueHeadAvailability == Boolean.FALSE)
+                    {
+                        queueHeadAvailability = Boolean.TRUE;
+                        notify();
+                    }
+                }*/
+
                 this.lastInOrder++;
-                this.selectiveACKsSet.removeAll(this.selectiveACKsSet.headSet(lastInOrder + 1));
+                while(!this.selectiveACKsSet.isEmpty() && this.selectiveACKsSet.first() == this.lastInOrder + 1)
+                {
+                    this.lastInOrder++;
+                    this.selectiveACKsSet.remove(this.selectiveACKsSet.first());
+                }
                 return false;
             }
             else

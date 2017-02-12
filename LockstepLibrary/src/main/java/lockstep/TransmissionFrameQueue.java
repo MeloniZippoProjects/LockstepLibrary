@@ -31,6 +31,8 @@ public class TransmissionFrameQueue
     int lastACKed;
     Map<Integer, FrameInput> frameBuffer;
     
+    LockstepTransmitter transmitter;
+
     /**
      * 
      * @param bufferSize Size of the internal buffer. It's important to
@@ -56,12 +58,17 @@ public class TransmissionFrameQueue
         if(input.frameNumber >= this.lastACKed && !this.frameBuffer.containsKey(input.frameNumber))
         {
             this.frameBuffer.put(input.frameNumber, input);
+            this.transmitter.signalTransmissionFrameQueuesReady();
         }
     }
     
     /**
      * Extracts the all frame inputs to send. This method is not destructive,
      * as items are removed only after the relative ACK is received.
+     * 
+     * Calls to this method may conflict with concurrent calls to processACK().
+     * However, we assume that sending innecessary frames creates no issues
+     * and has acceptable cost vs synchronization overhead.
      * 
      * @return an array containing the frame input to send
      */
@@ -82,6 +89,10 @@ public class TransmissionFrameQueue
     /**
      * Process the received ACKwnoledgement to remove packets successfully
      * delivered from the transmitting queue.
+     *
+     * Calls to this method may conflict with concurrent calls to pop().
+     * However, we assume that sending innecessary frames creates no issues
+     * and has acceptable cost vs synchronization overhead.
      * 
      * @param ack the ACKwnoledgement received
      */

@@ -11,6 +11,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Observable;
 import lockstep.messages.InputMessage;
 
 /**
@@ -22,6 +23,8 @@ public class LockstepTransmitter implements Runnable
     DatagramSocket dgramSocket;
     Map<Integer, TransmissionFrameQueue> transmissionFrameQueues;
     
+    Boolean transmissionFrameQueuesReady;
+
     public LockstepTransmitter(DatagramSocket socket, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues)
     {
         //initialize members...
@@ -29,24 +32,28 @@ public class LockstepTransmitter implements Runnable
     
     @Override
     public void run()
-    {
-        //Find most suitable wakeup/poll scheme...
-        
+    {        
         while(true)
         {
             try
             {
-                for(Entry<Integer, TransmissionFrameQueue> entry : transmissionFrameQueues.entrySet())
+                synchronized(transmissionFrameQueuesReady)
                 {
-                    FrameInput[] frames = entry.getValue().pop();
-                    for(FrameInput frame : frames)
+                    while(transmissionFrameQueuesReady == Boolean.FALSE)
+                        wait();
+
+                    for(Entry<Integer, TransmissionFrameQueue> entry : transmissionFrameQueues.entrySet())
                     {
-                        InputMessage msg = new InputMessage(entry.getKey(), frame);
-                        this.send(msg);
+                        FrameInput[] frames = entry.getValue().pop();
+                        for(FrameInput frame : frames)
+                        {
+                            InputMessage msg = new InputMessage(entry.getKey(), frame);
+                            this.send(msg);
+                        }
                     }
+
+                    transmissionFrameQueuesReady = Boolean.FALSE;    //This efficient if we assume that interframetime < rtt
                 }
-                
-                Thread.sleep(50); ///placeholder: think about timings, notification schemes, etc.
             }
             catch(InterruptedException e)
             {
@@ -72,4 +79,14 @@ public class LockstepTransmitter implements Runnable
             e.printStackTrace();
         }
     }       
+
+    public void signalTransmissionFrameQueuesReady()
+    {
+        synchronized(transmissionFrameQueuesReady)
+            {
+                transmissionFrameQueuesReady = Boolean.TRUE;
+                notify();
+            }
+    }
 }
+
