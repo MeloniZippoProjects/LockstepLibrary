@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
-import lockstep.messages.FrameACK;
+import lockstep.messages.simulation.FrameACK;
 import org.apache.log4j.Logger;
 
 /**
@@ -62,7 +62,7 @@ public class TransmissionFrameQueue
         if(input.frameNumber >= this.lastACKed && !this.frameBuffer.containsKey(input.frameNumber))
         {
             this.frameBuffer.put(input.frameNumber, input);
-            //this.transmitter.signalTransmissionFrameQueuesReady();
+            this.transmitter.signalTransmissionFrameQueuesReady();
         }
     }
     
