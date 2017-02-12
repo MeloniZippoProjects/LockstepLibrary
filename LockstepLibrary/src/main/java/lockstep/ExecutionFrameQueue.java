@@ -8,6 +8,7 @@ package lockstep;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CountDownLatch;
 import lockstep.messages.simulation.FrameACK;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.log4j.Logger;
@@ -41,6 +42,7 @@ class ExecutionFrameQueue
 
     int hostID;
     Map<Integer, QueueAvailability> executionQueuesHeadsAvailability;
+    CountDownLatch inputLatch;
     
     private static final Logger LOG = Logger.getLogger(ExecutionFrameQueue.class.getName());
     
@@ -52,7 +54,7 @@ class ExecutionFrameQueue
      * @param initialFrameNumber First frame's number. Must be the same for all 
      * the clients using the protocol
      */
-    public ExecutionFrameQueue(int bufferSize, int initialFrameNumber, int hostID)
+    public ExecutionFrameQueue(int bufferSize, int initialFrameNumber, int hostID, CountDownLatch inputLatch)
     {
         this.bufferSize = bufferSize;
         this.frameBuffer = new FrameInput[bufferSize];
@@ -63,6 +65,8 @@ class ExecutionFrameQueue
         this.hostID = hostID;
         this.executionQueuesHeadsAvailability = new HashMap<>();
         executionQueuesHeadsAvailability.put(hostID, new QueueAvailability(Boolean.FALSE));
+        
+        this.inputLatch = inputLatch;
     }
     
     /**
@@ -77,6 +81,8 @@ class ExecutionFrameQueue
         {
             this.frameBuffer[this.bufferHead] = null;
             this.bufferHead = (this.bufferHead + 1) % this.bufferSize;
+            
+            inputLatch.countDown();
 
             QueueAvailability queueHeadAvailability = executionQueuesHeadsAvailability.get(hostID);
             synchronized(queueHeadAvailability)

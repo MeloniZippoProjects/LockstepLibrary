@@ -88,7 +88,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     /**
      * Provides the first commands to bootstart the simulation.
      * 
-     * @return 
+     * @return array of commands to bootstart the simulation
      */
     protected abstract Command[] fillCommands();
         
@@ -147,10 +147,11 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
             InetSocketAddress serverUDPAddress = new InetSocketAddress(serverTCPAddress.getAddress(), helloReply.serverUDPPort);
             udpSocket.connect(serverUDPAddress);
             
+            Map<Integer, ExecutionFrameQueue> receivingExecutionQueues = new ConcurrentHashMap<>();
             transmissionFrameQueue = new TransmissionFrameQueue(helloReply.firstFrameNumber);
             HashMap<Integer,TransmissionFrameQueue> transmissionQueueWrapper = new HashMap<>();
             transmissionQueueWrapper.put(hostID, transmissionFrameQueue);
-
+            
             receiver = new LockstepReceiver(udpSocket, receivingExecutionQueues, transmissionQueueWrapper);
             transmitter = new LockstepTransmitter(udpSocket, transmissionQueueWrapper);
 
@@ -161,7 +162,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
             ClientsAnnouncement clientsAnnouncement = (ClientsAnnouncement) oin.readObject();
             LOG.info("Received list of clients from server");
             
-            Map<Integer, ExecutionFrameQueue> receivingExecutionQueues = new ConcurrentHashMap<>();
+            
 
             for(int clientID : clientsAnnouncement.hostIDs)
             {
