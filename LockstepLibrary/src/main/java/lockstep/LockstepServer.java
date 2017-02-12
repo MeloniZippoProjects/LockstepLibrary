@@ -94,26 +94,11 @@ public class LockstepServer implements Runnable
     {
         handshake();
         
-        inputLatch = new CyclicCountDownLatch();
+        inputLatch = new CyclicCountDownLatch(clientsNumber);
         while(true)
         {
             try
             {
-//                if(executionQueuesHeadsAvailability.containsValue(Boolean.FALSE))
-//                {
-//                    for(Integer key : executionQueuesHeadsAvailability.keySet())
-//                    {
-//                        Boolean nextQueueHeadAvailability = executionQueuesHeadsAvailability.get(key);
-//                        synchronized(nextQueueHeadAvailability)
-//                        {
-//                            while(nextQueueHeadAvailability == Boolean.FALSE)
-//                            {
-//                                nextQueueHeadAvailability.wait();
-//                            }
-//                        }
-//                    }
-//                }
-                
                 //Wait that everyone has received current frame
                 inputLatch.await();
                 
@@ -210,7 +195,7 @@ public class LockstepServer implements Runnable
     
     private void clientReceiveSetup(int clientID, DatagramSocket clientUDPSocket, int initialFrameNumber, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues)
     {
-        ExecutionFrameQueue receivingQueue = new ExecutionFrameQueue(executionBufferSize, initialFrameNumber, clientID);
+        ExecutionFrameQueue receivingQueue = new ExecutionFrameQueue(executionBufferSize, initialFrameNumber, clientID, inputLatch);
         this.executionFrameQueues.put(clientID, receivingQueue);
         HashMap<Integer,ExecutionFrameQueue> receivingQueueWrapper = new HashMap<>();
         receivingQueueWrapper.put(clientID, receivingQueue);

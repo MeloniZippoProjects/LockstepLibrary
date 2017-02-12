@@ -7,6 +7,7 @@ package lockstep;
 
 import java.io.IOException;
 import lockstep.messages.handshake.*;
+import lockstep.CyclicCountDownLatch;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -51,7 +52,8 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     /**
      * Used for synchronization between server and executionFrameQueues
      */
-    Map<Integer, Boolean> executionQueuesHeadsAvailability;
+    CyclicCountDownLatch inputLatch;
+    private int clientsNumber;
 
     public LockstepClient(InetSocketAddress serverTCPAddress)
     {
@@ -161,10 +163,13 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
             //Receive and process second server reply
             ClientsAnnouncement clientsAnnouncement = (ClientsAnnouncement) oin.readObject();
             LOG.info("Received list of clients from server");
+            
+            clientsNumber = clientsAnnouncement.hostIDs.length;
+            inputLatch = new CyclicCountDownLatch(clientsNumber);
 
             for(int clientID : clientsAnnouncement.hostIDs)
             {
-                ExecutionFrameQueue executionFrameQueue = new ExecutionFrameQueue(executionQueueBufferSize, helloReply.firstFrameNumber, clientID);
+                ExecutionFrameQueue executionFrameQueue = new ExecutionFrameQueue(executionQueueBufferSize, helloReply.firstFrameNumber, clientID, inputLatch);
                 executionFrameQueues.put(clientID, executionFrameQueue);
                 receivingExecutionQueues.put(clientID, executionFrameQueue);
             }
