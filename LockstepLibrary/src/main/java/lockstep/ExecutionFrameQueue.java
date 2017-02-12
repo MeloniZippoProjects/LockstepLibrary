@@ -42,7 +42,7 @@ class ExecutionFrameQueue
 
     int hostID;
     Map<Integer, QueueAvailability> executionQueuesHeadsAvailability;
-    CountDownLatch inputLatch;
+    CyclicCountDownLatch inputLatch;
     
     private static final Logger LOG = Logger.getLogger(ExecutionFrameQueue.class.getName());
     
@@ -54,7 +54,7 @@ class ExecutionFrameQueue
      * @param initialFrameNumber First frame's number. Must be the same for all 
      * the clients using the protocol
      */
-    public ExecutionFrameQueue(int bufferSize, int initialFrameNumber, int hostID, CountDownLatch inputLatch)
+    public ExecutionFrameQueue(int bufferSize, int initialFrameNumber, int hostID, CyclicCountDownLatch inputLatch)
     {
         this.bufferSize = bufferSize;
         this.frameBuffer = new FrameInput[bufferSize];

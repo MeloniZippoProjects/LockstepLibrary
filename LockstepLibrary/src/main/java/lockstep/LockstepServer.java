@@ -63,7 +63,7 @@ public class LockstepServer implements Runnable
      */
     Map<Integer, Boolean> executionQueuesHeadsAvailability;
     
-    CountDownLatch inputLatch;
+    CyclicCountDownLatch inputLatch;
     
     int tcpPort;
     int clientsNumber;
@@ -94,26 +94,29 @@ public class LockstepServer implements Runnable
     {
         handshake();
         
+        inputLatch = new CyclicCountDownLatch();
         while(true)
         {
             try
             {
-                if(executionQueuesHeadsAvailability.containsValue(Boolean.FALSE))
-                {
-                    for(Integer key : executionQueuesHeadsAvailability.keySet())
-                    {
-                        Boolean nextQueueHeadAvailability = executionQueuesHeadsAvailability.get(key);
-                        synchronized(nextQueueHeadAvailability)
-                        {
-                            while(nextQueueHeadAvailability == Boolean.FALSE)
-                            {
-                                nextQueueHeadAvailability.wait();
-                            }
-                        }
-                    }
-                }
+//                if(executionQueuesHeadsAvailability.containsValue(Boolean.FALSE))
+//                {
+//                    for(Integer key : executionQueuesHeadsAvailability.keySet())
+//                    {
+//                        Boolean nextQueueHeadAvailability = executionQueuesHeadsAvailability.get(key);
+//                        synchronized(nextQueueHeadAvailability)
+//                        {
+//                            while(nextQueueHeadAvailability == Boolean.FALSE)
+//                            {
+//                                nextQueueHeadAvailability.wait();
+//                            }
+//                        }
+//                    }
+//                }
                 
-
+                //Wait that everyone has received current frame
+                inputLatch.await();
+                
                 Map<Integer, FrameInput> frameInputs = collectFrameInputs();
                 distributeFrameInputs(frameInputs);
             } catch (InterruptedException ex)
