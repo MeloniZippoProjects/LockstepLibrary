@@ -13,6 +13,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import lockstep.Command;
 import static org.junit.Assert.*;
 
 
@@ -20,18 +21,6 @@ import static org.junit.Assert.*;
  *
  * @author enric
  */
-
-class Command implements Serializable
-{
-    int up_down;
-    int right_left;
-    
-    public Command(int upd, int rl)
-    {
-        up_down = upd;
-        right_left = rl;
-    }
-}
 
 public class ExecutionFrameQueueTest {
     
@@ -46,7 +35,7 @@ public class ExecutionFrameQueueTest {
     final static int bufferSize = 10;
     final static int initialFrame = 4;
     ExecutionFrameQueue efq;
-    FrameInput[] frames;
+    FrameInput<Command>[] frames;
     
     @Before
     public void setUp() {

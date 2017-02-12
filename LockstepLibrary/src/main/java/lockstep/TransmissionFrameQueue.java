@@ -5,6 +5,7 @@
  */
 package lockstep;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -41,7 +42,7 @@ public class TransmissionFrameQueue
      * @param initialFrameNumber First frame's number. Must be the same for all 
      * the clients using the protocol
      */
-    public TransmissionFrameQueue(int bufferSize, int initialFrameNumber)
+    public TransmissionFrameQueue(int initialFrameNumber)
     {
         this.frameBuffer = new ConcurrentSkipListMap<>();
         this.lastACKed = initialFrameNumber - 1;
@@ -58,8 +59,19 @@ public class TransmissionFrameQueue
         if(input.frameNumber >= this.lastACKed && !this.frameBuffer.containsKey(input.frameNumber))
         {
             this.frameBuffer.put(input.frameNumber, input);
-            this.transmitter.signalTransmissionFrameQueuesReady();
+            //this.transmitter.signalTransmissionFrameQueuesReady();
         }
+    }
+    
+    /**
+     * Inserts all inputs passed, provided it is in the interval currently 
+     * accepted. Otherwise it is discarded.
+     * @param inputs array of inputs to be transmitted
+     */
+    public void push(FrameInput[] inputs)
+    {
+        for(FrameInput input : inputs)
+            push(input);
     }
     
     /**
@@ -78,8 +90,7 @@ public class TransmissionFrameQueue
         FrameInput[] toRet = new FrameInput[entries.size()];
         int i = 0;
         
-        for(Entry<Integer, FrameInput> entry : entries)
-        {
+        for (Entry<Integer, FrameInput> entry : entries) {
             toRet[i++] = entry.getValue();
         }
         
