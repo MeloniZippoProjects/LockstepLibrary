@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 import lockstep.messages.FrameACK;
+import org.apache.log4j.Logger;
 
 /**
  * This frame queue supports out of order insertions, while extractions get the 
@@ -33,6 +34,8 @@ public class TransmissionFrameQueue
     Map<Integer, FrameInput> frameBuffer;
     
     LockstepTransmitter transmitter;
+    
+    private static final Logger LOG = Logger.getLogger(TransmissionFrameQueue.class.getName());
 
     /**
      * 

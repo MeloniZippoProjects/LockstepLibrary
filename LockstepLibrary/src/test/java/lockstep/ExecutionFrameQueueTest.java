@@ -39,6 +39,7 @@ public class ExecutionFrameQueueTest {
     
     @Before
     public void setUp() {
+        efq = new ExecutionFrameQueue(bufferSize, initialFrame, 1);
         FrameInput frame1 = createFrame(4,1,-1), frame2 = createFrame(5,-1,-1), frame3 = createFrame(6,-1,1); 
         frames = new FrameInput[] { frame1, frame2, frame3 };
     }
@@ -46,7 +47,6 @@ public class ExecutionFrameQueueTest {
     @Test
     public void singlePushTest()
     {
-        efq = new ExecutionFrameQueue(bufferSize, initialFrame);
         FrameInput<Command> frame = createFrame(4,1,-1);
         efq.push(frame);
         assertSame("Check single push", frame, efq.head());
@@ -54,8 +54,7 @@ public class ExecutionFrameQueueTest {
     
     @Test
     public void multiplePushTest()
-    {    
-        efq = new ExecutionFrameQueue(bufferSize, initialFrame);
+    {
         efq.push(frames);
         
         for(int i = 0; i < 3; i++)
@@ -67,7 +66,6 @@ public class ExecutionFrameQueueTest {
     @Test
     public void inOrderPop()
     {
-        efq = new ExecutionFrameQueue(bufferSize, initialFrame);
         efq.push(createFrame(5,1,1));
         assertEquals("Check in order pop", null, efq.pop());
         
@@ -79,7 +77,6 @@ public class ExecutionFrameQueueTest {
     @Test
     public void inOrderAck()
     {
-        efq = new ExecutionFrameQueue(bufferSize, initialFrame);
         FrameACK ack = efq.push(frames);
         
         assertEquals("Check cumulative acks", ack.cumulativeACK, 6);
@@ -88,7 +85,6 @@ public class ExecutionFrameQueueTest {
     @Test
     public void selectiveAck()
     {
-        efq = new ExecutionFrameQueue(bufferSize, initialFrame);
         FrameInput[] frames2 = frames.clone();
         frames2[2] = createFrame(8,1,1);
         
@@ -101,7 +97,6 @@ public class ExecutionFrameQueueTest {
     @Test
     public void acksWithGapFilling()
     {
-        efq = new ExecutionFrameQueue(bufferSize, initialFrame);
         FrameInput frame1 = createFrame(4,1,1), frame2 = createFrame(6,1,1), frame3 = createFrame(7,1,1);
         FrameInput[] frames2 = new FrameInput[]{ frame1, frame2, frame3 };
         

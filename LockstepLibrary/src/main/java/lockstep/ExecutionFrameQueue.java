@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListSet;
 import lockstep.messages.FrameACK;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.log4j.Logger;
 
 
 /**
@@ -39,8 +40,10 @@ class ExecutionFrameQueue
     ConcurrentSkipListSet<Integer> selectiveACKsSet;
 
     int hostID;
-    Map<Integer, Boolean> executionQueuesHeadsAvailability;
-        
+    Map<Integer, QueueAvailability> executionQueuesHeadsAvailability;
+    
+    private static final Logger LOG = Logger.getLogger(ExecutionFrameQueue.class.getName());
+    
     /**
      * Creates a new ExecutionFrameQueue
      * @param bufferSize Size of the internal buffer. It's important to
@@ -49,7 +52,7 @@ class ExecutionFrameQueue
      * @param initialFrameNumber First frame's number. Must be the same for all 
      * the clients using the protocol
      */
-    public ExecutionFrameQueue(int bufferSize, int initialFrameNumber)
+    public ExecutionFrameQueue(int bufferSize, int initialFrameNumber, int hostID)
     {
         this.bufferSize = bufferSize;
         this.frameBuffer = new FrameInput[bufferSize];
@@ -57,7 +60,9 @@ class ExecutionFrameQueue
         this.baseFrameNumber = initialFrameNumber;
         this.lastInOrder = initialFrameNumber - 1;
         this.selectiveACKsSet = new ConcurrentSkipListSet<>();
-        //this.executionQueuesHeadsAvailability = new HashMap<>();
+        this.hostID = hostID;
+        this.executionQueuesHeadsAvailability = new HashMap<>();
+        executionQueuesHeadsAvailability.put(hostID, new QueueAvailability(Boolean.FALSE));
     }
     
     /**
@@ -73,12 +78,16 @@ class ExecutionFrameQueue
             this.frameBuffer[this.bufferHead] = null;
             this.bufferHead = (this.bufferHead + 1) % this.bufferSize;
 
-            Boolean queueHeadAvailability = executionQueuesHeadsAvailability.get(hostID);
+            QueueAvailability queueHeadAvailability = executionQueuesHeadsAvailability.get(hostID);
             synchronized(queueHeadAvailability)
             {
                 if(this.frameBuffer[this.bufferHead] == null)
-                    queueHeadAvailability = Boolean.FALSE;
+                    queueHeadAvailability.setValue(Boolean.FALSE);
             }            
+        }
+        else
+        {
+            LOG.debug("ExecutionFrameQueue " + hostID + ": FrameInput missing for current frame");
         }
         return nextInput;
     }
@@ -142,12 +151,12 @@ class ExecutionFrameQueue
             
             if(input.frameNumber == this.lastInOrder + 1)
             {
-                Boolean queueHeadAvailability = executionQueuesHeadsAvailability.get(hostID);
+                QueueAvailability queueHeadAvailability = executionQueuesHeadsAvailability.get(hostID);
                 synchronized(queueHeadAvailability)
                 {                    
-                    if(queueHeadAvailability == Boolean.FALSE)
+                    if(queueHeadAvailability.equals(Boolean.FALSE))
                     {
-                        queueHeadAvailability = Boolean.TRUE;
+                        queueHeadAvailability.setValue(Boolean.TRUE);
                         queueHeadAvailability.notify();
                     }
                 }
@@ -165,6 +174,7 @@ class ExecutionFrameQueue
         }
         else
         {
+            LOG.debug("Frame arrived out of buffer bound");
             return false;
         }
     }
