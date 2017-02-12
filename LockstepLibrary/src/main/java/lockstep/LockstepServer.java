@@ -78,6 +78,7 @@ public class LockstepServer implements Runnable
         this.clientsNumber = clientsNumber;
         executorService = Executors.newWorkStealingPool();
         
+        inputLatch = new CyclicCountDownLatch(clientsNumber);
         executionFrameQueues = new ConcurrentHashMap<>();
         transmissionFrameQueueTree = new ConcurrentHashMap<>();
     }
