@@ -11,8 +11,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Observable;
-import lockstep.messages.InputMessage;
+import lockstep.messages.simulation.InputMessage;
 
 /**
  * 
@@ -23,7 +22,7 @@ public class LockstepTransmitter implements Runnable
     DatagramSocket dgramSocket;
     Map<Integer, TransmissionFrameQueue> transmissionFrameQueues;
     
-    Boolean transmissionFrameQueuesReady;
+    QueueAvailability transmissionFrameQueuesReady;
 
     public LockstepTransmitter(DatagramSocket socket, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues)
     {
@@ -39,7 +38,7 @@ public class LockstepTransmitter implements Runnable
             {
                 synchronized(transmissionFrameQueuesReady)
                 {
-                    while(transmissionFrameQueuesReady == Boolean.FALSE)
+                    while(transmissionFrameQueuesReady.equals(Boolean.FALSE))
                         wait();
 
                     for(Entry<Integer, TransmissionFrameQueue> entry : transmissionFrameQueues.entrySet())
@@ -52,7 +51,7 @@ public class LockstepTransmitter implements Runnable
                         }
                     }
 
-                    transmissionFrameQueuesReady = Boolean.FALSE;    //This efficient if we assume that interframetime < rtt
+                    transmissionFrameQueuesReady.setValue(Boolean.FALSE);    //This efficient if we assume that interframetime < rtt
                 }
             }
             catch(InterruptedException e)
@@ -84,7 +83,7 @@ public class LockstepTransmitter implements Runnable
     {
         synchronized(transmissionFrameQueuesReady)
             {
-                transmissionFrameQueuesReady = Boolean.TRUE;
+                transmissionFrameQueuesReady.setValue(Boolean.TRUE);
                 notify();
             }
     }

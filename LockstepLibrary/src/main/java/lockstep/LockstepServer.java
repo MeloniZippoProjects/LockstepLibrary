@@ -40,7 +40,7 @@ public class LockstepServer implements Runnable
     /**
      * Used for synchronization between server and executionFrameQueues
      */
-    Object executionQueuesUpdateMonitor = new Object();
+    Map<Integer, Boolean> executionQueuesHeadsAvailability;
     
     public LockstepServer()
     {
@@ -59,23 +59,34 @@ public class LockstepServer implements Runnable
     {
         while(true)
         {
-            Map<Integer, FrameInput> frameInputs = collectFrames();
-            distributeFrameInputs(frameInputs);
+            try
+            {
+                if(executionQueuesHeadsAvailability.containsValue(Boolean.FALSE))
+                {
+                    for(Integer key : executionQueuesHeadsAvailability.keySet())
+                    {
+                        Boolean nextQueueHeadAvailability = executionQueuesHeadsAvailability.get(key);
+                        synchronized(nextQueueHeadAvailability)
+                        {
+                            while(nextQueueHeadAvailability == Boolean.FALSE)
+                            {
+                                nextQueueHeadAvailability.wait();
+                            }
+                        }
+                    }
+                }
+
+                Map<Integer, FrameInput> frameInputs = collectFrameInputs();
+                distributeFrameInputs(frameInputs);
+            } catch (InterruptedException ex)
+            {
+                Logger.getLogger(LockstepServer.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
-
-    private Map<Integer, FrameInput> collectFrames()
+    
+    private Map<Integer, FrameInput> collectFrameInputs()
     {
-        synchronized(executionQueuesUpdateMonitor)
-        {
-            while(!checkFrameInputs())
-                try {
-                    wait();
-                } catch (InterruptedException ex) {
-                    //logger?
-                }
-        }
-
         Map<Integer, FrameInput> frameInputs = new TreeMap<>();
         for(Entry<Integer, ExecutionFrameQueue> entry : this.executionFrameQueues.entrySet())
         {
@@ -83,23 +94,16 @@ public class LockstepServer implements Runnable
         }
         return frameInputs;
     }
-
-    private boolean checkFrameInputs()
-    {
-        for(Entry<Integer, ExecutionFrameQueue> entry : this.executionFrameQueues.entrySet())
-        {
-            if(entry.getValue().head() == null)
-                return false;
-        }
-        return true;
-    }
-
+    
     private void distributeFrameInputs(Map<Integer, FrameInput> frameInputs)
     {
+        //For each frameInput
         for(Entry<Integer, FrameInput> frameInputEntry : frameInputs.entrySet())
         {
+            //For each client, take its tree of transmission queues
             for(Entry<Integer, Map<Integer, TransmissionFrameQueue>> transmissionFrameQueueMapEntry : this.transmissionFrameQueueTree.entrySet())
             {
+                //If the frameInput doesn't come from that client, forward the frameInput though the correct transmission queue
                 if(transmissionFrameQueueMapEntry.getKey() != frameInputEntry.getKey())
                 {
                     Map<Integer, TransmissionFrameQueue> transmissionFrameQueueMap = transmissionFrameQueueMapEntry.getValue();

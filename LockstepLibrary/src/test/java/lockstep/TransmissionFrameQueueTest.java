@@ -5,7 +5,7 @@
  */
 package lockstep;
 
-import lockstep.messages.FrameACK;
+import lockstep.messages.simulation.FrameACK;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

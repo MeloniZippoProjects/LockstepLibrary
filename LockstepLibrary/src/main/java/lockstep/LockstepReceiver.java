@@ -5,6 +5,8 @@
  */
 package lockstep;
 
+import lockstep.messages.simulation.InputMessageArray;
+import lockstep.messages.simulation.InputMessage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -13,8 +15,7 @@ import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Map;
-import lockstep.messages.FrameACK;
-import lockstep.messages.*;
+import lockstep.messages.simulation.FrameACK;
 
 /**
  *

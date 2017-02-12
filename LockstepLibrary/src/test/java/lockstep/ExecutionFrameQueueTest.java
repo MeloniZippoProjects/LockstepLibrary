@@ -7,7 +7,7 @@ package lockstep;
 
 import com.sun.org.apache.xml.internal.utils.SerializableLocatorImpl;
 import java.io.Serializable;
-import lockstep.messages.FrameACK;
+import lockstep.messages.simulation.FrameACK;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
