@@ -26,7 +26,8 @@ public class LockstepTransmitter implements Runnable
 
     public LockstepTransmitter(DatagramSocket socket, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues)
     {
-        //initialize members...
+        this.dgramSocket = socket;
+        this.transmissionFrameQueues = transmissionFrameQueues;
     }
     
     @Override
@@ -51,7 +52,8 @@ public class LockstepTransmitter implements Runnable
                         }
                     }
 
-                    transmissionFrameQueuesReady.setValue(Boolean.FALSE);    //This efficient if we assume that interframetime < rtt
+                    //This efficient as we assume that interframetime < rtt
+                    transmissionFrameQueuesReady.setValue(Boolean.FALSE);    
                 }
             }
             catch(InterruptedException e)
@@ -82,10 +84,10 @@ public class LockstepTransmitter implements Runnable
     public void signalTransmissionFrameQueuesReady()
     {
         synchronized(transmissionFrameQueuesReady)
-            {
-                transmissionFrameQueuesReady.setValue(Boolean.TRUE);
-                notify();
-            }
+        {
+            transmissionFrameQueuesReady.setValue(Boolean.TRUE);
+            notify();
+        }
     }
 }
 

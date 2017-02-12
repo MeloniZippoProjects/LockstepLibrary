@@ -16,9 +16,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.log4j.Logger;
@@ -26,11 +24,13 @@ import org.apache.log4j.Logger;
 /**
  *
  * @author Raff
+ * @param <Command>
  */
 public abstract class LockstepClient<Command extends Serializable> implements Runnable
 {
     int currentFrame;
     int interframeTime;
+    int frameExecutionDistance;
     int hostID;
     Map<Integer, ExecutionFrameQueue> executionFrameQueues; 
     TransmissionFrameQueue transmissionFrameQueue;
@@ -136,10 +136,27 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
             ServerHelloReply helloReply = (ServerHelloReply) oin.readObject();
             LOG.info("Received reply from server");
             this.hostID = helloReply.assignedHostID;
+            this.currentFrame = helloReply.firstFrameNumber;
             
             this.executionFrameQueues = new ConcurrentHashMap<>();
             this.executionFrameQueues.put(hostID, new ExecutionFrameQueue(executionQueueBufferSize, helloReply.firstFrameNumber, hostID));
             
+            //Network setup
+            LOG.info("Setting up network threads and stub frames");
+
+            InetSocketAddress serverUDPAddress = new InetSocketAddress(serverTCPAddress.getAddress(), helloReply.serverUDPPort);
+            udpSocket.connect(serverUDPAddress);
+            
+            transmissionFrameQueue = new TransmissionFrameQueue(helloReply.firstFrameNumber);
+            HashMap<Integer,TransmissionFrameQueue> transmissionQueueWrapper = new HashMap<>();
+            transmissionQueueWrapper.put(hostID, transmissionFrameQueue);
+
+            receiver = new LockstepReceiver(udpSocket, receivingExecutionQueues, transmissionQueueWrapper);
+            transmitter = new LockstepTransmitter(udpSocket, transmissionQueueWrapper);
+
+            fillFrameBuffer(fillCommands());
+            executorService = Executors.newFixedThreadPool(2);
+
             //Receive and process second server reply
             ClientsAnnouncement clientsAnnouncement = (ClientsAnnouncement) oin.readObject();
             LOG.info("Received list of clients from server");
@@ -152,26 +169,9 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
                 executionFrameQueues.put(clientID, executionFrameQueue);
                 receivingExecutionQueues.put(clientID, executionFrameQueue);
             }
-            
-            //Final initializations
-            InetSocketAddress serverUDPAddress = new InetSocketAddress(serverTCPAddress.getAddress(), helloReply.serverUDPPort);
-            udpSocket.connect(serverUDPAddress);
-            
-            transmissionFrameQueue = new TransmissionFrameQueue(helloReply.firstFrameNumber);
-            HashMap<Integer,TransmissionFrameQueue> transmissionQueueWrapper = new HashMap<>();
-            transmissionQueueWrapper.put(hostID, transmissionFrameQueue);
-            
-            receiver = new LockstepReceiver(udpSocket, receivingExecutionQueues, transmissionQueueWrapper);
-            transmitter = new LockstepTransmitter(udpSocket, transmissionQueueWrapper);
-            
-            fillFrameBuffer(fillCommands());
-            executorService = Executors.newFixedThreadPool(2);
-                        
-            //Wait for simulation start signal
+
+            //Wait for simulation start signal to proceed executing
             SimulationStart start = (SimulationStart) oin.readObject();
-            executorService.submit(receiver);
-            executorService.submit(transmitter);
-            
             LOG.info("Simulation started");
         }
         catch(ClassNotFoundException e)
@@ -191,15 +191,15 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
         {
             executionFrameQueues.get(this.hostID).push(new FrameInput(currentFrame, cmd));
             transmissionFrameQueue.push(new FrameInput(currentFrame, cmd));
-            currentFrame++;
         }
+        this.frameExecutionDistance = fillCommands.length;
     }
     
     private void readUserInput()
     {
         Command cmd = readInput();
-        executionFrameQueues.get(this.hostID).push(new FrameInput(currentFrame, cmd));
-        transmissionFrameQueue.push(new FrameInput(currentFrame, cmd));
+        executionFrameQueues.get(this.hostID).push(new FrameInput(currentFrame + frameExecutionDistance, cmd));
+        transmissionFrameQueue.push(new FrameInput(currentFrame + frameExecutionDistance, cmd));
     }
     
     private void executeInputs() throws InterruptedException
