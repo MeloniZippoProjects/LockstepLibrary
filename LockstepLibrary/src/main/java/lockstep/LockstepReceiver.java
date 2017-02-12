@@ -40,10 +40,10 @@ public class LockstepReceiver implements Runnable
             {
                DatagramPacket p = new DatagramPacket(new byte[1024], 1024);
                this.dgramSocket.receive(p);
-               ByteArrayInputStream bain = new ByteArrayInputStream(p.getData());
-               ObjectInputStream oin = new ObjectInputStream(bain);
+               ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(p.getData());
+               ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
                
-               Object obj = oin.readObject();
+               Object obj = objectInputStream.readObject();
                messageDispatch(obj);               
             }
             catch(Exception e)
@@ -82,7 +82,7 @@ public class LockstepReceiver implements Runnable
     {
         ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(input.hostID);
         FrameACK frameAck = executionFrameQueue.push(input.frame);
-        frameAck.setHostID(input.hostID);
+        frameAck.setHostID(input.hostID); //forse dovrebbe essere il proprio id
         sendACK(frameAck);
     }
 
@@ -103,12 +103,12 @@ public class LockstepReceiver implements Runnable
     private void sendACK(FrameACK ack)
     {
         try(
-            ByteArrayOutputStream baout = new ByteArrayOutputStream();
-            ObjectOutputStream oout = new ObjectOutputStream(baout);
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
         )
         {
-            oout.writeObject(ack);
-            byte[] data = baout.toByteArray();
+            objectOutputStream.writeObject(ack);
+            byte[] data = byteArrayOutputStream.toByteArray();
             this.dgramSocket.send(new DatagramPacket(data, data.length));
         }
         catch(Exception e)

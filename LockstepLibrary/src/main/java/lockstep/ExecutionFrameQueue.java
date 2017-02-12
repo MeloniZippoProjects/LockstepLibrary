@@ -5,6 +5,8 @@
  */
 package lockstep;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListSet;
 import lockstep.messages.FrameACK;
 import org.apache.commons.lang3.ArrayUtils;
@@ -54,6 +56,8 @@ class ExecutionFrameQueue
         this.bufferHead = 0;
         this.baseFrameNumber = initialFrameNumber;
         this.lastInOrder = initialFrameNumber - 1;
+        this.selectiveACKsSet = new ConcurrentSkipListSet<>();
+        //this.executionQueuesHeadsAvailability = new HashMap<>();
     }
     
     /**
@@ -149,7 +153,7 @@ class ExecutionFrameQueue
                 }
 
                 this.lastInOrder++;
-                while(this.selectiveACKsSet.first() == this.lastInOrder + 1)
+                while(!this.selectiveACKsSet.isEmpty() && this.selectiveACKsSet.first() == this.lastInOrder + 1)
                 {
                     this.lastInOrder++;
                     this.selectiveACKsSet.remove(this.selectiveACKsSet.first());
@@ -167,20 +171,7 @@ class ExecutionFrameQueue
         
     private int[] _getSelectiveACKs()
     {
-//        Integer[] selectiveACKsIntegerArray = (Integer[]) this.selectiveACKsSet.toArray();
-//        if(selectiveACKsIntegerArray.length > 0)
-//        {
-//            int[] selectiveACKs = new int[selectiveACKsIntegerArray.length];
-//            for (int i = 0; i < selectiveACKsIntegerArray.length; i++)
-//            {
-//                selectiveACKs[i] = selectiveACKsIntegerArray[i];
-//            }
-//            return selectiveACKs;
-//        }
-//        else
-//            return null;
-        
-        Integer[] selectiveACKsIntegerArray = (Integer[]) this.selectiveACKsSet.toArray();
+        Integer[] selectiveACKsIntegerArray = this.selectiveACKsSet.toArray(new Integer[0]);
         if(selectiveACKsIntegerArray.length > 0)
         {
             int[] selectiveACKs = ArrayUtils.toPrimitive(selectiveACKsIntegerArray);

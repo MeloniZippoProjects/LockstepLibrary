@@ -8,6 +8,8 @@ package lockstep;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -49,8 +51,8 @@ public class LockstepServer implements Runnable
      * The server simply cycles collecting a complete set of frame inputs and
      * forwarding them to all the clients. Differently from the clients, it doesn't
      * wait any interframe time to process the executionFrameQueues.
-     * If a frame lacks any input from any client, the server stops waiting for
-     * them eventually forcing the client to stop for synchronization.
+     * If a frame lacks any input from any client, the server stops and waits for
+     * them eventually forcing the clients to stop for synchronization.
      */
     @Override
     public void run()
@@ -67,7 +69,11 @@ public class LockstepServer implements Runnable
         synchronized(executionQueuesUpdateMonitor)
         {
             while(!checkFrameInputs())
-                await();
+                try {
+                    wait();
+                } catch (InterruptedException ex) {
+                    //logger?
+                }
         }
 
         Map<Integer, FrameInput> frameInputs = new TreeMap<>();

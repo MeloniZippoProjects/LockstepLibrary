@@ -40,7 +40,7 @@ public class LockstepTransmitter implements Runnable
                 synchronized(transmissionFrameQueuesReady)
                 {
                     while(transmissionFrameQueuesReady == Boolean.FALSE)
-                        await();
+                        wait();
 
                     for(Entry<Integer, TransmissionFrameQueue> entry : transmissionFrameQueues.entrySet())
                     {
@@ -84,9 +84,9 @@ public class LockstepTransmitter implements Runnable
     {
         synchronized(transmissionFrameQueuesReady)
             {
-                transmissionFrameQueuesReady = TRUE;
+                transmissionFrameQueuesReady = Boolean.TRUE;
                 notify();
             }
-        }
     }
 }
+

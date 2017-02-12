@@ -5,15 +5,23 @@
  */
 package lockstep;
 
+import java.io.Serializable;
+import java.net.Socket;
+import java.util.Map;
+import java.util.Set;
+
 /**
  *
  * @author Raff
  */
-public abstract class LockstepClient implements Runnable
+public abstract class LockstepClient<Command extends Serializable> implements Runnable
 {
+    int currentFrame;
     int interframeTime;
-    ExecutionFrameQueue[] frameQueues;    
-
+    int hostID;
+    Map<Integer, ExecutionFrameQueue> executionFrameQueues; 
+    TransmissionFrameQueue transmissionFrameQueue;
+    
     /**
      * Used for synchronization between server and executionFrameQueues
      */
@@ -21,7 +29,7 @@ public abstract class LockstepClient implements Runnable
 
     public LockstepClient()
     {
-        //Inizializzazione campi...
+        //Initialization
     }
 
     /**
@@ -58,21 +66,9 @@ public abstract class LockstepClient implements Runnable
         {
             try
             {
-                synchronized(executionQueuesHeadsAvailability)
-                {
-                    if(executionQueuesHeadsAvailability.contains(Boolean.FALSE))
-                    {
-                        suspendSimulation();
-                        while(executionQueuesHeadsAvailability.contains(Boolean.FALSE))
-                            wait();
-                        resumeSimulation();
-                    }
-                }  
-
-                FrameInput[] inputs = collectInputs();
-                for(FrameInput input : inputs)
-                    executeFrameInput(input);
-                
+                readUserInput();
+                executeInputs();
+                currentFrame++;
                 Thread.sleep(interframeTime);
             }
             catch(InterruptedException e)
@@ -81,20 +77,49 @@ public abstract class LockstepClient implements Runnable
             }           
         }
     }
+    
+    private void readUserInput()
+    {
+        Command cmd = readInput();
+        executionFrameQueues.get(this.hostID).push(new FrameInput(currentFrame, cmd));
+        transmissionFrameQueue.push(new FrameInput(currentFrame, cmd));
+    }
+    
+    private void executeInputs() throws InterruptedException
+    {
+        if(executionQueuesHeadsAvailability.containsValue(Boolean.FALSE))
+        {
+            suspendSimulation();
+            for(Integer key : executionQueuesHeadsAvailability.keySet())
+            {
+                if(key != this.hostID)
+                {
+                    Boolean nextQueueHeadAvailability = executionQueuesHeadsAvailability.get(key);
+                    synchronized(nextQueueHeadAvailability)
+                    {
+                        while(nextQueueHeadAvailability == Boolean.FALSE)
+                        {
+                            nextQueueHeadAvailability.wait();
+                        }
+                    }
+                }
+            }
+            resumeSimulation();
+        }
+                
+        FrameInput[] inputs = collectInputs();
+        for(FrameInput input : inputs)
+            executeFrameInput(input);
+    }
 
     private FrameInput[] collectInputs()
     {
-        FrameInput[] inputs = new FrameInput[this.frameQueues.length];
+        FrameInput[] inputs = new FrameInput[this.executionFrameQueues.size()];
         int idx = 0;
-        for(ExecutionFrameQueue frameQueue : this.frameQueues)
+        for(ExecutionFrameQueue frameQueue : this.executionFrameQueues.values())
         {
-            if(frameQueue.head()== null)
-                return null;
-            else
-            {
-                inputs[idx] = frameQueue.pop();
-                idx++;
-            }
+            inputs[idx] = frameQueue.pop();
+            ++idx;
         }        
         return inputs;
     }
