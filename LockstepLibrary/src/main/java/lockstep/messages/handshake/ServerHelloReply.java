@@ -13,7 +13,8 @@ import java.io.Serializable;
  */
 public class ServerHelloReply implements Serializable
 {
-    int serverUDPPort;
-    int assignedHostID;
-    int clientsNumber;
+    public int serverUDPPort;
+    public int assignedHostID;
+    public int clientsNumber;
+    public int firstFrameNumber;
 }

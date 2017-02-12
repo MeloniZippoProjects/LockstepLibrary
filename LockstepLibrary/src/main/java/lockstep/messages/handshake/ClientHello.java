@@ -13,5 +13,5 @@ import java.io.Serializable;
  */
 public class ClientHello implements Serializable
 {
-    int clientUDPPort;
+    public int clientUDPPort;
 }

@@ -13,5 +13,5 @@ import java.io.Serializable;
  */
 public class ClientsAnnouncement implements Serializable
 {
-    int[] hostIDs;
+    public int[] hostIDs;
 }
