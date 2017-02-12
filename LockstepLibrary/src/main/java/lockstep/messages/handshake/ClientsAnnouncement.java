@@ -3,12 +3,15 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package lockstep.messages;
+package lockstep.messages.handshake;
+
+import java.io.Serializable;
 
 /**
  *
- * @author enric
+ * @author Raff
  */
-public class HelloMessage {
-    
+public class ClientsAnnouncement implements Serializable
+{
+    int[] hostIDs;
 }

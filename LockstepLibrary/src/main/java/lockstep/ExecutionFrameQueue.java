@@ -8,7 +8,7 @@ package lockstep;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListSet;
-import lockstep.messages.FrameACK;
+import lockstep.messages.simulation.FrameACK;
 import org.apache.commons.lang3.ArrayUtils;
 
 

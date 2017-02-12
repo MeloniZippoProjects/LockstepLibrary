@@ -6,6 +6,7 @@
 package lockstep;
 
 import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Map;
 import java.util.Set;
@@ -27,9 +28,9 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
      */
     Map<Integer, Boolean> executionQueuesHeadsAvailability;
 
-    public LockstepClient()
+    public LockstepClient(InetSocketAddress serverAddress)
     {
-        //Initialization
+        
     }
 
     /**
@@ -107,12 +108,12 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
             resumeSimulation();
         }
                 
-        FrameInput[] inputs = collectInputs();
+        FrameInput[] inputs = collectFrameInputs();
         for(FrameInput input : inputs)
             executeFrameInput(input);
     }
 
-    private FrameInput[] collectInputs()
+    private FrameInput[] collectFrameInputs()
     {
         FrameInput[] inputs = new FrameInput[this.executionFrameQueues.size()];
         int idx = 0;
