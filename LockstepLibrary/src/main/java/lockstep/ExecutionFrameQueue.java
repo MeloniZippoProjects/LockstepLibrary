@@ -40,11 +40,6 @@ class ExecutionFrameQueue
     Map<Integer, Boolean> executionQueuesHeadsAvailability;
         
     /**
-     * Used for synchronization between a client or server and executionFrameQueues
-     */
-    Object executionQueuesUpdateMonitor = new Object();
-
-    /**
      * Creates a new ExecutionFrameQueue
      * @param bufferSize Size of the internal buffer. It's important to
      * dimension this large enough to store the received frames without forcing
@@ -73,6 +68,13 @@ class ExecutionFrameQueue
         {
             this.frameBuffer[this.bufferHead] = null;
             this.bufferHead = (this.bufferHead + 1) % this.bufferSize;
+
+            Boolean queueHeadAvailability = executionQueuesHeadsAvailability.get(hostID);
+            synchronized(queueHeadAvailability)
+            {
+                if(this.frameBuffer[this.bufferHead] == null)
+                    queueHeadAvailability = Boolean.FALSE;
+            }            
         }
         return nextInput;
     }
@@ -136,21 +138,21 @@ class ExecutionFrameQueue
             
             if(input.frameNumber == this.lastInOrder + 1)
             {
-                synchronized(executionQueuesHeadsAvailability)
-                {
-                    Boolean queueHeadAvailability = executionQueuesHeadsAvailability.getValue(hostID);           
+                Boolean queueHeadAvailability = executionQueuesHeadsAvailability.get(hostID);
+                synchronized(queueHeadAvailability)
+                {                    
                     if(queueHeadAvailability == Boolean.FALSE)
                     {
                         queueHeadAvailability = Boolean.TRUE;
-                        notify();
+                        queueHeadAvailability.notify();
                     }
                 }
 
                 this.lastInOrder++;
-                while(this.selectiveACK.first() == this.lastInOrder + 1)
+                while(this.selectiveACKsSet.first() == this.lastInOrder + 1)
                 {
                     this.lastInOrder++;
-                    this.selectiveACK.remove(this.selectiveACK.first());
+                    this.selectiveACKsSet.remove(this.selectiveACKsSet.first());
                 }
                 return false;
             }

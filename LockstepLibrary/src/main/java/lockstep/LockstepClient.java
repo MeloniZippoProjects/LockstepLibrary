@@ -19,12 +19,20 @@ public abstract class LockstepClient implements Runnable
      */
     Map<Integer, Boolean> executionQueuesHeadsAvailability;
 
-    //Input collector...
-    
     public LockstepClient()
     {
         //Inizializzazione campi...
     }
+
+    /**
+     * Must read input from user, and return a Command object to be executed.
+     * If there is no input in a frame a Command object must still be returned,
+     * possibly representing the lack of an user input in the semantic of the application
+     * 
+     * @return the Command object collected in the current frame
+     */
+    protected abstract Command readInput();
+
 
     /**
      * Must suspend the simulation execution due to a synchronization issue
@@ -52,29 +60,18 @@ public abstract class LockstepClient implements Runnable
             {
                 synchronized(executionQueuesHeadsAvailability)
                 {
-                    while(executionQueuesHeadsAvailability.contains(Boolean.FALSE))
+                    if(executionQueuesHeadsAvailability.contains(Boolean.FALSE))
                     {
                         suspendSimulation();
-                        synchronized(inputCollectionMonitor)
-                        wait();
+                        while(executionQueuesHeadsAvailability.contains(Boolean.FALSE))
+                            wait();
+                        resumeSimulation();
                     }
                 }  
 
-
                 FrameInput[] inputs = collectInputs();
-                if(inputs == null)
-                {
-                    suspendSimulation();
-                    //Suspend input collection...
-                    waitResync();
-                    //Resume input collection...
-                    resumeSimulation();
-                }
-                else
-                {
-                    for(FrameInput input : inputs)
-                        executeFrameInput(input);+
-                }
+                for(FrameInput input : inputs)
+                    executeFrameInput(input);
                 
                 Thread.sleep(interframeTime);
             }
@@ -100,10 +97,5 @@ public abstract class LockstepClient implements Runnable
             }
         }        
         return inputs;
-    }
-
-    private void waitResync()
-    {
-      
     }
 }
