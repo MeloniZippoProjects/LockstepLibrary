@@ -26,4 +26,19 @@ public class CyclicCountDownLatch {
         this.latch.await();
         this.latch = new CountDownLatch(count);
     }
+    
+    public void countDown()
+    {
+        this.latch.countDown();
+    }
+    
+    public long getCount()
+    {
+        return this.latch.getCount();
+    }
+    
+    public void reset()
+    {
+        this.latch = new CountDownLatch(count);
+    }
 }

@@ -7,8 +7,6 @@ package lockstep;
 
 import java.io.IOException;
 import lockstep.messages.handshake.*;
-import lockstep.CyclicCountDownLatch;
-
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
@@ -50,7 +48,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     /**
      * Used for synchronization between server and executionFrameQueues
      */
-    CyclicCountDownLatch inputLatch;
+    CyclicCountDownLatch cyclicExecutionLatch;
     private int clientsNumber;
 
     public LockstepClient(InetSocketAddress serverTCPAddress)
@@ -139,7 +137,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
             this.currentFrame = helloReply.firstFrameNumber;
             
             this.executionFrameQueues = new ConcurrentHashMap<>();
-            this.executionFrameQueues.put(hostID, new ExecutionFrameQueue(executionQueueBufferSize, helloReply.firstFrameNumber, hostID));
+            this.executionFrameQueues.put(hostID, new ExecutionFrameQueue(helloReply.firstFrameNumber, hostID, cyclicExecutionLatch));
             
             //Network setup
             LOG.info("Setting up network threads and stub frames");
@@ -163,11 +161,11 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
             LOG.info("Received list of clients from server");
             
             clientsNumber = clientsAnnouncement.hostIDs.length;
-            inputLatch = new CyclicCountDownLatch(clientsNumber);
+            cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
 
             for(int clientID : clientsAnnouncement.hostIDs)
             {
-                ExecutionFrameQueue executionFrameQueue = new ExecutionFrameQueue(executionQueueBufferSize, helloReply.firstFrameNumber, clientID, inputLatch);
+                ExecutionFrameQueue executionFrameQueue = new ExecutionFrameQueue(helloReply.firstFrameNumber, clientID, cyclicExecutionLatch);
                 executionFrameQueues.put(clientID, executionFrameQueue);
                 receivingExecutionQueues.put(clientID, executionFrameQueue);
             }
@@ -206,26 +204,15 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     
     private void executeInputs() throws InterruptedException
     {
-        if(executionQueuesHeadsAvailability.containsValue(Boolean.FALSE))
+        if(cyclicExecutionLatch.getCount() > 0)
         {
             suspendSimulation();
-            for(Integer key : executionQueuesHeadsAvailability.keySet())
-            {
-                if(key != this.hostID)
-                {
-                    Boolean nextQueueHeadAvailability = executionQueuesHeadsAvailability.get(key);
-                    synchronized(nextQueueHeadAvailability)
-                    {
-                        while(nextQueueHeadAvailability == Boolean.FALSE)
-                        {
-                            nextQueueHeadAvailability.wait();
-                        }
-                    }
-                }
-            }
+            cyclicExecutionLatch.await();
             resumeSimulation();
         }
-                
+        else
+            cyclicExecutionLatch.reset();
+        
         FrameInput[] inputs = collectFrameInputs();
         for(FrameInput input : inputs)
             executeFrameInput(input);

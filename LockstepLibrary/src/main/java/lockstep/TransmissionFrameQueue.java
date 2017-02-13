@@ -62,7 +62,7 @@ public class TransmissionFrameQueue
         if(input.frameNumber >= this.lastACKed && !this.frameBuffer.containsKey(input.frameNumber))
         {
             this.frameBuffer.put(input.frameNumber, input);
-            this.transmitter.signalTransmissionFrameQueuesReady();
+            //this.transmitter.signalTransmissionFrameQueuesReady();
         }
     }
     

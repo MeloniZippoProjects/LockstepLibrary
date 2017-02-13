@@ -63,7 +63,7 @@ public class LockstepServer implements Runnable
      */
     Map<Integer, Boolean> executionQueuesHeadsAvailability;
     
-    CyclicCountDownLatch inputLatch;
+    CyclicCountDownLatch cyclicExecutionLatch;
     
     int tcpPort;
     int clientsNumber;
@@ -78,7 +78,7 @@ public class LockstepServer implements Runnable
         this.clientsNumber = clientsNumber;
         executorService = Executors.newWorkStealingPool();
         
-        inputLatch = new CyclicCountDownLatch(clientsNumber);
+        cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
         executionFrameQueues = new ConcurrentHashMap<>();
         transmissionFrameQueueTree = new ConcurrentHashMap<>();
     }
@@ -95,13 +95,13 @@ public class LockstepServer implements Runnable
     {
         handshake();
         
-        inputLatch = new CyclicCountDownLatch(clientsNumber);
+        cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
         while(true)
         {
             try
             {
                 //Wait that everyone has received current frame
-                inputLatch.await();
+                cyclicExecutionLatch.await();
                 
                 Map<Integer, FrameInput> frameInputs = collectFrameInputs();
                 distributeFrameInputs(frameInputs);
@@ -196,7 +196,7 @@ public class LockstepServer implements Runnable
     
     private void clientReceiveSetup(int clientID, DatagramSocket clientUDPSocket, int initialFrameNumber, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues)
     {
-        ExecutionFrameQueue receivingQueue = new ExecutionFrameQueue(executionBufferSize, initialFrameNumber, clientID, inputLatch);
+        ExecutionFrameQueue receivingQueue = new ExecutionFrameQueue(initialFrameNumber, clientID, cyclicExecutionLatch);
         this.executionFrameQueues.put(clientID, receivingQueue);
         HashMap<Integer,ExecutionFrameQueue> receivingQueueWrapper = new HashMap<>();
         receivingQueueWrapper.put(clientID, receivingQueue);

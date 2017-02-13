@@ -44,10 +44,10 @@ class ExecutionFrameQueue
     int lastInOrder;
     ConcurrentSkipListSet<Integer> selectiveACKsSet;
 
-    int hostID;
-    CyclicCountDownLatch inputLatch;
+    CyclicCountDownLatch cyclicExecutionLatch;
     
     private static final Logger LOG = Logger.getLogger(ExecutionFrameQueue.class.getName());
+    private final int hostID;
     
     /**
      * Creates a new ExecutionFrameQueue
@@ -57,15 +57,14 @@ class ExecutionFrameQueue
      * @param initialFrameNumber First frame's number. Must be the same for all 
      * the clients using the protocol
      */
-    public ExecutionFrameQueue(int initialFrameNumber, int hostID, CyclicCountDownLatch inputLatch)
+    public ExecutionFrameQueue(int initialFrameNumber, int hostID, CyclicCountDownLatch cyclicExecutionLatch)
     {
         this.frameBuffer = new HashMap<Integer, FrameInput>();
         this.bufferHead = initialFrameNumber;
         this.lastInOrder = initialFrameNumber - 1;
         this.selectiveACKsSet = new ConcurrentSkipListSet<>();
         this.hostID = hostID;
-        
-        this.inputLatch = inputLatch;
+        this.cyclicExecutionLatch = cyclicExecutionLatch;
     }
     
     /**
@@ -80,7 +79,7 @@ class ExecutionFrameQueue
         {
             this.frameBuffer.remove(bufferHead);
             this.bufferHead++;
-            inputLatch.countDown();          
+            cyclicExecutionLatch.countDown();          
         }
         else
         {
@@ -144,11 +143,12 @@ class ExecutionFrameQueue
         {
             this.frameBuffer.putIfAbsent(input.frameNumber, input);
             
-            if(input.frameNumber == this.bufferHead)
+            if(input.frameNumber == this.lastInOrder + 1)
             {
-                inputLatch.countDown();
-
-                ++this.bufferHead;
+                if(input.frameNumber == this.bufferHead)
+                    cyclicExecutionLatch.countDown();
+                
+                lastInOrder++;
                 while(!this.selectiveACKsSet.isEmpty() && this.selectiveACKsSet.first() == this.lastInOrder + 1)
                 {
                     this.lastInOrder++;

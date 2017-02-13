@@ -39,7 +39,8 @@ public class ExecutionFrameQueueTest {
     
     @Before
     public void setUp() {
-        efq = new ExecutionFrameQueue(bufferSize, initialFrame, 1);
+        CyclicCountDownLatch ccdl = new CyclicCountDownLatch(1);
+        efq = new ExecutionFrameQueue(initialFrame, 1, ccdl);
         FrameInput frame1 = createFrame(4,1,-1), frame2 = createFrame(5,-1,-1), frame3 = createFrame(6,-1,1); 
         frames = new FrameInput[] { frame1, frame2, frame3 };
     }
