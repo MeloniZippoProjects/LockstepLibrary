@@ -1,9 +1,9 @@
 <project>
   <modelVersion>4.0.0</modelVersion>
   <groupId>cds.zippo.meloni</groupId>
-  <artifactId>lockstep_library</artifactId>
+  <artifactId>locksteplibrary</artifactId>
   <version>1</version>
-    <name>Lockstep Library</name>
+    <name>locksteplibrary-1.0.0</name>
     <dependencies>
         <dependency>
             <groupId>org.apache.commons</groupId>
