@@ -5,6 +5,9 @@
  */
 package mosaicsimulation;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.Map;
 import java.util.Random;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -24,7 +27,8 @@ public class MosaicSimulation extends Application
     static final int columns = 50;
     static final int rows = 50;
     
-    GridPane mosaic;
+    GridPane mosaicView;
+    Rectangle[][] mosaic;
     Color clientColor;
     
     @Override
@@ -34,9 +38,11 @@ public class MosaicSimulation extends Application
         Parent root = FXMLLoader.load(getClass().getClassLoader().getResource("FXMLMainPage.fxml"));
         Scene scene = new Scene(root);
         
-        mosaic = (GridPane) scene.lookup("#mosaic");
+        mosaicView = (GridPane) scene.lookup("#mosaic");
+        mosaic = new Rectangle[rows][];
         for (int row = 1; row <= rows; row++)
         {
+            mosaic[row] = new Rectangle[columns];
             for (int column = 1; column <= columns; column++)
             {
                 Rectangle rectangle = new Rectangle();
@@ -47,24 +53,27 @@ public class MosaicSimulation extends Application
                 rectangle.setFill(Color.BLACK);
                 
                 GridPane.setConstraints(rectangle, column, row);
-                mosaic.getChildren().add(rectangle);
+                mosaicView.getChildren().add(rectangle);
+                mosaic[row][column] = rectangle;
             }
         }      
         
         Random rand = new Random();
-        Color clientColor = Color.rgb(rand.nextInt(256), rand.nextInt(256), rand.nextInt(256));
+        clientColor = Color.rgb(rand.nextInt(256), rand.nextInt(256), rand.nextInt(256));
         Rectangle colorRectangle = (Rectangle) scene.lookup("#colorRectangle");
         colorRectangle.setFill(clientColor);
         
-        
-//        Map<String, String> namedParameters = this.getParameters().getNamed();
-//        String serverIPAddress = namedParameters.get("serverIPAddress");
-//        int serverTCPPort = Integer.parseInt(namedParameters.get("serverTCPPort"));
-
-        
-                
         stage.setScene(scene);
         stage.show();
+        
+        Map<String, String> namedParameters = this.getParameters().getNamed();
+        String serverIPAddress = namedParameters.get("serverIPAddress");
+        int serverTCPPort = Integer.parseInt(namedParameters.get("serverTCPPort"));
+        InetSocketAddress serverTCPAddress = new InetSocketAddress(serverIPAddress, serverTCPPort);
+
+        MosaicLockstepClient mosaicLockstepClient = new MosaicLockstepClient(serverTCPAddress, mosaic, rows, columns, clientColor);
+        Thread clientThread = new Thread(mosaicLockstepClient);
+        clientThread.start();
     }
 
     /**

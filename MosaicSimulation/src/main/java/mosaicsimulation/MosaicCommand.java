@@ -14,22 +14,22 @@ import javafx.scene.paint.Color;
  */
 public class MosaicCommand implements Serializable{
     Color color;
-    int x;
-    int y;
+    int row;
+    int column;
     
     boolean nop;
     
     /**
      * Creates a command with specified parameters
      * @param color color of the rectangle
-     * @param x x coordinate of rectangle
-     * @param y y coordinate of rectangle
+     * @param row row coordinate of rectangle
+     * @param column column coordinate of rectangle
      */
-    public MosaicCommand(Color color, int x, int y)
+    public MosaicCommand(Color color, int row, int column)
     {
         this.color = color;
-        this.x = x;
-        this.y = y;
+        this.row = row;
+        this.column = column;
         this.nop = false;
     }
     
@@ -49,20 +49,20 @@ public class MosaicCommand implements Serializable{
         this.color = color;
     }
 
-    public int getX() {
-        return x;
+    public int getRow() {
+        return row;
     }
 
-    public void setX(int x) {
-        this.x = x;
+    public void setRow(int row) {
+        this.row = row;
     }
 
-    public int getY() {
-        return y;
+    public int getColumn() {
+        return column;
     }
 
-    public void setY(int y) {
-        this.y = y;
+    public void setColumn(int column) {
+        this.column = column;
     }
     
     

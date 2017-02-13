@@ -13,8 +13,8 @@ import org.apache.log4j.Level;
  *
  * @author enric
  */
-public class MosaicServer {
-    private static final Logger LOG = org.apache.log4j.Logger.getLogger(MosaicServer.class.getName());
+public class MosaicLockstepServer {
+    private static final Logger LOG = org.apache.log4j.Logger.getLogger(MosaicLockstepServer.class.getName());
     
     public static void main(String[] args)
     {

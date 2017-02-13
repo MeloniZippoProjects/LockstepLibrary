@@ -5,7 +5,6 @@
  */
 package mosaicsimulation;
 
-import java.awt.Dimension;
 import java.net.InetSocketAddress;
 import java.util.Random;
 import javafx.scene.paint.Color;
@@ -17,26 +16,28 @@ import lockstep.LockstepClient;
  *
  * @author enric
  */
-public class MosaicClient extends LockstepClient<MosaicCommand> {
+public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
 
     private final Rectangle[][] mosaic;
     private final Color clientColor;
-    private final Dimension mosaicDimension;
+    private final int rows;
+    private final int columns;
     
-    public MosaicClient(InetSocketAddress serverTCPAddress, Rectangle[][] mosaic, Dimension mosaicDimension, Color clientColor) {
+    public MosaicLockstepClient(InetSocketAddress serverTCPAddress, Rectangle[][] mosaic, int rows, int columns, Color clientColor) {
         super(serverTCPAddress);
         this.mosaic = mosaic;
         this.clientColor = clientColor;
-        this.mosaicDimension = mosaicDimension;
+        this.rows = rows;
+        this.columns = columns;
     }
 
     @Override
     protected MosaicCommand readInput() {
         Random rand = new Random();
-        int x = rand.nextInt(mosaicDimension.width);
-        int y = rand.nextInt(mosaicDimension.height);
+        int row = rand.nextInt(rows);
+        int column = rand.nextInt(columns);
         
-        return new MosaicCommand(clientColor, x, y);
+        return new MosaicCommand(clientColor, row, column);
     }
 
     @Override
@@ -52,7 +53,7 @@ public class MosaicClient extends LockstepClient<MosaicCommand> {
     @Override
     protected void executeFrameInput(FrameInput<MosaicCommand> f) {
         MosaicCommand cmd = f.getCmd();
-        Rectangle rect = mosaic[cmd.getX()][cmd.getY()];
+        Rectangle rect = mosaic[cmd.getRow()][cmd.getColumn()];
         rect.setFill(cmd.getColor());
     }
 
