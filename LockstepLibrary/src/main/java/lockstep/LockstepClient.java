@@ -82,7 +82,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
      * 
      * @param f the frame input containing the command to execute
      */
-    protected abstract void executeFrameInput(FrameInput f);
+    protected abstract void executeFrameInput(FrameInput<Command> f);
 
     /**
      * Provides the first commands to bootstart the simulation.
