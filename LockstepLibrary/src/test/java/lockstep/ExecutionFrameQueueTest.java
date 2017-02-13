@@ -32,7 +32,6 @@ public class ExecutionFrameQueueTest {
     public static void setUpClass() {
     }
     
-    final static int bufferSize = 10;
     final static int initialFrame = 4;
     ExecutionFrameQueue efq;
     FrameInput<Command>[] frames;

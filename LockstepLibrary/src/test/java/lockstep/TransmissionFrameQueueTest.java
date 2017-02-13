@@ -5,6 +5,7 @@
  */
 package lockstep;
 
+import java.util.concurrent.Semaphore;
 import lockstep.messages.simulation.FrameACK;
 import org.junit.After;
 import org.junit.Before;
@@ -28,7 +29,8 @@ public class TransmissionFrameQueueTest {
     
     @Before
     public void setUp() {
-        tfq = new TransmissionFrameQueue(7);
+        Semaphore sem = new Semaphore(0);
+        tfq = new TransmissionFrameQueue(7, sem);
         FrameInput frame1 = createFrame(7,1,-1), frame2 = createFrame(8,-1,-1), frame3 = createFrame(9,-1,1); 
         frames = new FrameInput[] { frame1, frame2, frame3 };
     }

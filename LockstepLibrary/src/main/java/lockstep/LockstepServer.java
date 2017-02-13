@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -69,9 +70,7 @@ public class LockstepServer implements Runnable
     int clientsNumber;
     
     ExecutorService executorService;
-    
-    static final int executionBufferSize = 1024; //Serve davvero??
-    
+        
     public LockstepServer(int tcpPort, int clientsNumber)
     {
         this.tcpPort = tcpPort;
@@ -128,10 +127,7 @@ public class LockstepServer implements Runnable
                 executorService.submit(() -> clientHandshake(tcpConnectionSocket, firstFrameNumber, barrier, latch));
             }
             latch.await();
-        } catch (IOException ex)
-        {
-            Logger.getLogger(LockstepServer.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InterruptedException ex)
+        } catch (IOException | InterruptedException ex)
         {
             Logger.getLogger(LockstepServer.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -206,15 +202,16 @@ public class LockstepServer implements Runnable
     
     private void clientTransmissionSetup(int clientID, int firstFrameNumber, DatagramSocket udpSocket, Map<Integer, TransmissionFrameQueue> clientTransmissionFrameQueues)
     {
+        Semaphore transmissionSemaphore = new Semaphore(0);
         for(int hostID : hostIDs)
         {
             if(hostID != clientID)
             {
-                TransmissionFrameQueue transmissionFrameQueue = new TransmissionFrameQueue(firstFrameNumber);
+                TransmissionFrameQueue transmissionFrameQueue = new TransmissionFrameQueue(firstFrameNumber, transmissionSemaphore);
                 clientTransmissionFrameQueues.put(hostID, transmissionFrameQueue);
             }
         }
-        LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, clientTransmissionFrameQueues);
+        LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, clientTransmissionFrameQueues, transmissionSemaphore);
         executorService.submit(transmitter);
     }
     

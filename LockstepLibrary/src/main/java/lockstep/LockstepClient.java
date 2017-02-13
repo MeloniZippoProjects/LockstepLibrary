@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import org.apache.log4j.Logger;
 
 /**
@@ -146,12 +147,13 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
             udpSocket.connect(serverUDPAddress);
 
             Map<Integer, ExecutionFrameQueue> receivingExecutionQueues = new ConcurrentHashMap<>();
-            transmissionFrameQueue = new TransmissionFrameQueue(helloReply.firstFrameNumber);
+            Semaphore transmissionSemaphore = new Semaphore(0);
+            transmissionFrameQueue = new TransmissionFrameQueue(helloReply.firstFrameNumber, transmissionSemaphore);
             HashMap<Integer,TransmissionFrameQueue> transmissionQueueWrapper = new HashMap<>();
             transmissionQueueWrapper.put(hostID, transmissionFrameQueue);
             
             receiver = new LockstepReceiver(udpSocket, receivingExecutionQueues, transmissionQueueWrapper);
-            transmitter = new LockstepTransmitter(udpSocket, transmissionQueueWrapper);
+            transmitter = new LockstepTransmitter(udpSocket, transmissionQueueWrapper, transmissionSemaphore);
 
             fillFrameBuffer(fillCommands());
             executorService = Executors.newFixedThreadPool(2);

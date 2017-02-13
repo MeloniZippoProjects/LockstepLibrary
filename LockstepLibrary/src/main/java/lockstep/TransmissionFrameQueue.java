@@ -5,11 +5,11 @@
  */
 package lockstep;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.Semaphore;
 import lockstep.messages.simulation.FrameACK;
 import org.apache.log4j.Logger;
 
@@ -33,7 +33,7 @@ public class TransmissionFrameQueue
     int lastACKed;
     Map<Integer, FrameInput> frameBuffer;
     
-    LockstepTransmitter transmitter;
+    Semaphore transmissionSemaphore;
     
     private static final Logger LOG = Logger.getLogger(TransmissionFrameQueue.class.getName());
 
@@ -45,10 +45,11 @@ public class TransmissionFrameQueue
      * @param initialFrameNumber First frame's number. Must be the same for all 
      * the clients using the protocol
      */
-    public TransmissionFrameQueue(int initialFrameNumber)
+    public TransmissionFrameQueue(int initialFrameNumber, Semaphore transmissionSemaphore)
     {
         this.frameBuffer = new ConcurrentSkipListMap<>();
         this.lastACKed = initialFrameNumber - 1;
+        this.transmissionSemaphore = transmissionSemaphore;
     }
     
     /**
@@ -62,7 +63,7 @@ public class TransmissionFrameQueue
         if(input.frameNumber >= this.lastACKed && !this.frameBuffer.containsKey(input.frameNumber))
         {
             this.frameBuffer.put(input.frameNumber, input);
-            //this.transmitter.signalTransmissionFrameQueuesReady();
+            this.transmissionSemaphore.release();
         }
     }
     
@@ -128,5 +129,8 @@ public class TransmissionFrameQueue
                 this.frameBuffer.remove(frameNumber);
             }
         }
+        
+        if(this.frameBuffer.size() > 0)
+            transmissionSemaphore.release();
     }
 }

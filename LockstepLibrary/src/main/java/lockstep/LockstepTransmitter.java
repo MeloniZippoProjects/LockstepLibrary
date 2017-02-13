@@ -11,7 +11,10 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import lockstep.messages.simulation.InputMessage;
+import org.apache.log4j.Logger;
 
 /**
  * 
@@ -22,12 +25,16 @@ public class LockstepTransmitter implements Runnable
     DatagramSocket dgramSocket;
     Map<Integer, TransmissionFrameQueue> transmissionFrameQueues;
     
-    QueueAvailability transmissionFrameQueuesReady;
+    Semaphore transmissionSemaphore;
+    long interTransmissionTimeout = 20;
 
-    public LockstepTransmitter(DatagramSocket socket, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues)
+    private static final Logger LOG = Logger.getLogger(LockstepTransmitter.class.getName());
+    
+    public LockstepTransmitter(DatagramSocket socket, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues, Semaphore transmissionSemaphore)
     {
         this.dgramSocket = socket;
         this.transmissionFrameQueues = transmissionFrameQueues;
+        this.transmissionSemaphore = transmissionSemaphore;
     }
     
     @Override
@@ -37,24 +44,21 @@ public class LockstepTransmitter implements Runnable
         {
             try
             {
-                synchronized(transmissionFrameQueuesReady)
+                if(!transmissionSemaphore.tryAcquire(interTransmissionTimeout, TimeUnit.MILLISECONDS))
                 {
-                    while(transmissionFrameQueuesReady.equals(Boolean.FALSE))
-                        wait();
-
-                    for(Entry<Integer, TransmissionFrameQueue> entry : transmissionFrameQueues.entrySet())
+                    LOG.debug("Transmission timeout reached");
+                }                
+                
+                for(Entry<Integer, TransmissionFrameQueue> entry : transmissionFrameQueues.entrySet())
+                {
+                    FrameInput[] frames = entry.getValue().pop();
+                    for(FrameInput frame : frames)
                     {
-                        FrameInput[] frames = entry.getValue().pop();
-                        for(FrameInput frame : frames)
-                        {
-                            InputMessage msg = new InputMessage(entry.getKey(), frame);
-                            this.send(msg);
-                        }
+                        InputMessage msg = new InputMessage(entry.getKey(), frame);
+                        this.send(msg);
                     }
-
-                    //This efficient as we assume that interframetime < rtt
-                    transmissionFrameQueuesReady.setValue(Boolean.FALSE);    
                 }
+                transmissionSemaphore.drainPermits();
             }
             catch(InterruptedException e)
             {
@@ -80,14 +84,5 @@ public class LockstepTransmitter implements Runnable
             e.printStackTrace();
         }
     }       
-
-    public void signalTransmissionFrameQueuesReady()
-    {
-        synchronized(transmissionFrameQueuesReady)
-        {
-            transmissionFrameQueuesReady.setValue(Boolean.TRUE);
-            notify();
-        }
-    }
 }
 
