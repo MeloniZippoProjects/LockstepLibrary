@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox id="AnchorPane" prefHeight="350" prefWidth="300" xmlns:fx="http://javafx.com/fxml/1" fx:controller="mosaicsimulation.FXMLMainPageController">
+    <children>
+        <GridPane id="mosaicArea" prefHeight="300" prefWidth="300"></GridPane>
+        <HBox id="infoBar">
+            <children>
+                <Label>Put something here</Label>
+            </children>
+        </HBox>
+    </children>
+</VBox>
