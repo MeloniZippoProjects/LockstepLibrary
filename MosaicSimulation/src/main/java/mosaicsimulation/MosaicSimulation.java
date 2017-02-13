@@ -10,6 +10,10 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.GridPane;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
 /**
@@ -18,19 +22,31 @@ import javafx.stage.Stage;
  */
 public class MosaicSimulation extends Application
 {
-    static final int columns = 100;
-    static final int rows = 100;
+    static final int columns = 50;
+    static final int rows = 50;
+    
+    GridPane mosaic;
     
     @Override
     public void start(Stage stage) throws Exception
     {
         Parent root = FXMLLoader.load(getClass().getResource("FXMLMainPage.fxml"));
-  
-        Map<String, String> namedParameters = this.getParameters().getNamed();
-        
-        
-        
         Scene scene = new Scene(root);
+        
+        mosaic = (GridPane) scene.lookup("#mosaic");
+        for (int i = 1; i <= rows; i++)
+        {
+            for (int j = 1; j <= columns; j++)
+            {
+                Rectangle rectangle = new Rectangle();
+            }
+        }
+       
+        
+        
+        Map<String, String> namedParameters = this.getParameters().getNamed();
+        String serverIPAddress = namedParameters.get("serverIPAddress");
+        int serverTCPPort = Integer.parseInt(namedParameters.get("serverTCPPort"));
         
         stage.setScene(scene);
         stage.show();

@@ -8,7 +8,7 @@
 
 <VBox id="AnchorPane" prefHeight="350" prefWidth="300" xmlns:fx="http://javafx.com/fxml/1" fx:controller="mosaicsimulation.FXMLMainPageController">
     <children>
-        <GridPane id="mosaicArea" prefHeight="300" prefWidth="300"></GridPane>
+        <GridPane id="mosaic"></GridPane>
         <HBox id="infoBar">
             <children>
                 <Label>Put something here</Label>
