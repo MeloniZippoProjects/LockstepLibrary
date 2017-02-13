@@ -5,13 +5,16 @@
 <?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.Rectangle?>
+
 
 <VBox id="AnchorPane" prefHeight="350" prefWidth="300" xmlns:fx="http://javafx.com/fxml/1" fx:controller="mosaicsimulation.FXMLMainPageController">
     <children>
         <GridPane id="mosaic"></GridPane>
-        <HBox id="infoBar">
+        <HBox id="infoBar" alignment="center">
             <children>
-                <Label>Put something here</Label>
+                <Label>Client color:</Label>
+                <Rectangle id="colorRectangle" width="7" height="7" strokeWidth="1" stroke="GRAY"></Rectangle>
             </children>
         </HBox>
     </children>

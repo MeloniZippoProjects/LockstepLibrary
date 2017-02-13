@@ -5,14 +5,13 @@
  */
 package mosaicsimulation;
 
-import java.util.Map;
+import java.util.Random;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
@@ -26,28 +25,44 @@ public class MosaicSimulation extends Application
     static final int rows = 50;
     
     GridPane mosaic;
+    Color clientColor;
     
     @Override
     public void start(Stage stage) throws Exception
     {
-        Parent root = FXMLLoader.load(getClass().getResource("FXMLMainPage.fxml"));
+        stage.setTitle("Mosaic simulation");
+        Parent root = FXMLLoader.load(getClass().getClassLoader().getResource("FXMLMainPage.fxml"));
         Scene scene = new Scene(root);
         
         mosaic = (GridPane) scene.lookup("#mosaic");
-        for (int i = 1; i <= rows; i++)
+        for (int row = 1; row <= rows; row++)
         {
-            for (int j = 1; j <= columns; j++)
+            for (int column = 1; column <= columns; column++)
             {
                 Rectangle rectangle = new Rectangle();
+                rectangle.setHeight(7);
+                rectangle.setWidth(7);
+                rectangle.setStrokeWidth(1);
+                rectangle.setStroke(Color.GRAY);
+                rectangle.setFill(Color.BLACK);
+                
+                GridPane.setConstraints(rectangle, column, row);
+                mosaic.getChildren().add(rectangle);
             }
-        }
-       
+        }      
+        
+        Random rand = new Random();
+        Color clientColor = Color.rgb(rand.nextInt(256), rand.nextInt(256), rand.nextInt(256));
+        Rectangle colorRectangle = (Rectangle) scene.lookup("#colorRectangle");
+        colorRectangle.setFill(clientColor);
         
         
-        Map<String, String> namedParameters = this.getParameters().getNamed();
-        String serverIPAddress = namedParameters.get("serverIPAddress");
-        int serverTCPPort = Integer.parseInt(namedParameters.get("serverTCPPort"));
+//        Map<String, String> namedParameters = this.getParameters().getNamed();
+//        String serverIPAddress = namedParameters.get("serverIPAddress");
+//        int serverTCPPort = Integer.parseInt(namedParameters.get("serverTCPPort"));
+
         
+                
         stage.setScene(scene);
         stage.show();
     }

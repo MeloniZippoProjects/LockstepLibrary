@@ -17,11 +17,6 @@
             <version>1.2.17</version>
         </dependency>
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.17</version>
-        </dependency>
-        <dependency>
             <groupId>cds.zippo.meloni</groupId>
             <artifactId>locksteplibrary</artifactId>
             <version>1</version>
