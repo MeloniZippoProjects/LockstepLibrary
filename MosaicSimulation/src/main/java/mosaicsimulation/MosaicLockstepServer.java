@@ -24,7 +24,7 @@ public class MosaicLockstepServer {
         try {     
             thread.join();
         } catch (InterruptedException ex) {
-            LOG.log(Level.ERROR, "Server interrupted while joining");
+            LOG.error("Server interrupted while joining");
         }
     }
     
