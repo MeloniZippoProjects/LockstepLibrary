@@ -40,11 +40,10 @@ class ExecutionFrameQueue
     int lastInOrder;
     ConcurrentSkipListSet<Integer> selectiveACKsSet;
 
-    int hostID;
-    Map<Integer, QueueAvailability> executionQueuesHeadsAvailability;
-    CyclicCountDownLatch inputLatch;
+    CyclicCountDownLatch cyclicExecutionLatch;
     
     private static final Logger LOG = Logger.getLogger(ExecutionFrameQueue.class.getName());
+    private final int hostID;
     
     /**
      * Creates a new ExecutionFrameQueue
@@ -54,7 +53,7 @@ class ExecutionFrameQueue
      * @param initialFrameNumber First frame's number. Must be the same for all 
      * the clients using the protocol
      */
-    public ExecutionFrameQueue(int bufferSize, int initialFrameNumber, int hostID, CyclicCountDownLatch inputLatch)
+    public ExecutionFrameQueue(int bufferSize, int initialFrameNumber, int hostID, CyclicCountDownLatch cyclicExecutionLatch)
     {
         this.bufferSize = bufferSize;
         this.frameBuffer = new FrameInput[bufferSize];
@@ -63,10 +62,7 @@ class ExecutionFrameQueue
         this.lastInOrder = initialFrameNumber - 1;
         this.selectiveACKsSet = new ConcurrentSkipListSet<>();
         this.hostID = hostID;
-        this.executionQueuesHeadsAvailability = new HashMap<>();
-        executionQueuesHeadsAvailability.put(hostID, new QueueAvailability(Boolean.FALSE));
-        
-        this.inputLatch = inputLatch;
+        this.cyclicExecutionLatch = cyclicExecutionLatch;
     }
     
     /**
@@ -82,14 +78,8 @@ class ExecutionFrameQueue
             this.frameBuffer[this.bufferHead] = null;
             this.bufferHead = (this.bufferHead + 1) % this.bufferSize;
             
-            inputLatch.countDown();
-
-            QueueAvailability queueHeadAvailability = executionQueuesHeadsAvailability.get(hostID);
-            synchronized(queueHeadAvailability)
-            {
-                if(this.frameBuffer[this.bufferHead] == null)
-                    queueHeadAvailability.setValue(Boolean.FALSE);
-            }            
+            if(this.frameBuffer[this.bufferHead] != null)
+                cyclicExecutionLatch.countDown();
         }
         else
         {
@@ -157,15 +147,8 @@ class ExecutionFrameQueue
             
             if(input.frameNumber == this.lastInOrder + 1)
             {
-                QueueAvailability queueHeadAvailability = executionQueuesHeadsAvailability.get(hostID);
-                synchronized(queueHeadAvailability)
-                {                    
-                    if(queueHeadAvailability.equals(Boolean.FALSE))
-                    {
-                        queueHeadAvailability.setValue(Boolean.TRUE);
-                        queueHeadAvailability.notify();
-                    }
-                }
+                if(bufferIndex == bufferHead)
+                    this.cyclicExecutionLatch.countDown();
 
                 this.lastInOrder++;
                 while(!this.selectiveACKsSet.isEmpty() && this.selectiveACKsSet.first() == this.lastInOrder + 1)
