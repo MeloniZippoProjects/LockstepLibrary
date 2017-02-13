@@ -25,11 +25,9 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import lockstep.messages.handshake.*;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.log4j.Logger;
 
 /**
  *
@@ -70,7 +68,8 @@ public class LockstepServer implements Runnable
     int clientsNumber;
     
     ExecutorService executorService;
-        
+    private static final Logger LOG = Logger.getLogger(LockstepServer.class.getName());
+    
     public LockstepServer(int tcpPort, int clientsNumber)
     {
         this.tcpPort = tcpPort;
@@ -80,6 +79,7 @@ public class LockstepServer implements Runnable
         cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
         executionFrameQueues = new ConcurrentHashMap<>();
         transmissionFrameQueueTree = new ConcurrentHashMap<>();
+        hostIDs = new ConcurrentSkipListSet<>();
     }
 
     /**
@@ -106,7 +106,8 @@ public class LockstepServer implements Runnable
                 distributeFrameInputs(frameInputs);
             } catch (InterruptedException ex)
             {
-                Logger.getLogger(LockstepServer.class.getName()).log(Level.SEVERE, null, ex);
+                LOG.fatal("Server interrupted while waiting for frames");
+                System.exit(1);
             }
         }
     }
@@ -124,12 +125,15 @@ public class LockstepServer implements Runnable
             for(int i = 0; i < clientsNumber; i++)
             {
                 Socket tcpConnectionSocket = tcpServerSocket.accept();
+                LOG.info("Connection " + i + " accepted from " +  tcpConnectionSocket.getInetAddress().getHostAddress());
                 executorService.submit(() -> clientHandshake(tcpConnectionSocket, firstFrameNumber, barrier, latch));
             }
             latch.await();
+            LOG.info("All handshakes completed");
         } catch (IOException | InterruptedException ex)
         {
-            Logger.getLogger(LockstepServer.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.fatal("Error in handshake " + ex.getMessage());
+            System.exit(1);
         }
     }
     
@@ -140,53 +144,50 @@ public class LockstepServer implements Runnable
             ObjectInputStream oin = new ObjectInputStream(tcpSocket.getInputStream()); 
         )
         {
-            //Receive hello message from client and reply
+            //Receive hello message from client and replyess());
+            LOG.info("Waiting an hello from " + tcpSocket.getInetAddress().getHostAddress());
             ClientHello hello = (ClientHello) oin.readObject();
-            
+            LOG.info("Received an hello from " + tcpSocket.getInetAddress().getHostAddress());
             DatagramSocket udpSocket = new DatagramSocket();
-            udpSocket.bind(null);
             InetSocketAddress clientUDPAddress = new InetSocketAddress(tcpSocket.getInetAddress().getHostAddress(), hello.clientUDPPort);
             udpSocket.connect(clientUDPAddress);
 
             int assignedHostID;
             do{
                 assignedHostID = (new Random()).nextInt(100000) + 10000;
-            }   while(!this.hostIDs.add(assignedHostID));
+                LOG.debug("Extracted ID is " + assignedHostID);
+            }while(!this.hostIDs.add(assignedHostID));
             
+            LOG.info("Assigned hostID " + assignedHostID + " to " + tcpSocket.getInetAddress().getHostAddress() + ", sending helloReply");
             ServerHelloReply helloReply = new ServerHelloReply(udpSocket.getLocalPort(), assignedHostID, clientsNumber, firstFrameNumber);
             oout.writeObject(helloReply);
-            
+                        
             Map<Integer, TransmissionFrameQueue> clientTransmissionFrameQueues = new HashMap<>();
             this.transmissionFrameQueueTree.put(assignedHostID, clientTransmissionFrameQueues);
             clientReceiveSetup(assignedHostID, udpSocket, firstFrameNumber, clientTransmissionFrameQueues);
             
+            LOG.debug("Waiting at first barrier for " + assignedHostID);
             barrier.await();
                         
             //Send second reply
             ClientsAnnouncement announcement = new ClientsAnnouncement();
             announcement.hostIDs = ArrayUtils.toPrimitive(this.hostIDs.toArray(new Integer[0]));
+            LOG.debug("Sending clientsAnnouncement for " + assignedHostID);
             oout.writeObject(announcement);
             
             clientTransmissionSetup(assignedHostID, firstFrameNumber, udpSocket, clientTransmissionFrameQueues);
             
             //Wait for other handshakes to reach final step
+            LOG.debug("Waiting at second barrier for " + assignedHostID);
             barrier.await();
             oout.writeObject(new SimulationStart());   
 
             //Continue with execution
             latch.countDown();
-        } catch (IOException ex)
+        } catch (IOException | ClassNotFoundException | InterruptedException | BrokenBarrierException ex)
         {
-            Logger.getLogger(LockstepServer.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (ClassNotFoundException ex)
-        {
-            Logger.getLogger(LockstepServer.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InterruptedException ex)
-        {
-            Logger.getLogger(LockstepServer.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (BrokenBarrierException ex)
-        {
-            Logger.getLogger(LockstepServer.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.fatal("Exception at clientHandshake " + ex.getMessage());
+            System.exit(1);
         }            
     }
     

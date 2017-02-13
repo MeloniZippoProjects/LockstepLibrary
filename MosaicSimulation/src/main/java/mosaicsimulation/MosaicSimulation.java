@@ -6,7 +6,6 @@
 package mosaicsimulation;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.Map;
 import java.util.Random;
 import javafx.application.Application;
@@ -17,6 +16,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
+import org.apache.log4j.Logger;
 
 /**
  *
@@ -31,6 +31,8 @@ public class MosaicSimulation extends Application
     Rectangle[][] mosaic;
     Color clientColor;
     
+    private static final Logger LOG = Logger.getLogger(MosaicSimulation.class.getName());
+    
     @Override
     public void start(Stage stage) throws Exception
     {
@@ -42,7 +44,7 @@ public class MosaicSimulation extends Application
         mosaic = new Rectangle[rows][];
         for (int row = 1; row <= rows; row++)
         {
-            mosaic[row] = new Rectangle[columns];
+            mosaic[row - 1] = new Rectangle[columns];
             for (int column = 1; column <= columns; column++)
             {
                 Rectangle rectangle = new Rectangle();
@@ -54,7 +56,7 @@ public class MosaicSimulation extends Application
                 
                 GridPane.setConstraints(rectangle, column, row);
                 mosaicView.getChildren().add(rectangle);
-                mosaic[row][column] = rectangle;
+                mosaic[row - 1][column - 1] = rectangle;
             }
         }      
         
@@ -66,14 +68,18 @@ public class MosaicSimulation extends Application
         stage.setScene(scene);
         stage.show();
         
+        LOG.info("created graphical UI");
+        
         Map<String, String> namedParameters = this.getParameters().getNamed();
         String serverIPAddress = namedParameters.get("serverIPAddress");
         int serverTCPPort = Integer.parseInt(namedParameters.get("serverTCPPort"));
         InetSocketAddress serverTCPAddress = new InetSocketAddress(serverIPAddress, serverTCPPort);
 
+        LOG.debug("Creation of lockstep client");
         MosaicLockstepClient mosaicLockstepClient = new MosaicLockstepClient(serverTCPAddress, mosaic, rows, columns, clientColor);
         Thread clientThread = new Thread(mosaicLockstepClient);
         clientThread.start();
+        LOG.debug("thread started");
     }
 
     /**

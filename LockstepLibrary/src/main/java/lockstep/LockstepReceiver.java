@@ -29,7 +29,9 @@ public class LockstepReceiver implements Runnable
     
     public LockstepReceiver(DatagramSocket socket, Map<Integer, ExecutionFrameQueue> executionFrameQueues, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues)
     {
-        //initialize members...
+        dgramSocket = socket;
+        this.executionFrameQueues = executionFrameQueues;
+        this.transmissionFrameQueues = transmissionFrameQueues;
     }
     
     @Override

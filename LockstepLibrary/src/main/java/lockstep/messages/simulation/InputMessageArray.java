@@ -5,13 +5,14 @@
  */
 package lockstep.messages.simulation;
 
+import java.io.Serializable;
 import lockstep.FrameInput;
 
 /**
  *
  * @author Raff
  */
-public class InputMessageArray
+public class InputMessageArray implements Serializable
 {
     public final int hostID;
     public final FrameInput[] frames;

@@ -13,6 +13,7 @@ import java.io.Serializable;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,13 +37,13 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     TransmissionFrameQueue transmissionFrameQueue;
     
     InetSocketAddress serverTCPAddress;
-    
-    static final int executionQueueBufferSize = 1024;
-    
+        
     ExecutorService executorService;
     
     LockstepReceiver receiver;
     LockstepTransmitter transmitter;
+    
+    private int UDPPort = 10240;
     
     private static final Logger LOG = Logger.getLogger(LockstepClient.class.getName());
         
@@ -114,29 +115,37 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
 
     private void handshake()
     {
-        try(
-            Socket tcpSocket = new Socket(serverTCPAddress.getAddress(), serverTCPAddress.getPort());
-            ObjectOutputStream oout = new ObjectOutputStream(tcpSocket.getOutputStream());
-            ObjectInputStream oin = new ObjectInputStream(tcpSocket.getInputStream());
-        )
+        LOG.debug("Start of handshake");
+        try
         {
+            LOG.debug("Before create tcp socket");
+            Socket tcpSocket = new Socket(serverTCPAddress.getAddress(), serverTCPAddress.getPort());
+            LOG.debug("After create tcp socket");
+            LOG.debug("Before create oout");
+            ObjectOutputStream oout = new ObjectOutputStream(tcpSocket.getOutputStream());
+            LOG.debug("After create oout");
+            LOG.debug("Before create oin");
+            ObjectInputStream oin = new ObjectInputStream(tcpSocket.getInputStream());
+            LOG.debug("After create oin");
+            
             //Bind own UDP socket
             DatagramSocket udpSocket = new DatagramSocket();
-            udpSocket.bind(null);
             LOG.info("Opened connection on " + udpSocket.getLocalAddress().getHostAddress() + ":" + udpSocket.getLocalPort());
-            
-            LOG.info("Start handshake with server");
-            
+                       
             //Send hello to server, with the bound UDP port
-            oout.write(new ClientHello().clientUDPPort = udpSocket.getLocalPort());
-            LOG.info("Sent ClientHello message");
+            LOG.info("Sending ClientHello message");
+            ClientHello clientHello = new ClientHello();
+            clientHello.clientUDPPort = udpSocket.getLocalPort();
+            oout.writeObject(clientHello);
             
             //Receive and process first server reply
+            LOG.info("Waiting for helloReply from server");
             ServerHelloReply helloReply = (ServerHelloReply) oin.readObject();
-            LOG.info("Received reply from server");
             this.hostID = helloReply.assignedHostID;
             this.currentFrame = helloReply.firstFrameNumber;
             
+            clientsNumber = helloReply.clientsNumber;
+            cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
             this.executionFrameQueues = new ConcurrentHashMap<>();
             this.executionFrameQueues.put(hostID, new ExecutionFrameQueue(helloReply.firstFrameNumber, hostID, cyclicExecutionLatch));
             
@@ -154,16 +163,16 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
             
             receiver = new LockstepReceiver(udpSocket, receivingExecutionQueues, transmissionQueueWrapper);
             transmitter = new LockstepTransmitter(udpSocket, transmissionQueueWrapper, transmissionSemaphore);
-
+            
             fillFrameBuffer(fillCommands());
             executorService = Executors.newFixedThreadPool(2);
+             
+            executorService.submit(receiver);
+            executorService.submit(transmitter);
 
             //Receive and process second server reply
+            LOG.info("Waiting for list of clients from server");
             ClientsAnnouncement clientsAnnouncement = (ClientsAnnouncement) oin.readObject();
-            LOG.info("Received list of clients from server");
-            
-            clientsNumber = clientsAnnouncement.hostIDs.length;
-            cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
 
             for(int clientID : clientsAnnouncement.hostIDs)
             {
@@ -173,8 +182,10 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
             }
 
             //Wait for simulation start signal to proceed executing
+            LOG.info("Waiting for simulation start signal");
             SimulationStart start = (SimulationStart) oin.readObject();
             LOG.info("Simulation started");
+
         }
         catch(ClassNotFoundException e)
         {
@@ -183,7 +194,10 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
         }
         catch(IOException e)
         {
-            LOG.error("IO error");
+            LOG.fatal("IO error");
+            LOG.fatal(e);
+            e.printStackTrace();
+            System.exit(1);
         }
     }
     
