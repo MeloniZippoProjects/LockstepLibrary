@@ -6,7 +6,9 @@
 package lockstep;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import lockstep.messages.simulation.FrameACK;
@@ -34,14 +36,15 @@ class ExecutionFrameQueue
     
     int bufferSize;
     int bufferHead;
-    int baseFrameNumber;
-    FrameInput[] frameBuffer;
+    //int baseFrameNumber;
+    //FrameInput[] frameBuffer;
 
+    Map<Integer, FrameInput> frameBuffer;
+    
     int lastInOrder;
     ConcurrentSkipListSet<Integer> selectiveACKsSet;
 
     int hostID;
-    Map<Integer, QueueAvailability> executionQueuesHeadsAvailability;
     CyclicCountDownLatch inputLatch;
     
     private static final Logger LOG = Logger.getLogger(ExecutionFrameQueue.class.getName());
@@ -54,17 +57,13 @@ class ExecutionFrameQueue
      * @param initialFrameNumber First frame's number. Must be the same for all 
      * the clients using the protocol
      */
-    public ExecutionFrameQueue(int bufferSize, int initialFrameNumber, int hostID, CyclicCountDownLatch inputLatch)
+    public ExecutionFrameQueue(int initialFrameNumber, int hostID, CyclicCountDownLatch inputLatch)
     {
-        this.bufferSize = bufferSize;
-        this.frameBuffer = new FrameInput[bufferSize];
-        this.bufferHead = 0;
-        this.baseFrameNumber = initialFrameNumber;
+        this.frameBuffer = new HashMap<Integer, FrameInput>();
+        this.bufferHead = initialFrameNumber;
         this.lastInOrder = initialFrameNumber - 1;
         this.selectiveACKsSet = new ConcurrentSkipListSet<>();
         this.hostID = hostID;
-        this.executionQueuesHeadsAvailability = new HashMap<>();
-        executionQueuesHeadsAvailability.put(hostID, new QueueAvailability(Boolean.FALSE));
         
         this.inputLatch = inputLatch;
     }
@@ -76,20 +75,12 @@ class ExecutionFrameQueue
      */
     public FrameInput pop()
     {
-        FrameInput nextInput = this.frameBuffer[this.bufferHead];
+        FrameInput nextInput = this.frameBuffer.get(bufferHead);
         if( nextInput != null )
         {
-            this.frameBuffer[this.bufferHead] = null;
-            this.bufferHead = (this.bufferHead + 1) % this.bufferSize;
-            
-            inputLatch.countDown();
-
-            QueueAvailability queueHeadAvailability = executionQueuesHeadsAvailability.get(hostID);
-            synchronized(queueHeadAvailability)
-            {
-                if(this.frameBuffer[this.bufferHead] == null)
-                    queueHeadAvailability.setValue(Boolean.FALSE);
-            }            
+            this.frameBuffer.remove(bufferHead);
+            this.bufferHead++;
+            inputLatch.countDown();          
         }
         else
         {
@@ -104,7 +95,7 @@ class ExecutionFrameQueue
      */
     public FrameInput head()
     {
-        return this.frameBuffer[this.bufferHead];
+        return this.frameBuffer.get(bufferHead);
     }
     
     /**
@@ -149,25 +140,15 @@ class ExecutionFrameQueue
      */
     private boolean _push(FrameInput input)
     {
-        if(input.frameNumber >= this.baseFrameNumber && input.frameNumber <= this.baseFrameNumber + this.bufferSize - 1)
+        if(input.frameNumber >= this.bufferHead)
         {
-            int bufferIndex = (input.frameNumber - this.baseFrameNumber + this.bufferHead) % this.bufferSize;
-            if(this.frameBuffer[bufferIndex] == null)
-                this.frameBuffer[bufferIndex] = input;
+            this.frameBuffer.putIfAbsent(input.frameNumber, input);
             
-            if(input.frameNumber == this.lastInOrder + 1)
+            if(input.frameNumber == this.bufferHead)
             {
-                QueueAvailability queueHeadAvailability = executionQueuesHeadsAvailability.get(hostID);
-                synchronized(queueHeadAvailability)
-                {                    
-                    if(queueHeadAvailability.equals(Boolean.FALSE))
-                    {
-                        queueHeadAvailability.setValue(Boolean.TRUE);
-                        queueHeadAvailability.notify();
-                    }
-                }
+                inputLatch.countDown();
 
-                this.lastInOrder++;
+                ++this.bufferHead;
                 while(!this.selectiveACKsSet.isEmpty() && this.selectiveACKsSet.first() == this.lastInOrder + 1)
                 {
                     this.lastInOrder++;
