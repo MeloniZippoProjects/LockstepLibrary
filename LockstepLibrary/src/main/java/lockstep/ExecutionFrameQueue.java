@@ -5,6 +5,7 @@
  */
 package lockstep;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -26,7 +27,7 @@ import org.apache.log4j.Logger;
  * @author Raff
  */
 
-class ExecutionFrameQueue
+class ExecutionFrameQueue<Command extends Serializable>
 {
     /**
      * Internally it behaves as an infinite array of which, at any time, only
@@ -34,15 +35,13 @@ class ExecutionFrameQueue
      * accessed.
      */
     
-    AtomicInteger bufferSize;
-    AtomicInteger bufferHead;
+    int nextFrame;
     //int baseFrameNumber;
     //FrameInput[] frameBuffer;
 
-    Map<Integer, FrameInput> frameBuffer;
-    
-    AtomicInteger lastInOrder;
+    ConcurrentSkipListMap<Integer, Command> commandBuffer;
     ConcurrentSkipListSet<Integer> selectiveACKsSet;
+    AtomicInteger lastInOrder;
 
     CyclicCountDownLatch cyclicExecutionLatch;
     
@@ -59,8 +58,8 @@ class ExecutionFrameQueue
      */
     public ExecutionFrameQueue(int initialFrameNumber, int hostID, CyclicCountDownLatch cyclicExecutionLatch)
     {
-        this.frameBuffer = new ConcurrentSkipListMap<>();
-        this.bufferHead = new AtomicInteger(initialFrameNumber);
+        this.commandBuffer = new ConcurrentSkipListMap<>();
+        this.nextFrame = initialFrameNumber;
         this.lastInOrder = new AtomicInteger(initialFrameNumber - 1);
         this.selectiveACKsSet = new ConcurrentSkipListSet<>();
         this.hostID = hostID;
@@ -74,13 +73,16 @@ class ExecutionFrameQueue
      * This method will change the queue, extracting the head, only if it's present.
      * @return the next in order frame input, or null if not present. 
      */
-    public FrameInput pop()
+    public Command pop()
     {
-        FrameInput nextInput = this.frameBuffer.get(bufferHead.get());
-        if( nextInput != null )
+        Command nextCommand = this.commandBuffer.get(nextFrame);
+        if( nextCommand != null )
         {
-            this.frameBuffer.remove(bufferHead.get());
-            if(frameBuffer.get(bufferHead.incrementAndGet()) != null)
+            nextFrame++;
+            for(Integer key : commandBuffer.headMap(nextFrame).keySet())
+                commandBuffer.remove(key);
+            
+            if(commandBuffer.get(nextFrame) != null)
             {
                 LOG.debug("Countdown to " + ( cyclicExecutionLatch.getCount() - 1) + "made by " + hostID);
                 cyclicExecutionLatch.countDown();          
@@ -90,7 +92,7 @@ class ExecutionFrameQueue
         {
             LOG.debug("ExecutionFrameQueue " + hostID + ": FrameInput missing for current frame");
         }
-        return nextInput;
+        return nextCommand;
     }
     
     /**
@@ -99,7 +101,7 @@ class ExecutionFrameQueue
      */
     public FrameInput head()
     {
-        return this.frameBuffer.get(bufferHead.get());
+        return new FrameInput(nextFrame, commandBuffer.get(nextFrame));
     }
     
     /**
@@ -136,42 +138,35 @@ class ExecutionFrameQueue
      * @param input the input to push into the queue
      * @return A boolean indicating whether the input should be selectively ACKed
      */
-    private void _push(FrameInput input)
+    private void _push(FrameInput<Command> input)
     {
         try
         {
-            if(input.frameNumber >= this.bufferHead.get())
+            if( this.commandBuffer.putIfAbsent(input.getFrameNumber(), input.getCommand()) == null)
             {
-                if( this.frameBuffer.putIfAbsent(input.frameNumber, input) == null)
+                if(input.getFrameNumber() == this.lastInOrder.get() + 1)
                 {
-                    if(input.frameNumber == this.lastInOrder.get() + 1)
+                    lastInOrder.incrementAndGet();
+                    while(!this.selectiveACKsSet.isEmpty() && this.selectiveACKsSet.first() == this.lastInOrder.get() + 1)
                     {
-                        lastInOrder.incrementAndGet();
-                        while(!this.selectiveACKsSet.isEmpty() && this.selectiveACKsSet.first() == this.lastInOrder.get() + 1)
-                        {
-                            this.lastInOrder.incrementAndGet();
-                            this.selectiveACKsSet.remove(this.selectiveACKsSet.first());
-                        }
-                        
-                        if(input.frameNumber == this.bufferHead.get())
-                        {
-                            LOG.debug("Countdown to " + ( cyclicExecutionLatch.getCount() - 1) + " made by " + hostID);
-                            cyclicExecutionLatch.countDown();
-                        }
+                        this.lastInOrder.incrementAndGet();
+                        this.selectiveACKsSet.remove(this.selectiveACKsSet.first());
                     }
-                    else
+
+                    if(input.getFrameNumber() == this.nextFrame)
                     {
-                        this.selectiveACKsSet.add(input.frameNumber);
+                        LOG.debug("Countdown to " + ( cyclicExecutionLatch.getCount() - 1) + " made by " + hostID);
+                        cyclicExecutionLatch.countDown();
                     }
                 }
                 else
                 {
-                    LOG.debug("Duplicate frame arrived");
+                    this.selectiveACKsSet.add(input.getFrameNumber());
                 }
             }
             else
             {
-                LOG.debug("Frame arrived out of buffer bound");
+                LOG.debug("Duplicate frame arrived");
             }
         }
         catch(NullPointerException e)
@@ -200,11 +195,11 @@ class ExecutionFrameQueue
         String string = new String();
         
         string += "ExecutionFrameQueue[" + hostID + "] = {";
-        for(Entry<Integer, FrameInput> entry : this.frameBuffer.entrySet())
+        for(Entry<Integer, Command> entry : this.commandBuffer.entrySet())
         {
             string += " " + entry.getKey();
         }
-        string += " } bufferHead = " + bufferHead.get() + " lastInOrder " + lastInOrder.get();
+        string += " } nextFrame = " + nextFrame + " lastInOrder " + lastInOrder.get();
                 
         return string;
     }

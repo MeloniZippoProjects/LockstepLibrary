@@ -5,6 +5,9 @@
  */
 package lockstep;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.Semaphore;
 import lockstep.messages.simulation.FrameACK;
 import org.junit.After;

@@ -6,6 +6,7 @@
 package lockstep;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  *
@@ -15,7 +16,7 @@ import java.io.Serializable;
  */
 public class FrameInput<Command extends Serializable> implements Serializable 
 {
-    protected final int frameNumber;
+    private final int frameNumber;
     private final Command cmd;
     
     public FrameInput(int frameNumber, Command cmd)
@@ -28,7 +29,42 @@ public class FrameInput<Command extends Serializable> implements Serializable
         return frameNumber;
     }
 
-    public Command getCmd() {
+    public Command getCommand() {
         return cmd;
     }    
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 5;
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+        {
+            return true;
+        }
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        final FrameInput<?> other = (FrameInput<?>) obj;
+        if (this.frameNumber != other.frameNumber)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    
+   
+    
+    
 }

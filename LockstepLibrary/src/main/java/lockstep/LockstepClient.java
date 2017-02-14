@@ -14,6 +14,7 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -84,9 +85,9 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     /**
      * Must get the command contained in the frame input and execute it
      * 
-     * @param f the frame input containing the command to execute
+     * @param c the command to execute
      */
-    protected abstract void executeFrameInput(FrameInput<Command> f);
+    protected abstract void executeCommand(Command c);
 
     /**
      * Provides void commands to resume from a deadlock situation.
@@ -249,12 +250,9 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
         
         if(cyclicExecutionLatch.getCount() > 0)
         {
-            
-            
             suspendSimulation();
             if( !cyclicExecutionLatch.await(fillTimeout, TimeUnit.MILLISECONDS))
             {
-//                LOG.debug("Inserting fillers to escape deadlock");
 //                LOG.debug("Inserting fillers to escape deadlock");
                 insertFillCommands(fillCommands());
                 cyclicExecutionLatch.await();
@@ -269,20 +267,17 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
         else
             cyclicExecutionLatch.reset();
         
-        FrameInput[] inputs = collectFrameInputs();
-        for(FrameInput input : inputs)
-            executeFrameInput(input);
+        ArrayList<Command> commands = collectCommands();
+        for(Command command : commands)
+            executeCommand(command);
     }
 
-    private FrameInput[] collectFrameInputs()
+    private ArrayList<Command> collectCommands()
     {
-        FrameInput[] inputs = new FrameInput[this.executionFrameQueues.size()];
-        int idx = 0;
-        for(ExecutionFrameQueue frameQueue : this.executionFrameQueues.values())
-        {
-            inputs[idx] = frameQueue.pop();
-            ++idx;
-        }        
-        return inputs;
+        ArrayList<Command> commands = new ArrayList<>();
+        for(ExecutionFrameQueue<Command> frameQueue : this.executionFrameQueues.values())
+            commands.add(frameQueue.pop());
+        
+        return commands;
     }
 }

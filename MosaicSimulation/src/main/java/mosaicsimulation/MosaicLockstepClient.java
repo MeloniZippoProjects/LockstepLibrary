@@ -7,9 +7,9 @@ package mosaicsimulation;
 
 import java.net.InetSocketAddress;
 import java.util.Random;
+import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
-import lockstep.FrameInput;
 import lockstep.LockstepClient;
 import org.apache.log4j.Logger;
 
@@ -18,7 +18,6 @@ import org.apache.log4j.Logger;
  * @author enric
  */
 public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
-
     private final Rectangle[][] mosaic;
     private final Color clientColor;
     private final int rows;
@@ -26,13 +25,15 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
     private final Random rand;
     
     private static final Logger LOG = Logger.getLogger(MosaicLockstepClient.class.getName());
+    private final Label currentFrameLabel;
     
-    public MosaicLockstepClient(InetSocketAddress serverTCPAddress, Rectangle[][] mosaic, int rows, int columns, Color clientColor) {
+    public MosaicLockstepClient(InetSocketAddress serverTCPAddress, Rectangle[][] mosaic, int rows, int columns, Color clientColor, Label currentFrameLabel) {
         super(serverTCPAddress);
         this.mosaic = mosaic;
         this.clientColor = clientColor;
         this.rows = rows;
         this.columns = columns;
+        this.currentFrameLabel = currentFrameLabel;
         this.rand = new Random();
     }
 
@@ -55,15 +56,15 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
     }
 
     @Override
-    protected void executeFrameInput(FrameInput<MosaicCommand> f) {
+    protected void executeCommand(MosaicCommand cmd)
+    {
         try{
-            MosaicCommand cmd = f.getCmd();
             if(!cmd.nop)
             {
                 Rectangle rect = mosaic[cmd.getRow()][cmd.getColumn()];
                 rect.setFill(cmd.getColor());
-
             }
+            currentFrameLabel.setText(Integer.toString(cmd.ownFrame));
         }  
         catch(NullPointerException e)
         {

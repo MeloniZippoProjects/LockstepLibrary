@@ -26,10 +26,10 @@ import org.apache.log4j.Logger;
  * @author Raff
  * @param <Command>
  */
-public class LockstepTransmitter implements Runnable
+public class LockstepTransmitter<Command extends Serializable> implements Runnable
 {
     DatagramSocket dgramSocket;
-    Map<Integer, TransmissionFrameQueue> transmissionFrameQueues;
+    Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues;
     
     Semaphore transmissionSemaphore;
     long interTransmissionTimeout = 20;
@@ -38,7 +38,7 @@ public class LockstepTransmitter implements Runnable
     
     private static final Logger LOG = Logger.getLogger(LockstepTransmitter.class.getName());
     
-    public LockstepTransmitter(DatagramSocket socket, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues, Semaphore transmissionSemaphore, String name)
+    public LockstepTransmitter(DatagramSocket socket, Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues, Semaphore transmissionSemaphore, String name)
     {
         this.dgramSocket = socket;
         this.transmissionFrameQueues = transmissionFrameQueues;
@@ -65,20 +65,20 @@ public class LockstepTransmitter implements Runnable
                     LOG.debug("Transmission timeout reached");
                 }                
                 LOG.debug("Out of Semaphore");
-                for(Entry<Integer, TransmissionFrameQueue> entry : transmissionFrameQueues.entrySet())
+                for(Entry<Integer, TransmissionFrameQueue<Command>> transmissionQueueEntry : transmissionFrameQueues.entrySet())
                 {
-                    LOG.debug("Entry " + entry.getKey());
-                    FrameInput[] frames = entry.getValue().pop();                  
+                    LOG.debug("Entry " + transmissionQueueEntry.getKey());
+                    FrameInput[] frames = transmissionQueueEntry.getValue().pop();                  
                     
                     if(frames.length == 1)
                     {
-                        InputMessage msg = new InputMessage(entry.getKey(), frames[0]);
+                        InputMessage msg = new InputMessage(transmissionQueueEntry.getKey(), frames[0]);
                         this.send(msg);
-                        LOG.debug("1 message sent for " + entry.getKey());
+                        LOG.debug("1 message sent for " + transmissionQueueEntry.getKey());
                     }
                     else if(frames.length > 1)
                     {
-                        this.send(entry.getKey(), frames);
+                        this.send(transmissionQueueEntry.getKey(), frames);
                     }
                 }
                 transmissionSemaphore.drainPermits();

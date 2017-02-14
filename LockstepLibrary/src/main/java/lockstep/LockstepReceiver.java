@@ -12,6 +12,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Map;
@@ -22,17 +23,17 @@ import org.apache.log4j.Logger;
  *
  * @author Raff
  */
-public class LockstepReceiver implements Runnable
+public class LockstepReceiver<Command extends Serializable> implements Runnable
 {
     DatagramSocket dgramSocket;
-    Map<Integer, ExecutionFrameQueue> executionFrameQueues;
-    Map<Integer, TransmissionFrameQueue> transmissionFrameQueues;
+    Map<Integer, ExecutionFrameQueue<Command>> executionFrameQueues;
+    Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues;
     
     private static final Logger LOG = Logger.getLogger(LockstepReceiver.class.getName());
     
     private final String name;
     
-    public LockstepReceiver(DatagramSocket socket, Map<Integer, ExecutionFrameQueue> executionFrameQueues, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues, String name)
+    public LockstepReceiver(DatagramSocket socket, Map<Integer, ExecutionFrameQueue<Command>> executionFrameQueues, Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues, String name)
     {
         dgramSocket = socket;
         this.executionFrameQueues = executionFrameQueues;
@@ -92,7 +93,7 @@ public class LockstepReceiver implements Runnable
     
     private void processInput(InputMessage input)
     {
-        LOG.debug("1 InputMessage received from " + input.hostID + ": " + input.frame.frameNumber);
+        LOG.debug("1 InputMessage received from " + input.hostID + ": " + input.frame.getFrameNumber());
         ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(input.hostID);
         FrameACK frameAck = executionFrameQueue.push(input.frame);
         frameAck.setHostID(input.hostID);
@@ -103,7 +104,7 @@ public class LockstepReceiver implements Runnable
     {
         String numbers = "";
         for(FrameInput frame : inputs.frames)
-            numbers += frame.frameNumber + ", ";
+            numbers += frame.getFrameNumber() + ", ";
         LOG.debug("" + inputs.frames.length + " InputMessages received from " + inputs.hostID + ": [ " + numbers + "]");
         ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(inputs.hostID);
         FrameACK frameAck = executionFrameQueue.push(inputs.frames);

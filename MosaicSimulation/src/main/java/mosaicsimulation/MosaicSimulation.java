@@ -12,6 +12,7 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
@@ -75,8 +76,10 @@ public class MosaicSimulation extends Application
         int serverTCPPort = Integer.parseInt(namedParameters.get("serverTCPPort"));
         InetSocketAddress serverTCPAddress = new InetSocketAddress(serverIPAddress, serverTCPPort);
 
+        Label currentFrameLabel = (Label) scene.lookup("#currentFrameLabel");
+        
         LOG.debug("Creation of lockstep client");
-        MosaicLockstepClient mosaicLockstepClient = new MosaicLockstepClient(serverTCPAddress, mosaic, rows, columns, clientColor);
+        MosaicLockstepClient mosaicLockstepClient = new MosaicLockstepClient(serverTCPAddress, mosaic, rows, columns, clientColor, currentFrameLabel);
         Thread clientThread = new Thread(mosaicLockstepClient);
         clientThread.setName("main-client-thread");
         clientThread.start();

@@ -39,7 +39,7 @@ public class ExecutionFrameQueueTest {
     @Before
     public void setUp() {
         CyclicCountDownLatch ccdl = new CyclicCountDownLatch(1);
-        efq = new ExecutionFrameQueue(initialFrame, 1, ccdl);
+        efq = new ExecutionFrameQueue<Command>(initialFrame, 1, ccdl);
         FrameInput frame1 = createFrame(4,1,-1), frame2 = createFrame(5,-1,-1), frame3 = createFrame(6,-1,1); 
         frames = new FrameInput[] { frame1, frame2, frame3 };
     }
@@ -49,7 +49,8 @@ public class ExecutionFrameQueueTest {
     {
         FrameInput<Command> frame = createFrame(4,1,-1);
         efq.push(frame);
-        assertSame("Check single push", frame, efq.head());
+        assertSame("Check single push", frame.getFrameNumber(), efq.head().getFrameNumber());
+        assertSame("Check single push", frame.getCommand(), efq.head().getCommand());
     }
     
     @Test
@@ -59,7 +60,7 @@ public class ExecutionFrameQueueTest {
         
         for(int i = 0; i < 3; i++)
         {
-            assertSame("Check multiple push", frames[i], efq.pop());
+            assertSame("Check multiple push", frames[i].getCommand(), efq.pop());
         }        
     }
     
@@ -71,7 +72,7 @@ public class ExecutionFrameQueueTest {
         
         FrameInput frame = createFrame(4,1,1);
         efq.push(frame);
-        assertSame("Check in order pop", frame, efq.pop());
+        assertSame("Check in order pop", frame.getCommand(), efq.pop());
     }
     
     @Test
