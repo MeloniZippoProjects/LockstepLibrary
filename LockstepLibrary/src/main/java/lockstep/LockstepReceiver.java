@@ -44,7 +44,7 @@ public class LockstepReceiver implements Runnable
         {
             try
             {
-               DatagramPacket p = new DatagramPacket(new byte[1024], 1024);
+               DatagramPacket p = new DatagramPacket(new byte[512], 512);
                this.dgramSocket.receive(p);
                ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(p.getData());
                ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
@@ -112,13 +112,15 @@ public class LockstepReceiver implements Runnable
     private void sendACK(FrameACK ack)
     {
         try(
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+            ByteArrayOutputStream baout = new ByteArrayOutputStream();
+            ObjectOutputStream oout = new ObjectOutputStream(baout);
         )
         {
-            objectOutputStream.writeObject(ack);
-            byte[] data = byteArrayOutputStream.toByteArray();
+            oout.writeObject(ack);
+            oout.flush();
+            byte[] data = baout.toByteArray();
             this.dgramSocket.send(new DatagramPacket(data, data.length));
+            LOG.debug("Payload size " + data.length);
             LOG.debug("ACK sent");
         }
         catch(Exception e)

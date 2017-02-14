@@ -22,6 +22,7 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
     private final Color clientColor;
     private final int rows;
     private final int columns;
+    private final Random rand;
     
     public MosaicLockstepClient(InetSocketAddress serverTCPAddress, Rectangle[][] mosaic, int rows, int columns, Color clientColor) {
         super(serverTCPAddress);
@@ -29,11 +30,11 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
         this.clientColor = clientColor;
         this.rows = rows;
         this.columns = columns;
+        this.rand = new Random();
     }
 
     @Override
     protected MosaicCommand readInput() {
-        Random rand = new Random();
         int row = rand.nextInt(rows);
         int column = rand.nextInt(columns);
         

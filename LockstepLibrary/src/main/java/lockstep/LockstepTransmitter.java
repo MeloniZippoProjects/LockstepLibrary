@@ -84,8 +84,10 @@ public class LockstepTransmitter implements Runnable
         )
         {
             oout.writeObject(msg);
+            oout.flush();
             byte[] data = baout.toByteArray();
             this.dgramSocket.send(new DatagramPacket(data, data.length));
+            LOG.debug("Payload size " + data.length);
         }
         catch(Exception e)
         {
@@ -101,8 +103,10 @@ public class LockstepTransmitter implements Runnable
         )
         {
             oout.writeObject(msg);
+            oout.flush();
             byte[] data = baout.toByteArray();
             this.dgramSocket.send(new DatagramPacket(data, data.length));
+            LOG.debug("Payload size " + data.length);
         }
         catch(Exception e)
         {
