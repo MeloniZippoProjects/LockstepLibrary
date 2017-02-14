@@ -173,9 +173,12 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
 
                 for(int clientID : clientsAnnouncement.hostIDs)
                 {
-                    ExecutionFrameQueue executionFrameQueue = new ExecutionFrameQueue(helloReply.firstFrameNumber, clientID, cyclicExecutionLatch);
-                    executionFrameQueues.put(clientID, executionFrameQueue);
-                    receivingExecutionQueues.put(clientID, executionFrameQueue);
+                    if(clientID != hostID)
+                    {
+                        ExecutionFrameQueue executionFrameQueue = new ExecutionFrameQueue(helloReply.firstFrameNumber, clientID, cyclicExecutionLatch);
+                        executionFrameQueues.put(clientID, executionFrameQueue);
+                        receivingExecutionQueues.put(clientID, executionFrameQueue);
+                    }
                 }
                 
                 executorService.submit(receiver);

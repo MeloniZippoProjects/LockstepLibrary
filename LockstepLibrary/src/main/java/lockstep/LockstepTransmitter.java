@@ -133,5 +133,31 @@ public class LockstepTransmitter implements Runnable
             send(hostID, frames);
         }
     }
+
+    private void measureMaxFramesInMessage(FrameInput testFrame)
+    {
+        int measuredPayloadLength = 0;
+        try(
+            ByteArrayOutputStream baout = new ByteArrayOutputStream();
+            ObjectOutputStream oout = new ObjectOutputStream(baout);
+        )
+        {
+            FrameInput[] frameInputs = new FrameInput[1];
+            frameInputs[0] = testFrame;
+            InputMessageArray inputMessageArray = new InputMessageArray(0, frameInputs);
+
+            oout.writeObject(inputMessageArray);
+            oout.flush();
+            measuredPayloadLength = baout.toByteArray().length;
+            LOG.debug("Payload measured as " + measuredPayloadLength);
+            this.maxFramesInMessage = Math.floorDiv(maxPayloadLength, measuredPayloadLength);
+            LOG.debug("maxFramesInMessage measured as " + maxFramesInMessage);
+            measuredMaxFramesInMessage = true;
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
 }
 

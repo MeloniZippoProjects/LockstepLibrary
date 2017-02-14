@@ -11,6 +11,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import lockstep.FrameInput;
 import lockstep.LockstepClient;
+import org.apache.log4j.Logger;
 
 /**
  *
@@ -23,6 +24,8 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
     private final int rows;
     private final int columns;
     private final Random rand;
+    
+    private static final Logger LOG = Logger.getLogger(MosaicLockstepClient.class.getName());
     
     public MosaicLockstepClient(InetSocketAddress serverTCPAddress, Rectangle[][] mosaic, int rows, int columns, Color clientColor) {
         super(serverTCPAddress);
@@ -53,12 +56,20 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
 
     @Override
     protected void executeFrameInput(FrameInput<MosaicCommand> f) {
-        MosaicCommand cmd = f.getCmd();
-        if(!cmd.nop)
+        try{
+            MosaicCommand cmd = f.getCmd();
+            if(!cmd.nop)
+            {
+                Rectangle rect = mosaic[cmd.getRow()][cmd.getColumn()];
+                rect.setFill(cmd.getColor());
+
+            }
+        }  
+        catch(NullPointerException e)
         {
-            Rectangle rect = mosaic[cmd.getRow()][cmd.getColumn()];
-            rect.setFill(cmd.getColor());
-        }   
+            System.exit(1);
+        }
+            
     }
 
     @Override

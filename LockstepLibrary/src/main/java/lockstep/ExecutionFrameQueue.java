@@ -56,12 +56,14 @@ class ExecutionFrameQueue
      */
     public ExecutionFrameQueue(int initialFrameNumber, int hostID, CyclicCountDownLatch cyclicExecutionLatch)
     {
-        this.frameBuffer = new HashMap<Integer, FrameInput>();
+        this.frameBuffer = new HashMap<>();
         this.bufferHead = initialFrameNumber;
         this.lastInOrder = initialFrameNumber - 1;
         this.selectiveACKsSet = new ConcurrentSkipListSet<>();
         this.hostID = hostID;
         this.cyclicExecutionLatch = cyclicExecutionLatch;
+        
+        LOG.debug("BufferHead initialized at " + initialFrameNumber);
     }
     
     /**
