@@ -6,6 +6,7 @@
 package lockstep;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -25,6 +26,11 @@ public class CyclicCountDownLatch {
     {
         this.latch.await();
         this.latch = new CountDownLatch(count);
+    }
+    
+    public boolean await(long timeout, TimeUnit unit) throws InterruptedException
+    {
+        return this.latch.await(timeout, unit);
     }
     
     public void countDown()

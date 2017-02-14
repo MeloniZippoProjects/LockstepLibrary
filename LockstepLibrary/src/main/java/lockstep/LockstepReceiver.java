@@ -96,7 +96,7 @@ public class LockstepReceiver implements Runnable
 
     private void processInput(InputMessageArray inputs)
     {
-        LOG.debug("" + inputs.frames.length + " InputMessages received from " + inputs.hostID);
+    LOG.debug("" + inputs.frames.length + " InputMessages received from " + inputs.hostID);
         ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(inputs.hostID);
         FrameACK frameAck = executionFrameQueue.push(inputs.frames);
         frameAck.setHostID(inputs.hostID);

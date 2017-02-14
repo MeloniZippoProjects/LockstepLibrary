@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 
 /**
@@ -52,6 +53,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
      */
     CyclicCountDownLatch cyclicExecutionLatch;
     private int clientsNumber;
+    private static long fillTimeout = 50;
 
     public LockstepClient(InetSocketAddress serverTCPAddress)
     {
@@ -86,11 +88,20 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     protected abstract void executeFrameInput(FrameInput<Command> f);
 
     /**
-     * Provides the first commands to bootstart the simulation.
+     * Provides void commands to resume from a deadlock situation.
+     * Their number should be dimensioned to take less time than the user to
+     * react from the simulation being resumed
      * 
      * @return array of commands to bootstart the simulation
      */
     protected abstract Command[] fillCommands();
+        
+    /**
+     * Provides the first commands to bootstrap the simulation.
+     * 
+     * @return 
+     */
+    protected abstract Command[] bootstrapCommands();
         
     @Override
     public void run()
@@ -156,14 +167,14 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
 
                 Map<Integer, ExecutionFrameQueue> receivingExecutionQueues = new ConcurrentHashMap<>();
                 Semaphore transmissionSemaphore = new Semaphore(0);
-                transmissionFrameQueue = new TransmissionFrameQueue(helloReply.firstFrameNumber, transmissionSemaphore);
+                transmissionFrameQueue = new TransmissionFrameQueue(helloReply.firstFrameNumber, transmissionSemaphore, hostID);
                 HashMap<Integer,TransmissionFrameQueue> transmissionQueueWrapper = new HashMap<>();
                 transmissionQueueWrapper.put(hostID, transmissionFrameQueue);
 
                 receiver = new LockstepReceiver(udpSocket, receivingExecutionQueues, transmissionQueueWrapper);
                 transmitter = new LockstepTransmitter(udpSocket, transmissionQueueWrapper, transmissionSemaphore);
 
-                fillFrameBuffer(fillCommands());
+                insertBootstrapCommands(fillCommands());
                 executorService = Executors.newFixedThreadPool(2);
 
                 executorService.submit(transmitter);
@@ -204,7 +215,13 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
         }
     }
     
-    private void fillFrameBuffer(Command[] fillCommands)
+    private void insertBootstrapCommands(Command[] bootstrapCommands)
+    {
+        insertFillCommands(bootstrapCommands);
+        this.frameExecutionDistance = bootstrapCommands.length;
+    }
+    
+    private void insertFillCommands(Command[] fillCommands)
     {
         for (int i = 0; i < fillCommands.length; i++)
         {
@@ -212,7 +229,6 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
             executionFrameQueues.get(this.hostID).push(new FrameInput(currentFrame + i, cmd));
             transmissionFrameQueue.push(new FrameInput(currentFrame + i, cmd));
         }
-        this.frameExecutionDistance = fillCommands.length;
     }
     
     private void readUserInput()
@@ -226,8 +242,21 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     {
         if(cyclicExecutionLatch.getCount() > 0)
         {
+            for(ExecutionFrameQueue exQ : executionFrameQueues.values())
+                LOG.debug(exQ);
+            
             suspendSimulation();
-            cyclicExecutionLatch.await();
+            if( !cyclicExecutionLatch.await(fillTimeout, TimeUnit.MILLISECONDS))
+            {
+                LOG.debug("Inserting fillers to escape deadlock");
+                insertFillCommands(fillCommands());
+                cyclicExecutionLatch.await();
+            }
+            else
+            {
+                cyclicExecutionLatch.reset();
+            }
+            
             resumeSimulation();
         }
         else

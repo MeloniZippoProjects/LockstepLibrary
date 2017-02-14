@@ -7,7 +7,10 @@ package lockstep;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicInteger;
 import lockstep.messages.simulation.FrameACK;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.log4j.Logger;
@@ -31,14 +34,14 @@ class ExecutionFrameQueue
      * accessed.
      */
     
-    int bufferSize;
-    int bufferHead;
+    AtomicInteger bufferSize;
+    AtomicInteger bufferHead;
     //int baseFrameNumber;
     //FrameInput[] frameBuffer;
 
     Map<Integer, FrameInput> frameBuffer;
     
-    int lastInOrder;
+    AtomicInteger lastInOrder;
     ConcurrentSkipListSet<Integer> selectiveACKsSet;
 
     CyclicCountDownLatch cyclicExecutionLatch;
@@ -56,9 +59,9 @@ class ExecutionFrameQueue
      */
     public ExecutionFrameQueue(int initialFrameNumber, int hostID, CyclicCountDownLatch cyclicExecutionLatch)
     {
-        this.frameBuffer = new HashMap<>();
-        this.bufferHead = initialFrameNumber;
-        this.lastInOrder = initialFrameNumber - 1;
+        this.frameBuffer = new ConcurrentSkipListMap<>();
+        this.bufferHead = new AtomicInteger(initialFrameNumber);
+        this.lastInOrder = new AtomicInteger(initialFrameNumber - 1);
         this.selectiveACKsSet = new ConcurrentSkipListSet<>();
         this.hostID = hostID;
         this.cyclicExecutionLatch = cyclicExecutionLatch;
@@ -73,12 +76,11 @@ class ExecutionFrameQueue
      */
     public FrameInput pop()
     {
-        FrameInput nextInput = this.frameBuffer.get(bufferHead);
+        FrameInput nextInput = this.frameBuffer.get(bufferHead.get());
         if( nextInput != null )
         {
-            this.frameBuffer.remove(bufferHead);
-            this.bufferHead++;
-            if(frameBuffer.get(bufferHead) != null)
+            this.frameBuffer.remove(bufferHead.get());
+            if(frameBuffer.get(bufferHead.incrementAndGet()) != null)
             {
                 LOG.debug("Countdown to " + ( cyclicExecutionLatch.getCount() - 1) + "made by " + hostID);
                 cyclicExecutionLatch.countDown();          
@@ -97,7 +99,7 @@ class ExecutionFrameQueue
      */
     public FrameInput head()
     {
-        return this.frameBuffer.get(bufferHead);
+        return this.frameBuffer.get(bufferHead.get());
     }
     
     /**
@@ -109,13 +111,9 @@ class ExecutionFrameQueue
     public FrameACK push(FrameInput[] inputs)
     {
         for(FrameInput input : inputs)
-        {
-            boolean toSelectivelyACK = _push(input);
-            if(toSelectivelyACK)
-                selectiveACKsSet.add(input.frameNumber);
-        }
+            _push(input);
         
-        return new FrameACK(lastInOrder, _getSelectiveACKs());
+        return new FrameACK(lastInOrder.get(), _getSelectiveACKs());
     }
         
     /**
@@ -127,11 +125,9 @@ class ExecutionFrameQueue
      */
     public FrameACK push(FrameInput input)
     {
-        boolean toSelectivelyACK = _push(input);
-        if(toSelectivelyACK)
-            this.selectiveACKsSet.add(input.frameNumber);
+        _push(input);
         
-        return new FrameACK(lastInOrder, _getSelectiveACKs());
+        return new FrameACK(lastInOrder.get(), _getSelectiveACKs());
     }
         
     /**
@@ -140,38 +136,49 @@ class ExecutionFrameQueue
      * @param input the input to push into the queue
      * @return A boolean indicating whether the input should be selectively ACKed
      */
-    private boolean _push(FrameInput input)
+    private void _push(FrameInput input)
     {
-        if(input.frameNumber >= this.bufferHead)
+        try
         {
-            if( this.frameBuffer.putIfAbsent(input.frameNumber, input) == null)
+            if(input.frameNumber >= this.bufferHead.get())
             {
-                if(input.frameNumber == this.bufferHead)
+                if( this.frameBuffer.putIfAbsent(input.frameNumber, input) == null)
                 {
-                    LOG.debug("Countdown to " + ( cyclicExecutionLatch.getCount() - 1) + "made by " + hostID);
-                    cyclicExecutionLatch.countDown();
-                }
-
-                if(input.frameNumber == this.lastInOrder + 1)
-                {                
-                    lastInOrder++;
-                    while(!this.selectiveACKsSet.isEmpty() && this.selectiveACKsSet.first() == this.lastInOrder + 1)
+                    if(input.frameNumber == this.lastInOrder.get() + 1)
                     {
-                        this.lastInOrder++;
-                        this.selectiveACKsSet.remove(this.selectiveACKsSet.first());
+                        lastInOrder.incrementAndGet();
+                        while(!this.selectiveACKsSet.isEmpty() && this.selectiveACKsSet.first() == this.lastInOrder.get() + 1)
+                        {
+                            this.lastInOrder.incrementAndGet();
+                            this.selectiveACKsSet.remove(this.selectiveACKsSet.first());
+                        }
+                        
+                        if(input.frameNumber == this.bufferHead.get())
+                        {
+                            LOG.debug("Countdown to " + ( cyclicExecutionLatch.getCount() - 1) + " made by " + hostID);
+                            cyclicExecutionLatch.countDown();
+                        }
                     }
-                    return false;
+                    else
+                    {
+                        this.selectiveACKsSet.add(input.frameNumber);
+                    }
                 }
                 else
-                    return true;
+                {
+                    LOG.debug("Duplicate frame arrived");
+                }
             }
             else
-                return false;
+            {
+                LOG.debug("Frame arrived out of buffer bound");
+            }
         }
-        else
+        catch(NullPointerException e)
         {
-            LOG.debug("Frame arrived out of buffer bound");
-            return false;
+            LOG.debug("SEGFAULT for " + hostID);
+            e.printStackTrace();
+            System.exit(1);
         }
     }
         
@@ -185,5 +192,20 @@ class ExecutionFrameQueue
         }
         else
             return null;
+    }
+    
+    @Override
+    public String toString()
+    {
+        String string = new String();
+        
+        string += "ExecutionFrameQueue[" + hostID + "] = {";
+        for(Entry<Integer, FrameInput> entry : this.frameBuffer.entrySet())
+        {
+            string += " " + entry.getKey();
+        }
+        string += " } bufferHead = " + bufferHead.get() + " lastInOrder " + lastInOrder.get();
+                
+        return string;
     }
 }

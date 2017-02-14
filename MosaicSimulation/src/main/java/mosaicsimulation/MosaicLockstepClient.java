@@ -46,12 +46,12 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
 
     @Override
     protected void suspendSimulation() {
-        return;
+        LOG.debug("Simulation suspended");
     }
 
     @Override
     protected void resumeSimulation() {
-        return;
+        LOG.debug("Simulation resumed");
     }
 
     @Override
@@ -74,9 +74,21 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
 
     @Override
     protected MosaicCommand[] fillCommands() {
+        MosaicCommand[] fillers = new MosaicCommand[5];
+        
+        for (int i = 0; i < fillers.length; i++)
+        {
+            fillers[i] = new MosaicCommand();
+        }
+        
+        return fillers;
+    }   
+    
+    @Override
+    protected MosaicCommand[] bootstrapCommands() {
         MosaicCommand[] fillers = new MosaicCommand[10];
         
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < fillers.length; i++)
         {
             fillers[i] = new MosaicCommand();
         }

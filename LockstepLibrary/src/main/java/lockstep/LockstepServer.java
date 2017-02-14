@@ -216,7 +216,7 @@ public class LockstepServer implements Runnable
         {
             if(hostID != clientID)
             {
-                TransmissionFrameQueue transmissionFrameQueue = new TransmissionFrameQueue(firstFrameNumber, transmissionSemaphore);
+                TransmissionFrameQueue transmissionFrameQueue = new TransmissionFrameQueue(firstFrameNumber, transmissionSemaphore, hostID);
                 clientTransmissionFrameQueues.put(hostID, transmissionFrameQueue);
             }
         }

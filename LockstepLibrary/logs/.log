@@ -346,3 +346,363 @@ DEBUG [main]: BufferHead initialized at 4
 DEBUG [main]: Countdown to 0made by 1
 DEBUG [main]: 2 ACKs received
 DEBUG [main]: 2 ACKs received
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: ExecutionFrameQueue 1: FrameInput missing for current frame
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Released a permit for semaphore, current permits: 1
+DEBUG [main]: Released a permit for semaphore, current permits: 2
+DEBUG [main]: Released a permit for semaphore, current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: Released a permit for semaphore, current permits: 1
+DEBUG [main]: Released a permit for semaphore, current permits: 2
+DEBUG [main]: Released a permit for semaphore, current permits: 3
+DEBUG [main]: Released a permit for semaphore, current permits: 1
+DEBUG [main]: Released a permit for semaphore, current permits: 1
+DEBUG [main]: Released a permit for semaphore, current permits: 2
+DEBUG [main]: Released a permit for semaphore, current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: ExecutionFrameQueue 1: FrameInput missing for current frame
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: ExecutionFrameQueue 1: FrameInput missing for current frame
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: ExecutionFrameQueue 1: FrameInput missing for current frame
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: ExecutionFrameQueue 1: FrameInput missing for current frame
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: ExecutionFrameQueue 1: FrameInput missing for current frame
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: ExecutionFrameQueue 1: FrameInput missing for current frame
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: ExecutionFrameQueue 1: FrameInput missing for current frame
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: ExecutionFrameQueue 1: FrameInput missing for current frame
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: ExecutionFrameQueue 1: FrameInput missing for current frame
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: ExecutionFrameQueue 1: FrameInput missing for current frame
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0made by 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0 made by 1
+DEBUG [main]: ExecutionFrameQueue[1] = { 4 5 8 } bufferHead = 4 lastInOrder 5
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0 made by 1
+DEBUG [main]: ExecutionFrameQueue[1] = { 4 5 6 } bufferHead = 4 lastInOrder 6
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0 made by 1
+DEBUG [main]: ExecutionFrameQueue[1] = { 4 5 6 } bufferHead = 4 lastInOrder 6
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: ExecutionFrameQueue[1] = { 5 } bufferHead = 4 lastInOrder 3
+DEBUG [main]: ExecutionFrameQueue 1: FrameInput missing for current frame
+DEBUG [main]: Countdown to 0 made by 1
+DEBUG [main]: ExecutionFrameQueue[1] = { 4 5 } bufferHead = 4 lastInOrder 5
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0 made by 1
+DEBUG [main]: ExecutionFrameQueue[1] = { 4 6 7 } bufferHead = 4 lastInOrder 4
+DEBUG [main]: ExecutionFrameQueue[1] = { 4 5 6 7 } bufferHead = 4 lastInOrder 7
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0 made by 1
+DEBUG [main]: ExecutionFrameQueue[1] = { 4 } bufferHead = 4 lastInOrder 4
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0 made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0 made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0 made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: ExecutionFrameQueue 1: FrameInput missing for current frame
+DEBUG [main]: Countdown to 0 made by 1
+DEBUG [main]: Countdown to -1made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0 made by 1
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Countdown to 0 made by 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received

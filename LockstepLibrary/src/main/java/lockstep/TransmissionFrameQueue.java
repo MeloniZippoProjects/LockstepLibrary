@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 import lockstep.messages.simulation.FrameACK;
 import org.apache.log4j.Logger;
 
@@ -30,27 +31,26 @@ public class TransmissionFrameQueue
      * accessed.
      */
     
-    int lastACKed;
+    AtomicInteger lastACKed;
     Map<Integer, FrameInput> frameBuffer;
     
     Semaphore transmissionSemaphore;
     
     private static final Logger LOG = Logger.getLogger(TransmissionFrameQueue.class.getName());
+    private final int hostID;
 
     /**
      * 
-     * @param bufferSize Size of the internal buffer. It's important to
-     * dimension this large enough to store the received frames without forcing
-     * retransmissions
      * @param transmissionSemaphore
      * @param initialFrameNumber First frame's number. Must be the same for all 
      * the clients using the protocol
      */
-    public TransmissionFrameQueue(int initialFrameNumber, Semaphore transmissionSemaphore)
+    public TransmissionFrameQueue(int initialFrameNumber, Semaphore transmissionSemaphore, int hostID)
     {
         this.frameBuffer = new ConcurrentSkipListMap<>();
-        this.lastACKed = initialFrameNumber - 1;
+        this.lastACKed = new AtomicInteger(initialFrameNumber - 1);
         this.transmissionSemaphore = transmissionSemaphore;
+        this.hostID = hostID;
     }
     
     /**
@@ -61,11 +61,11 @@ public class TransmissionFrameQueue
      */
     public void push(FrameInput input)
     {
-        if(input.frameNumber >= this.lastACKed && !this.frameBuffer.containsKey(input.frameNumber))
+        if(input.frameNumber >= this.lastACKed.get())
         {
-            this.frameBuffer.put(input.frameNumber, input);
+            this.frameBuffer.putIfAbsent(input.frameNumber, input);
             this.transmissionSemaphore.release();
-            LOG.debug("Released a permit for semaphore, current permits: " + transmissionSemaphore.availablePermits());
+            LOG.debug("Released a permit for semaphore[" + hostID + "], current permits: " + transmissionSemaphore.availablePermits());
         }
     }
     
@@ -117,14 +117,14 @@ public class TransmissionFrameQueue
     {
         int acked = 0;
         
-        if(ack.cumulativeACK > this.lastACKed)
+        if(ack.cumulativeACK > this.lastACKed.get())
         {
-            for(int frameNumber = this.lastACKed + 1; frameNumber <= ack.cumulativeACK; frameNumber++)
+            for(int frameNumber = this.lastACKed.get() + 1; frameNumber <= ack.cumulativeACK; frameNumber++)
             {
                 this.frameBuffer.remove(frameNumber);
                 acked++;
             }
-            this.lastACKed = ack.cumulativeACK;
+            this.lastACKed.set(ack.cumulativeACK);
         }
         
         if(ack.selectiveACKs != null)
@@ -136,8 +136,7 @@ public class TransmissionFrameQueue
             }
         }
         
-        if(this.frameBuffer.size() > 0)
-            transmissionSemaphore.release();
+        transmissionSemaphore.release(frameBuffer.size());
         
         LOG.debug("" + acked + " ACKs received");
     }

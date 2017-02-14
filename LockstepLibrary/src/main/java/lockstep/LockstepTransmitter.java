@@ -54,11 +54,12 @@ public class LockstepTransmitter implements Runnable
                 LOG.debug("Try acquire semaphore");
                 if(!transmissionSemaphore.tryAcquire(interTransmissionTimeout, TimeUnit.MILLISECONDS))
                 {
-                    LOG.trace("Transmission timeout reached");
+                    LOG.debug("Transmission timeout reached");
                 }                
                 LOG.debug("Out of Semaphore");
                 for(Entry<Integer, TransmissionFrameQueue> entry : transmissionFrameQueues.entrySet())
                 {
+                    LOG.debug("Entry " + entry.getKey());
                     FrameInput[] frames = entry.getValue().pop();                  
                     
                     if(frames.length == 1)

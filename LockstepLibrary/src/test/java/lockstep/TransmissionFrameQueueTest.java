@@ -27,10 +27,11 @@ public class TransmissionFrameQueueTest {
     TransmissionFrameQueue tfq;
     FrameInput<Command>[] frames;
     
+    
     @Before
     public void setUp() {
         Semaphore sem = new Semaphore(0);
-        tfq = new TransmissionFrameQueue(7, sem);
+        tfq = new TransmissionFrameQueue(7, sem, 5);
         FrameInput frame1 = createFrame(7,1,-1), frame2 = createFrame(8,-1,-1), frame3 = createFrame(9,-1,1); 
         frames = new FrameInput[] { frame1, frame2, frame3 };
     }
