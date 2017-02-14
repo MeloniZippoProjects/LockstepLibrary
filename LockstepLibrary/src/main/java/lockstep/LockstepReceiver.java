@@ -120,8 +120,7 @@ public class LockstepReceiver implements Runnable
             oout.flush();
             byte[] data = baout.toByteArray();
             this.dgramSocket.send(new DatagramPacket(data, data.length));
-            LOG.debug("Payload size " + data.length);
-            LOG.debug("ACK sent");
+            LOG.debug("ACK sent, payload size:" + data.length);
         }
         catch(Exception e)
         {

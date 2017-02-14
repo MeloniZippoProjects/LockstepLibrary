@@ -5,14 +5,17 @@
  */
 package mosaicsimulation;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import javafx.scene.paint.Color;
 
 /**
  *
  * @author enric
  */
-public class MosaicCommand implements Serializable{
+public class MosaicCommand implements Externalizable{
     double colorRed;
     double colorGreen;
     double colorBlue;
@@ -72,7 +75,26 @@ public class MosaicCommand implements Serializable{
     public void setColumn(int column) {
         this.column = column;
     }
-    
-    
-    
+
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException
+    {
+        out.writeDouble(colorRed);
+        out.writeDouble(colorGreen);
+        out.writeDouble(colorBlue);
+        out.writeInt(row);
+        out.writeInt(column);
+        out.writeBoolean(nop);
+    }
+
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
+    {
+        colorRed = in.readDouble();
+        colorGreen = in.readDouble();
+        colorBlue = in.readDouble();
+        row = in.readInt();
+        column = in.readInt();
+        nop = in.readBoolean();
+    }      
 }
