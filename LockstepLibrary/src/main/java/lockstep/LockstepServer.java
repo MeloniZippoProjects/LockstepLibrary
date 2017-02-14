@@ -99,12 +99,17 @@ public class LockstepServer implements Runnable
         {
             try
             {
+                for(ExecutionFrameQueue exQ : executionFrameQueues.values())
+                    LOG.debug(exQ);
+                
                 //Wait that everyone has received current frame
                 LOG.debug("Waiting the receivingQueues to forward");
                 cyclicExecutionLatch.await();
                 LOG.debug("ReceivingQueues ready for forwarding");
                 
                 Map<Integer, FrameInput> frameInputs = collectFrameInputs();
+                
+                
                 distributeFrameInputs(frameInputs);
                 LOG.debug("Message batch forwarded");
             } catch (InterruptedException ex)
@@ -205,7 +210,7 @@ public class LockstepServer implements Runnable
         this.executionFrameQueues.put(clientID, receivingQueue);
         HashMap<Integer,ExecutionFrameQueue> receivingQueueWrapper = new HashMap<>();
         receivingQueueWrapper.put(clientID, receivingQueue);
-        LockstepReceiver receiver = new LockstepReceiver(clientUDPSocket, receivingQueueWrapper, transmissionFrameQueues);
+        LockstepReceiver receiver = new LockstepReceiver(clientUDPSocket, receivingQueueWrapper, transmissionFrameQueues, "Receiver-from-"+clientID);
         receivers.submit(receiver);
     }
     
@@ -220,7 +225,7 @@ public class LockstepServer implements Runnable
                 clientTransmissionFrameQueues.put(hostID, transmissionFrameQueue);
             }
         }
-        LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, clientTransmissionFrameQueues, transmissionSemaphore);
+        LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, clientTransmissionFrameQueues, transmissionSemaphore, "Transmitter-to-"+clientID);
         transmitters.submit(transmitter);
     }
     

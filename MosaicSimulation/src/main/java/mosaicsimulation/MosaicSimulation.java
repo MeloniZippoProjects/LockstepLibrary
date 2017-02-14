@@ -78,6 +78,7 @@ public class MosaicSimulation extends Application
         LOG.debug("Creation of lockstep client");
         MosaicLockstepClient mosaicLockstepClient = new MosaicLockstepClient(serverTCPAddress, mosaic, rows, columns, clientColor);
         Thread clientThread = new Thread(mosaicLockstepClient);
+        clientThread.setName("main-client-thread");
         clientThread.start();
         LOG.debug("thread started");
     }

@@ -34,23 +34,31 @@ public class LockstepTransmitter implements Runnable
     Semaphore transmissionSemaphore;
     long interTransmissionTimeout = 20;
     static final int maxPayloadLength = 512;
+    final String name;
     
     private static final Logger LOG = Logger.getLogger(LockstepTransmitter.class.getName());
     
-    public LockstepTransmitter(DatagramSocket socket, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues, Semaphore transmissionSemaphore)
+    public LockstepTransmitter(DatagramSocket socket, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues, Semaphore transmissionSemaphore, String name)
     {
         this.dgramSocket = socket;
         this.transmissionFrameQueues = transmissionFrameQueues;
         this.transmissionSemaphore = transmissionSemaphore;
+        this.name = name;
     }
     
     @Override
     public void run()
     {        
+        Thread.currentThread().setName(name);
+        
         while(true)
         {
             try
             {
+                for(TransmissionFrameQueue txQ : transmissionFrameQueues.values())
+                {   
+                    LOG.debug(txQ);
+                }
                 LOG.debug("Try acquire semaphore");
                 if(!transmissionSemaphore.tryAcquire(interTransmissionTimeout, TimeUnit.MILLISECONDS))
                 {

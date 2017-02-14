@@ -19,6 +19,7 @@ public class MosaicLockstepServer {
     public static void main(String[] args)
     {
         Thread thread = new Thread(new LockstepServer(Integer.parseInt(args[0]), Integer.parseInt(args[1])));
+        thread.setName("Main-server-thread");
         thread.start();
         
         try {     

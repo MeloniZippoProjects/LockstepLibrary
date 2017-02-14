@@ -30,16 +30,21 @@ public class LockstepReceiver implements Runnable
     
     private static final Logger LOG = Logger.getLogger(LockstepReceiver.class.getName());
     
-    public LockstepReceiver(DatagramSocket socket, Map<Integer, ExecutionFrameQueue> executionFrameQueues, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues)
+    private final String name;
+    
+    public LockstepReceiver(DatagramSocket socket, Map<Integer, ExecutionFrameQueue> executionFrameQueues, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues, String name)
     {
         dgramSocket = socket;
         this.executionFrameQueues = executionFrameQueues;
         this.transmissionFrameQueues = transmissionFrameQueues;
+        this.name = name;
     }
     
     @Override
     public void run()
     {
+        Thread.currentThread().setName(name);
+        
         while(true)
         {
             try
@@ -87,7 +92,7 @@ public class LockstepReceiver implements Runnable
     
     private void processInput(InputMessage input)
     {
-        LOG.debug("1 InputMessage received from " + input.hostID);
+        LOG.debug("1 InputMessage received from " + input.hostID + ": " + input.frame.frameNumber);
         ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(input.hostID);
         FrameACK frameAck = executionFrameQueue.push(input.frame);
         frameAck.setHostID(input.hostID);
@@ -96,7 +101,10 @@ public class LockstepReceiver implements Runnable
 
     private void processInput(InputMessageArray inputs)
     {
-    LOG.debug("" + inputs.frames.length + " InputMessages received from " + inputs.hostID);
+        String numbers = "";
+        for(FrameInput frame : inputs.frames)
+            numbers += frame.frameNumber + ", ";
+        LOG.debug("" + inputs.frames.length + " InputMessages received from " + inputs.hostID + ": [ " + numbers + "]");
         ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(inputs.hostID);
         FrameACK frameAck = executionFrameQueue.push(inputs.frames);
         frameAck.setHostID(inputs.hostID);

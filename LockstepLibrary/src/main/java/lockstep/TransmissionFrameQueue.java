@@ -140,4 +140,18 @@ public class TransmissionFrameQueue
         
         LOG.debug("" + acked + " ACKs received");
     }
+    
+    public String toString()
+    {
+        String string = new String();
+        
+        string += "TransmissionFrameQueue[" + hostID + "] = {";
+        for(Entry<Integer, FrameInput> entry : this.frameBuffer.entrySet())
+        {
+            string += " " + entry.getKey();
+        }
+        string += " }; lastAcked = " + lastACKed.get();
+                
+        return string;
+    }
 }

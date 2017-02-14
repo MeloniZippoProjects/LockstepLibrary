@@ -16,6 +16,7 @@ import javafx.scene.paint.Color;
  * @author enric
  */
 public class MosaicCommand implements Externalizable{
+    static int frame = 0;
     double colorRed;
     double colorGreen;
     double colorBlue;
@@ -24,6 +25,7 @@ public class MosaicCommand implements Externalizable{
     int column;
     
     boolean nop;
+    int ownFrame;
     
     /**
      * Creates a command with specified parameters
@@ -40,6 +42,7 @@ public class MosaicCommand implements Externalizable{
         this.row = row;
         this.column = column;
         this.nop = false;
+        this.ownFrame = frame++;
     }
     
     /**
@@ -48,6 +51,7 @@ public class MosaicCommand implements Externalizable{
     public MosaicCommand()
     {
         this.nop = !nop;
+        this.ownFrame = frame++;
     }
 
     public Color getColor() {
@@ -85,6 +89,7 @@ public class MosaicCommand implements Externalizable{
         out.writeInt(row);
         out.writeInt(column);
         out.writeBoolean(nop);
+        out.writeInt(ownFrame);
     }
 
     @Override
@@ -96,5 +101,7 @@ public class MosaicCommand implements Externalizable{
         row = in.readInt();
         column = in.readInt();
         nop = in.readBoolean();
+        ownFrame = in.readInt();
+        frame--;
     }      
 }

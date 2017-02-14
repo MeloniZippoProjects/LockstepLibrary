@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.log4j.Logger;
 
 /**
@@ -171,10 +172,11 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
                 HashMap<Integer,TransmissionFrameQueue> transmissionQueueWrapper = new HashMap<>();
                 transmissionQueueWrapper.put(hostID, transmissionFrameQueue);
 
-                receiver = new LockstepReceiver(udpSocket, receivingExecutionQueues, transmissionQueueWrapper);
-                transmitter = new LockstepTransmitter(udpSocket, transmissionQueueWrapper, transmissionSemaphore);
+                receiver = new LockstepReceiver(udpSocket, receivingExecutionQueues, transmissionQueueWrapper, "Receiver-to-"+hostID);
+                transmitter = new LockstepTransmitter(udpSocket, transmissionQueueWrapper, transmissionSemaphore, "Transmitter-from-"+hostID);
 
                 insertBootstrapCommands(fillCommands());
+                                
                 executorService = Executors.newFixedThreadPool(2);
 
                 executorService.submit(transmitter);
@@ -240,15 +242,20 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     
     private void executeInputs() throws InterruptedException
     {
+        for(ExecutionFrameQueue exQ : executionFrameQueues.values())
+                LOG.debug(exQ);
+
+        LOG.debug(transmissionFrameQueue);
+        
         if(cyclicExecutionLatch.getCount() > 0)
         {
-            for(ExecutionFrameQueue exQ : executionFrameQueues.values())
-                LOG.debug(exQ);
+            
             
             suspendSimulation();
             if( !cyclicExecutionLatch.await(fillTimeout, TimeUnit.MILLISECONDS))
             {
-                LOG.debug("Inserting fillers to escape deadlock");
+//                LOG.debug("Inserting fillers to escape deadlock");
+//                LOG.debug("Inserting fillers to escape deadlock");
                 insertFillCommands(fillCommands());
                 cyclicExecutionLatch.await();
             }
