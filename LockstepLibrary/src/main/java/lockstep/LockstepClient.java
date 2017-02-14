@@ -140,6 +140,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
                 LOG.info("Waiting for helloReply from server");
                 ServerHelloReply helloReply = (ServerHelloReply) oin.readObject();
                 this.hostID = helloReply.assignedHostID;
+                LOG.info("ID assigned = " + hostID);
                 this.currentFrame = helloReply.firstFrameNumber;
 
                 clientsNumber = helloReply.clientsNumber;

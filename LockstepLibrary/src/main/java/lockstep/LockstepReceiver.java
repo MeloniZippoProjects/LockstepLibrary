@@ -87,9 +87,8 @@ public class LockstepReceiver implements Runnable
     
     private void processInput(InputMessage input)
     {
-        LOG.debug("1 InputMessage received");
+        LOG.debug("1 InputMessage received from " + input.hostID);
         ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(input.hostID);
-        LOG.debug("Check if is null: " + (input.frame == null ?  "Yes" : "No") );
         FrameACK frameAck = executionFrameQueue.push(input.frame);
         frameAck.setHostID(input.hostID);
         sendACK(frameAck);
@@ -97,15 +96,8 @@ public class LockstepReceiver implements Runnable
 
     private void processInput(InputMessageArray inputs)
     {
-        LOG.debug("" + inputs.frames.length + " InputMessages received");
+        LOG.debug("" + inputs.frames.length + " InputMessages received from " + inputs.hostID);
         ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(inputs.hostID);
-        boolean isNotNull = true;
-        for(FrameInput frame : inputs.frames)
-        {
-            if(frame == null)
-                isNotNull = false;
-        }
-        LOG.debug("Check if is null: " + (!isNotNull ?  "Yes" : "No") );
         FrameACK frameAck = executionFrameQueue.push(inputs.frames);
         frameAck.setHostID(inputs.hostID);
         sendACK(frameAck);
