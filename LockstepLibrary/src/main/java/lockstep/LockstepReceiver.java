@@ -15,6 +15,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.util.Arrays;
 import java.util.Map;
 import lockstep.messages.simulation.FrameACK;
 import org.apache.log4j.Logger;
@@ -28,6 +29,8 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
     DatagramSocket dgramSocket;
     Map<Integer, ExecutionFrameQueue<Command>> executionFrameQueues;
     Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues;
+    
+    static final int maxPayloadLength = 512;
     
     private static final Logger LOG = Logger.getLogger(LockstepReceiver.class.getName());
     
@@ -95,9 +98,9 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
     {
         LOG.debug("1 InputMessage received from " + input.hostID + ": " + input.frame.getFrameNumber());
         ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(input.hostID);
-        FrameACK frameAck = executionFrameQueue.push(input.frame);
-        frameAck.setHostID(input.hostID);
-        sendACK(frameAck);
+        FrameACK frameACK = executionFrameQueue.push(input.frame);
+        frameACK.setHostID(input.hostID);
+        sendACK(frameACK);
     }
 
     private void processInput(InputMessageArray inputs)
@@ -107,9 +110,9 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
             numbers += frame.getFrameNumber() + ", ";
         LOG.debug("" + inputs.frames.length + " InputMessages received from " + inputs.hostID + ": [ " + numbers + "]");
         ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(inputs.hostID);
-        FrameACK frameAck = executionFrameQueue.push(inputs.frames);
-        frameAck.setHostID(inputs.hostID);
-        sendACK(frameAck);
+        FrameACK frameACK = executionFrameQueue.push(inputs.frames);
+        frameACK.setHostID(inputs.hostID);
+        sendACK(frameACK);
     }
     
     private void processACK(FrameACK ack)
@@ -117,23 +120,82 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
         TransmissionFrameQueue transmissionFrameQueue = this.transmissionFrameQueues.get(ack.hostID);
         transmissionFrameQueue.processACK(ack);
     }
+    
+    private void sendACK(FrameACK frameACK)
+    {
+        if(frameACK.selectiveACKs == null || frameACK.selectiveACKs.length == 0) 
+            sendSingleACK(frameACK);
+        else
+            sendSplitACKs(frameACK);
+    }
 
-    private void sendACK(FrameACK ack)
+    private void sendSingleACK(FrameACK frameACK)
     {
         try(
             ByteArrayOutputStream baout = new ByteArrayOutputStream();
             ObjectOutputStream oout = new ObjectOutputStream(baout);
         )
         {
-            oout.writeObject(ack);
+            oout.writeObject(frameACK);
             oout.flush();
             byte[] data = baout.toByteArray();
             this.dgramSocket.send(new DatagramPacket(data, data.length));
-            LOG.debug("ACK sent, payload size:" + data.length);
+            LOG.debug("Single ACK sent, payload size:" + data.length);
         }
         catch(Exception e)
         {
             e.printStackTrace();
+        }
+    }
+    
+    private void sendSplitACKs(FrameACK frameACK)
+    {
+        int payloadLength = maxPayloadLength + 1;
+        int[] selectiveACKs = frameACK.selectiveACKs;
+        int selectiveACKsToInclude = frameACK.selectiveACKs.length + 1;
+        byte[] payload = null;
+        while( payloadLength > maxPayloadLength && selectiveACKsToInclude > 0)
+        {
+            try(
+                ByteArrayOutputStream baout = new ByteArrayOutputStream();
+                ObjectOutputStream oout = new ObjectOutputStream(baout);
+            )
+            {
+                selectiveACKsToInclude--;
+                frameACK.selectiveACKs = Arrays.copyOf(selectiveACKs, selectiveACKsToInclude);
+                oout.writeObject(frameACK);
+                oout.flush();
+                payload = baout.toByteArray();
+                payloadLength = payload.length;
+            }
+            catch(IOException e)
+            {
+                LOG.fatal(e.getStackTrace());
+                System.exit(1);
+            }
+        }
+
+        try
+        {
+            this.dgramSocket.send(new DatagramPacket(payload, payload.length));
+        }
+        catch(IOException e)
+        {
+            LOG.fatal("Can't send dgramsocket");
+            System.exit(1);
+        }
+        LOG.debug("" + selectiveACKsToInclude + " selectiveACKs sent");
+        LOG.debug("Payload size " + payloadLength);
+        
+        LOG.debug("SelectiveACKsToInclude = " + selectiveACKsToInclude);
+        LOG.debug("SelectiveACKs.length = .... " + selectiveACKs.length);
+        if(selectiveACKsToInclude < selectiveACKs.length)
+        {
+            LOG.debug("SPlitting acks");
+            frameACK.selectiveACKs = Arrays.copyOfRange(selectiveACKs, selectiveACKsToInclude, selectiveACKs.length);
+            if(frameACK.selectiveACKs == null)
+                LOG.debug("selectiveacks è diventato null");
+            sendSplitACKs(frameACK);
         }
     }
 }
