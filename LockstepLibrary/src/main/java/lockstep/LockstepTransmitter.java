@@ -7,8 +7,10 @@ package lockstep;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Semaphore;
@@ -20,6 +22,7 @@ import org.apache.log4j.Logger;
 /**
  * 
  * @author Raff
+ * @param <Command>
  */
 public class LockstepTransmitter implements Runnable
 {
@@ -28,7 +31,8 @@ public class LockstepTransmitter implements Runnable
     
     Semaphore transmissionSemaphore;
     long interTransmissionTimeout = 20;
-
+    static final int maxPayloadLength = 512;
+    
     private static final Logger LOG = Logger.getLogger(LockstepTransmitter.class.getName());
     
     public LockstepTransmitter(DatagramSocket socket, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues, Semaphore transmissionSemaphore)
@@ -53,6 +57,10 @@ public class LockstepTransmitter implements Runnable
                 for(Entry<Integer, TransmissionFrameQueue> entry : transmissionFrameQueues.entrySet())
                 {
                     FrameInput[] frames = entry.getValue().pop();
+
+                    if(!measuredMaxFramesInMessage && frames.length > 0)
+                        measureMaxFramesInMessage(frames[0]);                    
+                    
                     if(frames.length == 1)
                     {
                         InputMessage msg = new InputMessage(entry.getKey(), frames[0]);
@@ -61,9 +69,7 @@ public class LockstepTransmitter implements Runnable
                     }
                     else if(frames.length > 1)
                     {
-                        InputMessageArray msg = new InputMessageArray(entry.getKey(), frames);
-                        this.send(msg);
-                        LOG.debug("" + frames.length + " messages sent for " + entry.getKey());
+                        this.send(entry.getKey(), frames);
                     }
                 }
                 transmissionSemaphore.drainPermits();
@@ -95,22 +101,36 @@ public class LockstepTransmitter implements Runnable
         }
     }       
 
-    private void send(InputMessageArray msg)
+    private void send(int hostID, FrameInput[] frames)
     {
-        try(
+        int payloadLength = maxPayloadLength + 1;
+        int framesToInclude = frames.length + 1;
+        byte[] payload;
+        while( payloadLength > maxPayloadLength && framesToInclude > 0)
+        {
+            try(
                 ByteArrayOutputStream baout = new ByteArrayOutputStream();
                 ObjectOutputStream oout = new ObjectOutputStream(baout);
-        )
-        {
-            oout.writeObject(msg);
-            oout.flush();
-            byte[] data = baout.toByteArray();
-            this.dgramSocket.send(new DatagramPacket(data, data.length));
-            LOG.debug("Payload size " + data.length);
+            )
+            {
+                framesToInclude--;
+                FrameInput[] framesToSend = Arrays.copyOf(frames, framesToInclude);
+                inputMessageArray = new InputMessageArray(hostID, framesToSend);
+                oout.writeObject(inputMessageArray);
+                oout.flush();
+                payload = baout.toByteArray();
+                payloadLength = payload.length;
+            }
         }
-        catch(Exception e)
+        
+        this.dgramSocket.send(new DatagramPacket(payload, payload.length));
+        LOG.debug("" + framesToInclude + "sent for " + hostID);
+        LOG.debug("Payload size " + payloadLength);
+        
+        if(framesToInclude < frames.length)
         {
-            e.printStackTrace();
+            frames = Arrays.copyOfRange(frames, framesToInclude, frames.length);
+            send(hostID, frames);
         }
     }
 }
