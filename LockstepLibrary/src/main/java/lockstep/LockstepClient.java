@@ -116,76 +116,75 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     private void handshake()
     {
         LOG.debug("Start of handshake");
-        try
-        {
-            LOG.debug("Before create tcp socket");
+        try(
             Socket tcpSocket = new Socket(serverTCPAddress.getAddress(), serverTCPAddress.getPort());
-            LOG.debug("After create tcp socket");
-            LOG.debug("Before create oout");
-            ObjectOutputStream oout = new ObjectOutputStream(tcpSocket.getOutputStream());
-            LOG.debug("After create oout");
-            LOG.debug("Before create oin");
-            ObjectInputStream oin = new ObjectInputStream(tcpSocket.getInputStream());
-            LOG.debug("After create oin");
-            
-            //Bind own UDP socket
-            DatagramSocket udpSocket = new DatagramSocket();
-            LOG.info("Opened connection on " + udpSocket.getLocalAddress().getHostAddress() + ":" + udpSocket.getLocalPort());
-                       
-            //Send hello to server, with the bound UDP port
-            LOG.info("Sending ClientHello message");
-            ClientHello clientHello = new ClientHello();
-            clientHello.clientUDPPort = udpSocket.getLocalPort();
-            oout.writeObject(clientHello);
-            
-            //Receive and process first server reply
-            LOG.info("Waiting for helloReply from server");
-            ServerHelloReply helloReply = (ServerHelloReply) oin.readObject();
-            this.hostID = helloReply.assignedHostID;
-            this.currentFrame = helloReply.firstFrameNumber;
-            
-            clientsNumber = helloReply.clientsNumber;
-            cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
-            this.executionFrameQueues = new ConcurrentHashMap<>();
-            this.executionFrameQueues.put(hostID, new ExecutionFrameQueue(helloReply.firstFrameNumber, hostID, cyclicExecutionLatch));
-            
-            //Network setup
-            LOG.info("Setting up network threads and stub frames");
-
-            InetSocketAddress serverUDPAddress = new InetSocketAddress(serverTCPAddress.getAddress(), helloReply.serverUDPPort);
-            udpSocket.connect(serverUDPAddress);
-
-            Map<Integer, ExecutionFrameQueue> receivingExecutionQueues = new ConcurrentHashMap<>();
-            Semaphore transmissionSemaphore = new Semaphore(0);
-            transmissionFrameQueue = new TransmissionFrameQueue(helloReply.firstFrameNumber, transmissionSemaphore);
-            HashMap<Integer,TransmissionFrameQueue> transmissionQueueWrapper = new HashMap<>();
-            transmissionQueueWrapper.put(hostID, transmissionFrameQueue);
-            
-            receiver = new LockstepReceiver(udpSocket, receivingExecutionQueues, transmissionQueueWrapper);
-            transmitter = new LockstepTransmitter(udpSocket, transmissionQueueWrapper, transmissionSemaphore);
-            
-            fillFrameBuffer(fillCommands());
-            executorService = Executors.newFixedThreadPool(2);
-             
-            executorService.submit(receiver);
-            executorService.submit(transmitter);
-
-            //Receive and process second server reply
-            LOG.info("Waiting for list of clients from server");
-            ClientsAnnouncement clientsAnnouncement = (ClientsAnnouncement) oin.readObject();
-
-            for(int clientID : clientsAnnouncement.hostIDs)
+            ObjectOutputStream oout = new ObjectOutputStream(tcpSocket.getOutputStream());                        
+            //ObjectInputStream oin = new ObjectInputStream(tcpSocket.getInputStream());
+        )
+        {
+            oout.flush();
+            LOG.debug("oout flushed");
+            try(ObjectInputStream oin = new ObjectInputStream(tcpSocket.getInputStream()))
             {
-                ExecutionFrameQueue executionFrameQueue = new ExecutionFrameQueue(helloReply.firstFrameNumber, clientID, cyclicExecutionLatch);
-                executionFrameQueues.put(clientID, executionFrameQueue);
-                receivingExecutionQueues.put(clientID, executionFrameQueue);
+                //Bind own UDP socket
+                DatagramSocket udpSocket = new DatagramSocket();
+                LOG.info("Opened connection on " + udpSocket.getLocalAddress().getHostAddress() + ":" + udpSocket.getLocalPort());
+
+                //Send hello to server, with the bound UDP port
+                LOG.info("Sending ClientHello message");
+                ClientHello clientHello = new ClientHello();
+                clientHello.clientUDPPort = udpSocket.getLocalPort();
+                oout.writeObject(clientHello);
+
+                //Receive and process first server reply
+                LOG.info("Waiting for helloReply from server");
+                ServerHelloReply helloReply = (ServerHelloReply) oin.readObject();
+                this.hostID = helloReply.assignedHostID;
+                this.currentFrame = helloReply.firstFrameNumber;
+
+                clientsNumber = helloReply.clientsNumber;
+                cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
+                this.executionFrameQueues = new ConcurrentHashMap<>();
+                this.executionFrameQueues.put(hostID, new ExecutionFrameQueue(helloReply.firstFrameNumber, hostID, cyclicExecutionLatch));
+
+                //Network setup
+                LOG.info("Setting up network threads and stub frames");
+
+                InetSocketAddress serverUDPAddress = new InetSocketAddress(serverTCPAddress.getAddress(), helloReply.serverUDPPort);
+                udpSocket.connect(serverUDPAddress);
+
+                Map<Integer, ExecutionFrameQueue> receivingExecutionQueues = new ConcurrentHashMap<>();
+                Semaphore transmissionSemaphore = new Semaphore(0);
+                transmissionFrameQueue = new TransmissionFrameQueue(helloReply.firstFrameNumber, transmissionSemaphore);
+                HashMap<Integer,TransmissionFrameQueue> transmissionQueueWrapper = new HashMap<>();
+                transmissionQueueWrapper.put(hostID, transmissionFrameQueue);
+
+                receiver = new LockstepReceiver(udpSocket, receivingExecutionQueues, transmissionQueueWrapper);
+                transmitter = new LockstepTransmitter(udpSocket, transmissionQueueWrapper, transmissionSemaphore);
+
+                fillFrameBuffer(fillCommands());
+                executorService = Executors.newFixedThreadPool(2);
+
+                executorService.submit(transmitter);
+
+                //Receive and process second server reply
+                LOG.info("Waiting for list of clients from server");
+                ClientsAnnouncement clientsAnnouncement = (ClientsAnnouncement) oin.readObject();
+
+                for(int clientID : clientsAnnouncement.hostIDs)
+                {
+                    ExecutionFrameQueue executionFrameQueue = new ExecutionFrameQueue(helloReply.firstFrameNumber, clientID, cyclicExecutionLatch);
+                    executionFrameQueues.put(clientID, executionFrameQueue);
+                    receivingExecutionQueues.put(clientID, executionFrameQueue);
+                }
+                
+                executorService.submit(receiver);
+                
+                //Wait for simulation start signal to proceed executing
+                LOG.info("Waiting for simulation start signal");
+                SimulationStart start = (SimulationStart) oin.readObject();
+                LOG.info("Simulation started");
             }
-
-            //Wait for simulation start signal to proceed executing
-            LOG.info("Waiting for simulation start signal");
-            SimulationStart start = (SimulationStart) oin.readObject();
-            LOG.info("Simulation started");
-
         }
         catch(ClassNotFoundException e)
         {
@@ -203,10 +202,11 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     
     private void fillFrameBuffer(Command[] fillCommands)
     {
-        for(Command cmd : fillCommands)
+        for (int i = 0; i < fillCommands.length; i++)
         {
-            executionFrameQueues.get(this.hostID).push(new FrameInput(currentFrame, cmd));
-            transmissionFrameQueue.push(new FrameInput(currentFrame, cmd));
+            Command cmd = fillCommands[i];
+            executionFrameQueues.get(this.hostID).push(new FrameInput(currentFrame + i, cmd));
+            transmissionFrameQueue.push(new FrameInput(currentFrame + i, cmd));
         }
         this.frameExecutionDistance = fillCommands.length;
     }

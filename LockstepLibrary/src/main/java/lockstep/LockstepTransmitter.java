@@ -14,6 +14,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import lockstep.messages.simulation.InputMessage;
+import lockstep.messages.simulation.InputMessageArray;
 import org.apache.log4j.Logger;
 
 /**
@@ -46,16 +47,23 @@ public class LockstepTransmitter implements Runnable
             {
                 if(!transmissionSemaphore.tryAcquire(interTransmissionTimeout, TimeUnit.MILLISECONDS))
                 {
-                    LOG.debug("Transmission timeout reached");
+                    LOG.trace("Transmission timeout reached");
                 }                
                 
                 for(Entry<Integer, TransmissionFrameQueue> entry : transmissionFrameQueues.entrySet())
                 {
                     FrameInput[] frames = entry.getValue().pop();
-                    for(FrameInput frame : frames)
+                    if(frames.length == 1)
                     {
-                        InputMessage msg = new InputMessage(entry.getKey(), frame);
+                        InputMessage msg = new InputMessage(entry.getKey(), frames[0]);
                         this.send(msg);
+                        LOG.debug("1 message sent for " + entry.getKey());
+                    }
+                    else if(frames.length > 1)
+                    {
+                        InputMessageArray msg = new InputMessageArray(entry.getKey(), frames);
+                        this.send(msg);
+                        LOG.debug("" + frames.length + " messages sent for " + entry.getKey());
                     }
                 }
                 transmissionSemaphore.drainPermits();
@@ -84,5 +92,22 @@ public class LockstepTransmitter implements Runnable
             e.printStackTrace();
         }
     }       
+
+    private void send(InputMessageArray msg)
+    {
+        try(
+                ByteArrayOutputStream baout = new ByteArrayOutputStream();
+                ObjectOutputStream oout = new ObjectOutputStream(baout);
+        )
+        {
+            oout.writeObject(msg);
+            byte[] data = baout.toByteArray();
+            this.dgramSocket.send(new DatagramPacket(data, data.length));
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
 }
 

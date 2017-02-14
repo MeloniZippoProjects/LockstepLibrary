@@ -16,6 +16,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Map;
 import lockstep.messages.simulation.FrameACK;
+import org.apache.log4j.Logger;
 
 /**
  *
@@ -26,6 +27,8 @@ public class LockstepReceiver implements Runnable
     DatagramSocket dgramSocket;
     Map<Integer, ExecutionFrameQueue> executionFrameQueues;
     Map<Integer, TransmissionFrameQueue> transmissionFrameQueues;
+    
+    private static final Logger LOG = Logger.getLogger(LockstepReceiver.class.getName());
     
     public LockstepReceiver(DatagramSocket socket, Map<Integer, ExecutionFrameQueue> executionFrameQueues, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues)
     {
@@ -47,6 +50,7 @@ public class LockstepReceiver implements Runnable
                ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
                
                Object obj = objectInputStream.readObject();
+               
                messageDispatch(obj);               
             }
             catch(Exception e)
@@ -83,14 +87,16 @@ public class LockstepReceiver implements Runnable
     
     private void processInput(InputMessage input)
     {
+        LOG.debug("1 InputMessage received");
         ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(input.hostID);
         FrameACK frameAck = executionFrameQueue.push(input.frame);
-        frameAck.setHostID(input.hostID); //forse dovrebbe essere il proprio id
+        frameAck.setHostID(input.hostID);
         sendACK(frameAck);
     }
 
     private void processInput(InputMessageArray inputs)
     {
+        LOG.debug("" + inputs.frames.length + " InputMessages received");
         ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(inputs.hostID);
         FrameACK frameAck = executionFrameQueue.push(inputs.frames);
         frameAck.setHostID(inputs.hostID);
@@ -113,6 +119,7 @@ public class LockstepReceiver implements Runnable
             objectOutputStream.writeObject(ack);
             byte[] data = byteArrayOutputStream.toByteArray();
             this.dgramSocket.send(new DatagramPacket(data, data.length));
+            LOG.debug("ACK sent");
         }
         catch(Exception e)
         {

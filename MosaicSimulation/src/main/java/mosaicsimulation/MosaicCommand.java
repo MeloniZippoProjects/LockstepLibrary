@@ -13,7 +13,10 @@ import javafx.scene.paint.Color;
  * @author enric
  */
 public class MosaicCommand implements Serializable{
-    Color color;
+    double colorRed;
+    double colorGreen;
+    double colorBlue;
+    
     int row;
     int column;
     
@@ -27,7 +30,10 @@ public class MosaicCommand implements Serializable{
      */
     public MosaicCommand(Color color, int row, int column)
     {
-        this.color = color;
+        this.colorRed = color.getRed();
+        this.colorBlue = color.getBlue();
+        this.colorGreen = color.getGreen();
+        
         this.row = row;
         this.column = column;
         this.nop = false;
@@ -42,11 +48,13 @@ public class MosaicCommand implements Serializable{
     }
 
     public Color getColor() {
-        return color;
+        return Color.color(colorRed, colorGreen, colorBlue);
     }
 
     public void setColor(Color color) {
-        this.color = color;
+        this.colorRed = color.getRed();
+        this.colorBlue = color.getBlue();
+        this.colorGreen = color.getGreen();
     }
 
     public int getRow() {

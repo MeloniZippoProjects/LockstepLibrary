@@ -113,11 +113,14 @@ public class TransmissionFrameQueue
      */
     public void processACK(FrameACK ack)
     {
+        int acked = 0;
+        
         if(ack.cumulativeACK > this.lastACKed)
         {
             for(int frameNumber = this.lastACKed + 1; frameNumber <= ack.cumulativeACK; frameNumber++)
             {
                 this.frameBuffer.remove(frameNumber);
+                acked++;
             }
             this.lastACKed = ack.cumulativeACK;
         }
@@ -127,10 +130,13 @@ public class TransmissionFrameQueue
             for(int frameNumber : ack.selectiveACKs)
             {
                 this.frameBuffer.remove(frameNumber);
+                acked++;
             }
         }
         
         if(this.frameBuffer.size() > 0)
             transmissionSemaphore.release();
+        
+        LOG.debug("" + acked + " ACKs received");
     }
 }

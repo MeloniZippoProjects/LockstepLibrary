@@ -53,8 +53,11 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
     @Override
     protected void executeFrameInput(FrameInput<MosaicCommand> f) {
         MosaicCommand cmd = f.getCmd();
-        Rectangle rect = mosaic[cmd.getRow()][cmd.getColumn()];
-        rect.setFill(cmd.getColor());
+        if(!cmd.nop)
+        {
+            Rectangle rect = mosaic[cmd.getRow()][cmd.getColumn()];
+            rect.setFill(cmd.getColor());
+        }   
     }
 
     @Override

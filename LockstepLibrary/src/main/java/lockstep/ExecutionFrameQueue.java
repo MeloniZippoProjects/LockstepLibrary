@@ -79,6 +79,7 @@ class ExecutionFrameQueue
         {
             this.frameBuffer.remove(bufferHead);
             this.bufferHead++;
+            LOG.debug("Coundown to " + ( cyclicExecutionLatch.getCount() - 1));
             cyclicExecutionLatch.countDown();          
         }
         else
@@ -141,23 +142,29 @@ class ExecutionFrameQueue
     {
         if(input.frameNumber >= this.bufferHead)
         {
-            this.frameBuffer.putIfAbsent(input.frameNumber, input);
-            
-            if(input.frameNumber == this.lastInOrder + 1)
+            if( this.frameBuffer.putIfAbsent(input.frameNumber, input) == null)
             {
                 if(input.frameNumber == this.bufferHead)
-                    cyclicExecutionLatch.countDown();
-                
-                lastInOrder++;
-                while(!this.selectiveACKsSet.isEmpty() && this.selectiveACKsSet.first() == this.lastInOrder + 1)
                 {
-                    this.lastInOrder++;
-                    this.selectiveACKsSet.remove(this.selectiveACKsSet.first());
+                    LOG.debug("Coundown to " + (cyclicExecutionLatch.getCount() - 1));
+                    cyclicExecutionLatch.countDown();
                 }
-                return false;
+
+                if(input.frameNumber == this.lastInOrder + 1)
+                {                
+                    lastInOrder++;
+                    while(!this.selectiveACKsSet.isEmpty() && this.selectiveACKsSet.first() == this.lastInOrder + 1)
+                    {
+                        this.lastInOrder++;
+                        this.selectiveACKsSet.remove(this.selectiveACKsSet.first());
+                    }
+                    return false;
+                }
+                else
+                    return true;
             }
             else
-                return true;
+                return false;
         }
         else
         {
