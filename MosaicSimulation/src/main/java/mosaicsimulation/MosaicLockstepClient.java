@@ -64,9 +64,9 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
     protected MosaicCommand[] fillCommands() {
         MosaicCommand[] fillers = new MosaicCommand[10];
         
-        for(MosaicCommand cmd : fillers)
+        for (int i = 0; i < 10; i++)
         {
-            cmd = new MosaicCommand();
+            fillers[i] = new MosaicCommand();
         }
         
         return fillers;

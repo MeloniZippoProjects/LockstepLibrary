@@ -6,11 +6,8 @@
 package lockstep;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.CountDownLatch;
 import lockstep.messages.simulation.FrameACK;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.log4j.Logger;
@@ -79,8 +76,11 @@ class ExecutionFrameQueue
         {
             this.frameBuffer.remove(bufferHead);
             this.bufferHead++;
-            LOG.debug("Coundown to " + ( cyclicExecutionLatch.getCount() - 1));
-            cyclicExecutionLatch.countDown();          
+            if(frameBuffer.get(bufferHead) != null)
+            {
+                LOG.debug("Coundown to " + ( cyclicExecutionLatch.getCount() - 1));
+                cyclicExecutionLatch.countDown();          
+            }
         }
         else
         {
