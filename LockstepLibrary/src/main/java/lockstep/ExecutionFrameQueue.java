@@ -80,7 +80,7 @@ class ExecutionFrameQueue
             this.bufferHead++;
             if(frameBuffer.get(bufferHead) != null)
             {
-                LOG.debug("Coundown to " + ( cyclicExecutionLatch.getCount() - 1));
+                LOG.debug("Countdown to " + ( cyclicExecutionLatch.getCount() - 1) + "made by " + hostID);
                 cyclicExecutionLatch.countDown();          
             }
         }
@@ -148,7 +148,7 @@ class ExecutionFrameQueue
             {
                 if(input.frameNumber == this.bufferHead)
                 {
-                    LOG.debug("Coundown to " + (cyclicExecutionLatch.getCount() - 1));
+                    LOG.debug("Countdown to " + ( cyclicExecutionLatch.getCount() - 1) + "made by " + hostID);
                     cyclicExecutionLatch.countDown();
                 }
 

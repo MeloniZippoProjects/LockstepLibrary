@@ -42,6 +42,7 @@ public class TransmissionFrameQueue
      * @param bufferSize Size of the internal buffer. It's important to
      * dimension this large enough to store the received frames without forcing
      * retransmissions
+     * @param transmissionSemaphore
      * @param initialFrameNumber First frame's number. Must be the same for all 
      * the clients using the protocol
      */
@@ -64,6 +65,7 @@ public class TransmissionFrameQueue
         {
             this.frameBuffer.put(input.frameNumber, input);
             this.transmissionSemaphore.release();
+            LOG.debug("Released a permit for semaphore, current permits: " + transmissionSemaphore.availablePermits());
         }
     }
     

@@ -6,6 +6,7 @@
 package lockstep;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.DatagramPacket;
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import lockstep.messages.simulation.InputMessage;
 import lockstep.messages.simulation.InputMessageArray;
 import org.apache.log4j.Logger;
@@ -49,17 +51,15 @@ public class LockstepTransmitter implements Runnable
         {
             try
             {
+                LOG.debug("Try acquire semaphore");
                 if(!transmissionSemaphore.tryAcquire(interTransmissionTimeout, TimeUnit.MILLISECONDS))
                 {
                     LOG.trace("Transmission timeout reached");
                 }                
-                
+                LOG.debug("Out of Semaphore");
                 for(Entry<Integer, TransmissionFrameQueue> entry : transmissionFrameQueues.entrySet())
                 {
-                    FrameInput[] frames = entry.getValue().pop();
-
-                    if(!measuredMaxFramesInMessage && frames.length > 0)
-                        measureMaxFramesInMessage(frames[0]);                    
+                    FrameInput[] frames = entry.getValue().pop();                  
                     
                     if(frames.length == 1)
                     {
@@ -73,6 +73,7 @@ public class LockstepTransmitter implements Runnable
                     }
                 }
                 transmissionSemaphore.drainPermits();
+                LOG.debug("Drained permits from semaphore");
             }
             catch(InterruptedException e)
             {
@@ -105,7 +106,7 @@ public class LockstepTransmitter implements Runnable
     {
         int payloadLength = maxPayloadLength + 1;
         int framesToInclude = frames.length + 1;
-        byte[] payload;
+        byte[] payload = null;
         while( payloadLength > maxPayloadLength && framesToInclude > 0)
         {
             try(
@@ -115,15 +116,27 @@ public class LockstepTransmitter implements Runnable
             {
                 framesToInclude--;
                 FrameInput[] framesToSend = Arrays.copyOf(frames, framesToInclude);
-                inputMessageArray = new InputMessageArray(hostID, framesToSend);
+                InputMessageArray inputMessageArray = new InputMessageArray(hostID, framesToSend);
                 oout.writeObject(inputMessageArray);
                 oout.flush();
                 payload = baout.toByteArray();
                 payloadLength = payload.length;
             }
+            catch(IOException e)
+            {
+                LOG.fatal(e.getStackTrace());
+                System.exit(1);
+            }
         }
         
-        this.dgramSocket.send(new DatagramPacket(payload, payload.length));
+        try
+        {
+            this.dgramSocket.send(new DatagramPacket(payload, payload.length));
+        } catch (IOException ex)
+        {
+            LOG.fatal("Can't send dgramsocket");
+            System.exit(1);
+        }
         LOG.debug("" + framesToInclude + "sent for " + hostID);
         LOG.debug("Payload size " + payloadLength);
         
@@ -131,32 +144,6 @@ public class LockstepTransmitter implements Runnable
         {
             frames = Arrays.copyOfRange(frames, framesToInclude, frames.length);
             send(hostID, frames);
-        }
-    }
-
-    private void measureMaxFramesInMessage(FrameInput testFrame)
-    {
-        int measuredPayloadLength = 0;
-        try(
-            ByteArrayOutputStream baout = new ByteArrayOutputStream();
-            ObjectOutputStream oout = new ObjectOutputStream(baout);
-        )
-        {
-            FrameInput[] frameInputs = new FrameInput[1];
-            frameInputs[0] = testFrame;
-            InputMessageArray inputMessageArray = new InputMessageArray(0, frameInputs);
-
-            oout.writeObject(inputMessageArray);
-            oout.flush();
-            measuredPayloadLength = baout.toByteArray().length;
-            LOG.debug("Payload measured as " + measuredPayloadLength);
-            this.maxFramesInMessage = Math.floorDiv(maxPayloadLength, measuredPayloadLength);
-            LOG.debug("maxFramesInMessage measured as " + maxFramesInMessage);
-            measuredMaxFramesInMessage = true;
-        }
-        catch(Exception e)
-        {
-            e.printStackTrace();
         }
     }
 }
