@@ -5,6 +5,8 @@
  */
 package lockstep;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -23,7 +25,7 @@ import org.apache.log4j.Logger;
  * data structure.
  * @author Raff
  */
-public class TransmissionFrameQueue
+public class TransmissionFrameQueue<Command extends Serializable>
 {
     /**
      * Internally it behaves as an infinite array of which, at any time, only
@@ -31,8 +33,9 @@ public class TransmissionFrameQueue
      * accessed.
      */
     
+    int lastFrame;
     AtomicInteger lastACKed;
-    Map<Integer, FrameInput> frameBuffer;
+    ConcurrentSkipListMap<Integer, Command> commandsBuffer;
     
     Semaphore transmissionSemaphore;
     
@@ -47,7 +50,8 @@ public class TransmissionFrameQueue
      */
     public TransmissionFrameQueue(int initialFrameNumber, Semaphore transmissionSemaphore, int hostID)
     {
-        this.frameBuffer = new ConcurrentSkipListMap<>();
+        this.lastFrame = initialFrameNumber - 1;
+        this.commandsBuffer = new ConcurrentSkipListMap<>();
         this.lastACKed = new AtomicInteger(initialFrameNumber - 1);
         this.transmissionSemaphore = transmissionSemaphore;
         this.hostID = hostID;
@@ -59,14 +63,11 @@ public class TransmissionFrameQueue
      * 
      * @param input the FrameInput to insert
      */
-    public void push(FrameInput input)
+    public void push(Command command)
     {
-        if(input.frameNumber >= this.lastACKed.get())
-        {
-            this.frameBuffer.putIfAbsent(input.frameNumber, input);
-            this.transmissionSemaphore.release();
-            LOG.debug("Released a permit for semaphore[" + hostID + "], current permits: " + transmissionSemaphore.availablePermits());
-        }
+        commandsBuffer.put(lastFrame + 1, command);
+        this.transmissionSemaphore.release();
+        LOG.debug("Released a permit for semaphore[" + hostID + "], current permits: " + transmissionSemaphore.availablePermits());
     }
     
     /**
@@ -74,10 +75,10 @@ public class TransmissionFrameQueue
      * accepted. Otherwise it is discarded.
      * @param inputs array of inputs to be transmitted
      */
-    public void push(FrameInput[] inputs)
+    public void push(Command[] commands)
     {
-        for(FrameInput input : inputs)
-            push(input);
+        for(Command command : commands)
+            push(command);
     }
     
     /**
@@ -90,17 +91,14 @@ public class TransmissionFrameQueue
      * 
      * @return an array containing the frame input to send
      */
-    public FrameInput[] pop()
+    public FrameInput<Command>[] pop()
     {
-        Set< Entry<Integer, FrameInput> > entries = this.frameBuffer.entrySet();
-        FrameInput[] toRet = new FrameInput[entries.size()];
-        int i = 0;
-        
-        for (Entry<Integer, FrameInput> entry : entries) {
-            toRet[i++] = entry.getValue();
+        Set<Entry<Integer, Command>> commandEntries = commandsBuffer.entrySet();
+        ArrayList<FrameInput<Command>> toRet = new ArrayList<>();        
+        for (Entry<Integer, Command> commandEntry : commandEntries) {
+            toRet.add(new FrameInput<Command>(commandEntry.getKey(), commandEntry.getValue()));
         }
-        
-        return toRet;
+        return (FrameInput[]) toRet.toArray(new FrameInput[0]);
     }
     
     /**
@@ -121,7 +119,7 @@ public class TransmissionFrameQueue
         {
             for(int frameNumber = this.lastACKed.get() + 1; frameNumber <= ack.cumulativeACK; frameNumber++)
             {
-                this.frameBuffer.remove(frameNumber);
+                commandsBuffer.remove(frameNumber);
                 acked++;
             }
             this.lastACKed.set(ack.cumulativeACK);
@@ -131,12 +129,12 @@ public class TransmissionFrameQueue
         {
             for(int frameNumber : ack.selectiveACKs)
             {
-                this.frameBuffer.remove(frameNumber);
+                commandsBuffer.remove(frameNumber);
                 acked++;
             }
         }
         
-        transmissionSemaphore.release(frameBuffer.size());
+        transmissionSemaphore.release(commandsBuffer.size());
         
         LOG.debug("" + acked + " ACKs received");
     }

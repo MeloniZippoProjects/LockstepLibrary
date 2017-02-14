@@ -12,6 +12,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Map;
@@ -22,15 +23,15 @@ import org.apache.log4j.Logger;
  *
  * @author Raff
  */
-public class LockstepReceiver implements Runnable
+public class LockstepReceiver<Command extends Serializable> implements Runnable
 {
     DatagramSocket dgramSocket;
-    Map<Integer, ExecutionFrameQueue> executionFrameQueues;
-    Map<Integer, TransmissionFrameQueue> transmissionFrameQueues;
+    Map<Integer, ExecutionFrameQueue<Command>> executionFrameQueues;
+    Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues;
     
     private static final Logger LOG = Logger.getLogger(LockstepReceiver.class.getName());
     
-    public LockstepReceiver(DatagramSocket socket, Map<Integer, ExecutionFrameQueue> executionFrameQueues, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues)
+    public LockstepReceiver(DatagramSocket socket, Map<Integer, ExecutionFrameQueue<Command>> executionFrameQueues, Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues)
     {
         dgramSocket = socket;
         this.executionFrameQueues = executionFrameQueues;

@@ -15,7 +15,7 @@ import java.io.Serializable;
  */
 public class FrameInput<Command extends Serializable> implements Serializable 
 {
-    protected final int frameNumber;
+    private final int frameNumber;
     private final Command cmd;
     
     public FrameInput(int frameNumber, Command cmd)
@@ -28,7 +28,7 @@ public class FrameInput<Command extends Serializable> implements Serializable
         return frameNumber;
     }
 
-    public Command getCmd() {
+    public Command getCommand() {
         return cmd;
     }    
 }

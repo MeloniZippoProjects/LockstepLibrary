@@ -8,6 +8,7 @@ package lockstep;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -33,7 +34,7 @@ import org.apache.log4j.Logger;
  *
  * @author Raff
  */
-public class LockstepServer implements Runnable
+public class LockstepServer<Command extends Serializable> implements Runnable
 {
     ConcurrentSkipListSet<Integer> hostIDs;
     
@@ -41,14 +42,14 @@ public class LockstepServer implements Runnable
      * Used without interframe times. As soon as all inputs for a frame are 
      * available, they're forwarded to all the clients
      */
-    Map<Integer, ExecutionFrameQueue> executionFrameQueues;
+    Map<Integer, ExecutionFrameQueue<Command>> executionFrameQueues;
     
     /**
      * Buffers for frame input to send to clients. 
      * For each client partecipating in the session there's a queue for each of
      * the other clients.
      */
-    Map<Integer, Map<Integer, TransmissionFrameQueue>> transmissionFrameQueueTree;
+    Map<Integer, Map<Integer, TransmissionFrameQueue<Command>>> transmissionFrameQueueTree;
     
     /**
      * Threads used for receiving and transmitting of frames. 
@@ -104,8 +105,8 @@ public class LockstepServer implements Runnable
                 cyclicExecutionLatch.await();
                 LOG.debug("ReceivingQueues ready for forwarding");
                 
-                Map<Integer, FrameInput> frameInputs = collectFrameInputs();
-                distributeFrameInputs(frameInputs);
+                Map<Integer, Command> commands = collectCommands();
+                distributeCommands(commands);
                 LOG.debug("Message batch forwarded");
             } catch (InterruptedException ex)
             {
@@ -169,7 +170,7 @@ public class LockstepServer implements Runnable
                 ServerHelloReply helloReply = new ServerHelloReply(udpSocket.getLocalPort(), assignedHostID, clientsNumber, firstFrameNumber);
                 oout.writeObject(helloReply);
 
-                Map<Integer, TransmissionFrameQueue> clientTransmissionFrameQueues = new HashMap<>();
+                Map<Integer, TransmissionFrameQueue<Command>> clientTransmissionFrameQueues = new HashMap<>();
                 this.transmissionFrameQueueTree.put(assignedHostID, clientTransmissionFrameQueues);
                 clientReceiveSetup(assignedHostID, udpSocket, firstFrameNumber, clientTransmissionFrameQueues);
 
@@ -199,7 +200,7 @@ public class LockstepServer implements Runnable
         }            
     }
     
-    private void clientReceiveSetup(int clientID, DatagramSocket clientUDPSocket, int initialFrameNumber, Map<Integer, TransmissionFrameQueue> transmissionFrameQueues)
+    private void clientReceiveSetup(int clientID, DatagramSocket clientUDPSocket, int initialFrameNumber, Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues)
     {
         ExecutionFrameQueue receivingQueue = new ExecutionFrameQueue(initialFrameNumber, clientID, cyclicExecutionLatch);
         this.executionFrameQueues.put(clientID, receivingQueue);
@@ -209,7 +210,7 @@ public class LockstepServer implements Runnable
         receivers.submit(receiver);
     }
     
-    private void clientTransmissionSetup(int clientID, int firstFrameNumber, DatagramSocket udpSocket, Map<Integer, TransmissionFrameQueue> clientTransmissionFrameQueues)
+    private void clientTransmissionSetup(int clientID, int firstFrameNumber, DatagramSocket udpSocket, Map<Integer, TransmissionFrameQueue<Command>> clientTransmissionFrameQueues)
     {
         Semaphore transmissionSemaphore = new Semaphore(0);
         for(int hostID : hostIDs)
@@ -224,31 +225,28 @@ public class LockstepServer implements Runnable
         transmitters.submit(transmitter);
     }
     
-    private Map<Integer, FrameInput> collectFrameInputs()
+    private Map<Integer, Command> collectCommands()
     {        
-        Map<Integer, FrameInput> frameInputs = new TreeMap<>();
-        for(Entry<Integer, ExecutionFrameQueue> entry : this.executionFrameQueues.entrySet())
-        {
-            FrameInput frame = entry.getValue().pop();
-            frameInputs.put(entry.getKey(), frame);
-        }
-        return frameInputs;
+        Map<Integer, Command> commands = new TreeMap<>();
+        for(Entry<Integer, ExecutionFrameQueue<Command>> executionFrameQueueEntry : this.executionFrameQueues.entrySet())
+            commands.put(executionFrameQueueEntry.getKey(), executionFrameQueueEntry.getValue().pop());
+        return commands;
     }
     
-    private void distributeFrameInputs(Map<Integer, FrameInput> frameInputs)
+    private void distributeCommands(Map<Integer, Command> commands)
     {
-        //For each frameInput
-        for(Entry<Integer, FrameInput> frameInputEntry : frameInputs.entrySet())
+        //For each command
+        for(Entry<Integer, Command> commandEntry : commands.entrySet())
         {
             //For each client, take its tree of transmission queues
-            for(Entry<Integer, Map<Integer, TransmissionFrameQueue>> transmissionFrameQueueMapEntry : this.transmissionFrameQueueTree.entrySet())
+            for(Entry<Integer, Map<Integer, TransmissionFrameQueue<Command>>> transmissionFrameQueueMapEntry : this.transmissionFrameQueueTree.entrySet())
             {
                 //If the frameInput doesn't come from that client, forward the frameInput though the correct transmission queue
-                if(!transmissionFrameQueueMapEntry.getKey().equals(frameInputEntry.getKey()))
+                if(!transmissionFrameQueueMapEntry.getKey().equals(commandEntry.getKey()))
                 {
-                    Map<Integer, TransmissionFrameQueue> transmissionFrameQueueMap = transmissionFrameQueueMapEntry.getValue();
-                    TransmissionFrameQueue transmissionFrameQueue = transmissionFrameQueueMap.get(frameInputEntry.getKey());
-                    transmissionFrameQueue.push(frameInputEntry.getValue());
+                    Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueueMap = transmissionFrameQueueMapEntry.getValue();
+                    TransmissionFrameQueue<Command> transmissionFrameQueue = transmissionFrameQueueMap.get(commandEntry.getKey());
+                    transmissionFrameQueue.push(commandEntry.getValue());
                 }
             }
         }
