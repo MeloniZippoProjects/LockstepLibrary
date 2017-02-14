@@ -7,6 +7,7 @@ package mosaicsimulation;
 
 import java.net.InetSocketAddress;
 import java.util.Random;
+import javafx.application.Platform;
 import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
@@ -27,8 +28,8 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
     private static final Logger LOG = Logger.getLogger(MosaicLockstepClient.class.getName());
     private final Label currentFrameLabel;
     
-    public MosaicLockstepClient(InetSocketAddress serverTCPAddress, Rectangle[][] mosaic, int rows, int columns, Color clientColor, Label currentFrameLabel) {
-        super(serverTCPAddress);
+    public MosaicLockstepClient(InetSocketAddress serverTCPAddress, int interframeTime, int fillTimeout, Rectangle[][] mosaic, int rows, int columns, Color clientColor, Label currentFrameLabel) {
+        super(serverTCPAddress, interframeTime, fillTimeout);
         this.mosaic = mosaic;
         this.clientColor = clientColor;
         this.rows = rows;
@@ -64,7 +65,7 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
                 Rectangle rect = mosaic[cmd.getRow()][cmd.getColumn()];
                 rect.setFill(cmd.getColor());
             }
-            currentFrameLabel.setText(Integer.toString(cmd.ownFrame));
+            Platform.runLater(()-> currentFrameLabel.setText(Integer.toString(cmd.ownFrame)));
         }  
         catch(NullPointerException e)
         {

@@ -22,7 +22,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.log4j.Logger;
 
 /**
@@ -32,12 +31,14 @@ import org.apache.log4j.Logger;
  */
 public abstract class LockstepClient<Command extends Serializable> implements Runnable
 {
-    int currentFrame;
     int interframeTime;
+    int fillTimeout;
+    
+    int currentFrame;
     int frameExecutionDistance;
     int hostID;
-    Map<Integer, ExecutionFrameQueue> executionFrameQueues; 
-    TransmissionFrameQueue transmissionFrameQueue;
+    Map<Integer, ExecutionFrameQueue<Command>> executionFrameQueues; 
+    TransmissionFrameQueue<Command> transmissionFrameQueue;
     
     InetSocketAddress serverTCPAddress;
         
@@ -55,11 +56,12 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
      */
     CyclicCountDownLatch cyclicExecutionLatch;
     private int clientsNumber;
-    private static long fillTimeout = 50;
-
-    public LockstepClient(InetSocketAddress serverTCPAddress)
+    
+    public LockstepClient(InetSocketAddress serverTCPAddress, int interframeTime, int fillTimeout)
     {
         this.serverTCPAddress = serverTCPAddress;
+        this.interframeTime = interframeTime;
+        this.fillTimeout = fillTimeout;
     }
 
     /**
@@ -159,7 +161,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
                 clientsNumber = helloReply.clientsNumber;
                 cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
                 this.executionFrameQueues = new ConcurrentHashMap<>();
-                this.executionFrameQueues.put(hostID, new ExecutionFrameQueue(helloReply.firstFrameNumber, hostID, cyclicExecutionLatch));
+                this.executionFrameQueues.put(hostID, new ExecutionFrameQueue<>(helloReply.firstFrameNumber, hostID, cyclicExecutionLatch));
 
                 //Network setup
                 LOG.info("Setting up network threads and stub frames");
@@ -230,7 +232,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
         {
             Command cmd = fillCommands[i];
             executionFrameQueues.get(this.hostID).push(new FrameInput(currentFrame + i, cmd));
-            transmissionFrameQueue.push(new FrameInput(currentFrame + i, cmd));
+            transmissionFrameQueue.push(cmd);
         }
     }
     
@@ -238,7 +240,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     {
         Command cmd = readInput();
         executionFrameQueues.get(this.hostID).push(new FrameInput(currentFrame + frameExecutionDistance, cmd));
-        transmissionFrameQueue.push(new FrameInput(currentFrame + frameExecutionDistance, cmd));
+        transmissionFrameQueue.push(cmd);
     }
     
     private void executeInputs() throws InterruptedException
