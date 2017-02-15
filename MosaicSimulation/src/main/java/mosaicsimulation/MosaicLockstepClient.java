@@ -27,9 +27,12 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
     
     private static final Logger LOG = Logger.getLogger(MosaicLockstepClient.class.getName());
     private final Label currentFrameLabel;
+    private final int fillSize;
     
-    public MosaicLockstepClient(InetSocketAddress serverTCPAddress, int interframeTime, int fillTimeout, Rectangle[][] mosaic, int rows, int columns, Color clientColor, Label currentFrameLabel) {
+    public MosaicLockstepClient(InetSocketAddress serverTCPAddress, int interframeTime, int fillTimeout, int fillSize, Rectangle[][] mosaic, int rows, int columns, Color clientColor, Label currentFrameLabel) {
         super(serverTCPAddress, interframeTime, fillTimeout);
+        this.fillSize = fillSize;
+        
         this.mosaic = mosaic;
         this.clientColor = clientColor;
         this.rows = rows;
@@ -76,7 +79,7 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
 
     @Override
     protected MosaicCommand[] fillCommands() {
-        MosaicCommand[] fillers = new MosaicCommand[5];
+        MosaicCommand[] fillers = new MosaicCommand[fillSize];
         
         for (int i = 0; i < fillers.length; i++)
         {
@@ -88,7 +91,7 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
     
     @Override
     protected MosaicCommand[] bootstrapCommands() {
-        MosaicCommand[] fillers = new MosaicCommand[10];
+        MosaicCommand[] fillers = new MosaicCommand[fillSize*2];
         
         for (int i = 0; i < fillers.length; i++)
         {

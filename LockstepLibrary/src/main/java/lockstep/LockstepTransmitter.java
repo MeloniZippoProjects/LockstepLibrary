@@ -32,7 +32,7 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
     Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues;
     
     Semaphore transmissionSemaphore;
-    long interTransmissionTimeout = 20;
+    long interTransmissionTimeout = 100;
     static final int maxPayloadLength = 512;
     final String name;
     
