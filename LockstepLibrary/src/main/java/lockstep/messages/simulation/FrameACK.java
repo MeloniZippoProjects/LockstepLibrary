@@ -19,20 +19,20 @@ import java.io.ObjectOutput;
  */
 public class FrameACK implements java.io.Externalizable
 {
-    public int hostID;
+    public int senderID;
     public int cumulativeACK;
     public int[] selectiveACKs;
     
     public FrameACK()
     {
-        this.hostID = 0;
+        this.senderID = 0;
         this.cumulativeACK = 0;
         this.selectiveACKs = null;
     }
     
     public FrameACK(int hostID, int cumulativeACK, int[] selectiveACKs)
     {
-        this.hostID = hostID;
+        this.senderID = hostID;
         this.cumulativeACK = cumulativeACK;
         this.selectiveACKs = selectiveACKs;
     }
@@ -41,23 +41,23 @@ public class FrameACK implements java.io.Externalizable
     {
         this.cumulativeACK = cumulativeACK;
         this.selectiveACKs = selectiveACKs;
-        this.hostID = -1;
+        this.senderID = -1;
     }
     
-    public int getHostID()
+    public int getSenderID()
     {
-        return hostID;
+        return senderID;
     }
     
-    public void setHostID(int hostID)
+    public void setSenderID(int senderID)
     {
-        this.hostID = hostID;
+        this.senderID = senderID;
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException
     {
-        out.writeInt(hostID);
+        out.writeInt(senderID);
         out.writeInt(cumulativeACK);
         out.writeObject(selectiveACKs);
     }
@@ -65,7 +65,7 @@ public class FrameACK implements java.io.Externalizable
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
     {
-        hostID = in.readInt();
+        senderID = in.readInt();
         cumulativeACK = in.readInt();
         selectiveACKs = (int[]) in.readObject();
     }

@@ -67,18 +67,20 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
                 LOG.debug("Out of Semaphore");
                 for(Entry<Integer, TransmissionFrameQueue<Command>> transmissionQueueEntry : transmissionFrameQueues.entrySet())
                 {
-                    LOG.debug("Entry " + transmissionQueueEntry.getKey());
+                    int senderID = transmissionQueueEntry.getKey();
+                    
+                    LOG.debug("Entry " + senderID);
                     FrameInput[] frames = transmissionQueueEntry.getValue().pop();                  
                     
                     if(frames.length == 1)
                     {
-                        InputMessage msg = new InputMessage(transmissionQueueEntry.getKey(), frames[0]);
+                        InputMessage msg = new InputMessage(senderID, frames[0]);
                         this.send(msg);
-                        LOG.debug("1 message sent for " + transmissionQueueEntry.getKey());
+                        LOG.debug("1 message sent for " + senderID);
                     }
                     else if(frames.length > 1)
                     {
-                        this.send(transmissionQueueEntry.getKey(), frames);
+                        this.send(senderID, frames);
                     }
                 }
                 transmissionSemaphore.drainPermits();
@@ -111,7 +113,7 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
         }
     }       
 
-    private void send(int hostID, FrameInput[] frames)
+    private void send(int senderID, FrameInput[] frames)
     {
         int payloadLength = maxPayloadLength + 1;
         int framesToInclude = frames.length + 1;
@@ -125,7 +127,7 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
             {
                 framesToInclude--;
                 FrameInput[] framesToSend = Arrays.copyOf(frames, framesToInclude);
-                InputMessageArray inputMessageArray = new InputMessageArray(hostID, framesToSend);
+                InputMessageArray inputMessageArray = new InputMessageArray(senderID, framesToSend);
                 oout.writeObject(inputMessageArray);
                 oout.flush();
                 payload = baout.toByteArray();
@@ -146,13 +148,13 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
             LOG.fatal("Can't send dgramsocket");
             System.exit(1);
         }
-        LOG.debug("" + framesToInclude + "sent for " + hostID);
+        LOG.debug("" + framesToInclude + "sent for " + senderID);
         LOG.debug("Payload size " + payloadLength);
         
         if(framesToInclude < frames.length)
         {
             frames = Arrays.copyOfRange(frames, framesToInclude, frames.length);
-            send(hostID, frames);
+            send(senderID, frames);
         }
     }
 }

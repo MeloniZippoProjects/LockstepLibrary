@@ -14,12 +14,12 @@ import lockstep.FrameInput;
  */
 public class InputMessage implements Serializable
 {
-    public final int hostID;
+    public final int senderID;
     public final FrameInput frame;
     
-    public InputMessage(int hostID, FrameInput frame)
+    public InputMessage(int senderID, FrameInput frame)
     {
-        this.hostID = hostID;
+        this.senderID = senderID;
         this.frame = frame;
     }
 }

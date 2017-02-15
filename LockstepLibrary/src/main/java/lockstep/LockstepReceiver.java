@@ -60,7 +60,7 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
                
                Object obj = objectInputStream.readObject();
                
-               messageDispatch(obj);               
+               messageDispatch(obj);    //cambiare nome          
             }
             catch(Exception e)
             {
@@ -96,10 +96,10 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
     
     private void processInput(InputMessage input)
     {
-        LOG.debug("1 InputMessage received from " + input.hostID + ": " + input.frame.getFrameNumber());
-        ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(input.hostID);
+        LOG.debug("1 InputMessage received from " + input.senderID + ": " + input.frame.getFrameNumber());
+        ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(input.senderID);
         FrameACK frameACK = executionFrameQueue.push(input.frame);
-        frameACK.setHostID(input.hostID);
+        frameACK.setSenderID(input.senderID);
         sendACK(frameACK);
     }
 
@@ -108,16 +108,16 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
         String numbers = "";
         for(FrameInput frame : inputs.frames)
             numbers += frame.getFrameNumber() + ", ";
-        LOG.debug("" + inputs.frames.length + " InputMessages received from " + inputs.hostID + ": [ " + numbers + "]");
-        ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(inputs.hostID);
+        LOG.debug("" + inputs.frames.length + " InputMessages received from " + inputs.senderID + ": [ " + numbers + "]");
+        ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(inputs.senderID);
         FrameACK frameACK = executionFrameQueue.push(inputs.frames);
-        frameACK.setHostID(inputs.hostID);
+        frameACK.setSenderID(inputs.senderID);
         sendACK(frameACK);
     }
     
     private void processACK(FrameACK ack)
     {
-        TransmissionFrameQueue transmissionFrameQueue = this.transmissionFrameQueues.get(ack.hostID);
+        TransmissionFrameQueue transmissionFrameQueue = this.transmissionFrameQueues.get(ack.senderID);
         transmissionFrameQueue.processACK(ack);
     }
     
