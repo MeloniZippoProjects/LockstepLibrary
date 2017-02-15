@@ -1,11 +1,11 @@
-﻿$nClients = 4;
+﻿$nClients = 8;
 $serverAddress = "localhost";
 $serverPort = 8000;
 $clientFramerate = 60;
 $clientTickrate = 30;
 $serverTickrate = 30;
 $fillTimeout = 500;
-$fillSize = 10;
+$fillSize = 50;
 
 $log = gci -Filter "logs";
 Remove-Item $log -Recurse;
