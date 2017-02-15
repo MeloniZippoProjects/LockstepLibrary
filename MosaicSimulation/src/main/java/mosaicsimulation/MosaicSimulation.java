@@ -79,7 +79,7 @@ public class MosaicSimulation extends Application
         Label currentFrameLabel = (Label) scene.lookup("#currentFrameLabel");
         
         LOG.debug("Creation of lockstep client");
-        MosaicLockstepClient mosaicLockstepClient = new MosaicLockstepClient(serverTCPAddress, 500, 500,mosaic, rows, columns, clientColor, currentFrameLabel);
+        MosaicLockstepClient mosaicLockstepClient = new MosaicLockstepClient(serverTCPAddress, 15, 500,mosaic, rows, columns, clientColor, currentFrameLabel);
         Thread clientThread = new Thread(mosaicLockstepClient);
         clientThread.setName("main-client-thread");
         clientThread.start();

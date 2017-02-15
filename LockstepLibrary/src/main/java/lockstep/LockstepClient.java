@@ -34,7 +34,8 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     int interframeTime;
     int fillTimeout;
     
-    int currentFrame;
+    int currentExecutionFrame;
+    int currentUserFrame;
     int frameExecutionDistance;
     int hostID;
     Map<Integer, ExecutionFrameQueue<Command>> executionFrameQueues; 
@@ -118,7 +119,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
             {
                 readUserInput();
                 executeInputs();
-                currentFrame++;
+                currentExecutionFrame++;
                 Thread.sleep(interframeTime);
             }
             catch(InterruptedException e)
@@ -156,7 +157,8 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
                 ServerHelloReply helloReply = (ServerHelloReply) oin.readObject();
                 this.hostID = helloReply.assignedHostID;
                 LOG.info("ID assigned = " + hostID);
-                this.currentFrame = helloReply.firstFrameNumber;
+                this.currentExecutionFrame = helloReply.firstFrameNumber;
+                this.currentUserFrame = helloReply.firstFrameNumber;
 
                 clientsNumber = helloReply.clientsNumber;
                 cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
@@ -231,7 +233,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
         for (int i = 0; i < fillCommands.length; i++)
         {
             Command cmd = fillCommands[i];
-            executionFrameQueues.get(this.hostID).push(new FrameInput(currentFrame + i, cmd));
+            executionFrameQueues.get(this.hostID).push(new FrameInput(currentUserFrame++, cmd));
             transmissionFrameQueue.push(cmd);
         }
     }
@@ -239,7 +241,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     private void readUserInput()
     {
         Command cmd = readInput();
-        executionFrameQueues.get(this.hostID).push(new FrameInput(currentFrame + frameExecutionDistance, cmd));
+        executionFrameQueues.get(this.hostID).push(new FrameInput(currentUserFrame++, cmd));
         transmissionFrameQueue.push(cmd);
     }
     
