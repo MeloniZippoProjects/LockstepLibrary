@@ -74,6 +74,7 @@ public class MosaicSimulation extends Application
         Map<String, String> namedParameters = this.getParameters().getNamed();
         String serverIPAddress = namedParameters.get("serverIPAddress");
         int serverTCPPort = Integer.parseInt(namedParameters.get("serverTCPPort"));
+        int framerate = Integer.parseInt(namedParameters.get("framerate"));
         int tickrate = Integer.parseInt(namedParameters.get("tickrate"));
         int fillTimeout = Integer.parseInt(namedParameters.get("fillTimeout"));
         int fillSize = Integer.parseInt(namedParameters.get("fillSize"));
@@ -82,7 +83,7 @@ public class MosaicSimulation extends Application
         Label currentFrameLabel = (Label) scene.lookup("#currentFrameLabel");
         
         LOG.debug("Creation of lockstep client");
-        MosaicLockstepClient mosaicLockstepClient = new MosaicLockstepClient(serverTCPAddress, tickrate, fillTimeout, fillSize, mosaic, rows, columns, clientColor, currentFrameLabel);
+        MosaicLockstepClient mosaicLockstepClient = new MosaicLockstepClient(serverTCPAddress, framerate, tickrate, fillTimeout, fillSize, mosaic, rows, columns, clientColor, currentFrameLabel);
         Thread clientThread = new Thread(mosaicLockstepClient);
         clientThread.setName("main-client-thread");
         clientThread.start();

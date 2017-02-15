@@ -5,9 +5,10 @@
  */
 package mosaicsimulation;
 
+import java.util.logging.Level;
 import lockstep.LockstepServer;
 import org.apache.log4j.Logger;
-import org.apache.log4j.Level;
+import org.apache.commons.cli.*;
 
 /**
  *
@@ -18,7 +19,27 @@ public class MosaicLockstepServer {
     
     public static void main(String[] args)
     {
-        Thread thread = new Thread(new LockstepServer<MosaicCommand>(Integer.parseInt(args[0]), Integer.parseInt(args[1])));
+        Options opts = new Options();
+        opts.addOption("s", "serverPort", true, "Listening TCP port used to initiate handshakes");
+        opts.addOption("n", "nClients", true, "Number of clients that will participate in the session");
+        opts.addOption("t", "tickrate", true, "Number of transmission session to execute per second");
+        
+        DefaultParser parser = new DefaultParser();
+        CommandLine commandLine = null;
+        try
+        {
+            commandLine = parser.parse(opts, args);
+        } catch (ParseException ex)
+        {
+            ex.printStackTrace();
+            System.exit(1);
+        }
+        
+        int serverPort = Integer.parseInt(commandLine.getOptionValue("serverPort"));
+        int nClients = Integer.parseInt(commandLine.getOptionValue("nClients"));
+        int tickrate = Integer.parseInt(commandLine.getOptionValue("tickrate"));
+        
+        Thread thread = new Thread(new LockstepServer<MosaicCommand>(serverPort, nClients, tickrate));
         thread.setName("Main-server-thread");
         thread.start();
         

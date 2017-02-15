@@ -37,10 +37,12 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
     final String name;
     
     private static final Logger LOG = Logger.getLogger(LockstepTransmitter.class.getName());
+    private final int tickrate;
     
-    public LockstepTransmitter(DatagramSocket socket, Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues, Semaphore transmissionSemaphore, String name)
+    public LockstepTransmitter(DatagramSocket socket, int tickrate, Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues, Semaphore transmissionSemaphore, String name)
     {
         this.dgramSocket = socket;
+        this.tickrate = tickrate;
         this.transmissionFrameQueues = transmissionFrameQueues;
         this.transmissionSemaphore = transmissionSemaphore;
         this.name = name;
@@ -59,6 +61,7 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
                 {   
                     LOG.debug(txQ);
                 }
+                
                 LOG.debug("Try acquire semaphore");
                 if(!transmissionSemaphore.tryAcquire(interTransmissionTimeout, TimeUnit.MILLISECONDS))
                 {
@@ -68,10 +71,10 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
                 for(Entry<Integer, TransmissionFrameQueue<Command>> transmissionQueueEntry : transmissionFrameQueues.entrySet())
                 {
                     int senderID = transmissionQueueEntry.getKey();
-                    
+
                     LOG.debug("Entry " + senderID);
                     FrameInput[] frames = transmissionQueueEntry.getValue().pop();                  
-                    
+
                     if(frames.length == 1)
                     {
                         InputMessage msg = new InputMessage(senderID, frames[0]);
@@ -85,6 +88,7 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
                 }
                 transmissionSemaphore.drainPermits();
                 LOG.debug("Drained permits from semaphore");
+                Thread.sleep(1000/tickrate);
             }
             catch(InterruptedException e)
             {

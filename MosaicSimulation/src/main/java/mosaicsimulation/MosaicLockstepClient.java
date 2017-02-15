@@ -29,8 +29,8 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
     private final Label currentFrameLabel;
     private final int fillSize;
     
-    public MosaicLockstepClient(InetSocketAddress serverTCPAddress, int interframeTime, int fillTimeout, int fillSize, Rectangle[][] mosaic, int rows, int columns, Color clientColor, Label currentFrameLabel) {
-        super(serverTCPAddress, interframeTime, fillTimeout);
+    public MosaicLockstepClient(InetSocketAddress serverTCPAddress, int framerate, int tickrate, int fillTimeout, int fillSize, Rectangle[][] mosaic, int rows, int columns, Color clientColor, Label currentFrameLabel) {
+        super(serverTCPAddress, framerate, tickrate, fillTimeout);
         this.fillSize = fillSize;
         
         this.mosaic = mosaic;
@@ -66,7 +66,7 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
             if(!cmd.nop)
             {
                 Rectangle rect = mosaic[cmd.getRow()][cmd.getColumn()];
-                rect.setFill(cmd.getColor());
+                Platform.runLater(() -> rect.setFill(cmd.getColor()));
             }
             Platform.runLater(()-> currentFrameLabel.setText(Integer.toString(cmd.ownFrame)));
         }  

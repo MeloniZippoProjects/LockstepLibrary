@@ -69,11 +69,13 @@ public class LockstepServer<Command extends Serializable> implements Runnable
     int clientsNumber;
     
     private static final Logger LOG = Logger.getLogger(LockstepServer.class.getName());
+    private final int tickrate;
     
-    public LockstepServer(int tcpPort, int clientsNumber)
+    public LockstepServer(int tcpPort, int clientsNumber, int tickrate)
     {
         this.tcpPort = tcpPort;
         this.clientsNumber = clientsNumber;
+        this.tickrate = tickrate;
     
         transmitters = Executors.newFixedThreadPool(clientsNumber);
         receivers = Executors.newFixedThreadPool(clientsNumber);
@@ -224,7 +226,7 @@ public class LockstepServer<Command extends Serializable> implements Runnable
                 clientTransmissionFrameQueues.put(hostID, transmissionFrameQueue);
             }
         }
-        LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, clientTransmissionFrameQueues, transmissionSemaphore, "Transmitter-to-"+clientID);
+        LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, tickrate ,clientTransmissionFrameQueues, transmissionSemaphore, "Transmitter-to-"+clientID);
         transmitters.submit(transmitter);
     }
     

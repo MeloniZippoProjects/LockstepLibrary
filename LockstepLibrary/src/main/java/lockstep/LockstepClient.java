@@ -31,7 +31,7 @@ import org.apache.log4j.Logger;
  */
 public abstract class LockstepClient<Command extends Serializable> implements Runnable
 {
-    int interframeTime;
+    int framerate;
     int fillTimeout;
     
     int currentExecutionFrame;
@@ -57,11 +57,13 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
      */
     CyclicCountDownLatch cyclicExecutionLatch;
     private int clientsNumber;
+    private final int tickrate;
     
-    public LockstepClient(InetSocketAddress serverTCPAddress, int interframeTime, int fillTimeout)
+    public LockstepClient(InetSocketAddress serverTCPAddress, int framerate, int tickrate, int fillTimeout)
     {
         this.serverTCPAddress = serverTCPAddress;
-        this.interframeTime = interframeTime;
+        this.framerate = framerate;
+        this.tickrate = tickrate;
         this.fillTimeout = fillTimeout;
     }
 
@@ -120,7 +122,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
                 readUserInput();
                 executeInputs();
                 currentExecutionFrame++;
-                Thread.sleep(interframeTime);
+                Thread.sleep(1000/framerate);
             }
             catch(InterruptedException e)
             {
@@ -178,7 +180,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
                 transmissionQueueWrapper.put(hostID, transmissionFrameQueue);
 
                 receiver = new LockstepReceiver(udpSocket, receivingExecutionQueues, transmissionQueueWrapper, "Receiver-to-"+hostID);
-                transmitter = new LockstepTransmitter(udpSocket, transmissionQueueWrapper, transmissionSemaphore, "Transmitter-from-"+hostID);
+                transmitter = new LockstepTransmitter(udpSocket, tickrate, transmissionQueueWrapper, transmissionSemaphore, "Transmitter-from-"+hostID);
 
                 insertBootstrapCommands(fillCommands());
                                 
