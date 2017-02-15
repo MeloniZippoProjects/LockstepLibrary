@@ -1,4 +1,4 @@
-﻿$nClients = 10;
+﻿$nClients = 4;
 $serverAddress = "localhost";
 $serverPort = 8000;
 $clientFramerate = 60;

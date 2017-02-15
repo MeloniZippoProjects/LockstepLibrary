@@ -15,8 +15,11 @@
             <children>
                 <Label>Client color:</Label>
                 <Rectangle id="colorRectangle" width="7" height="7" strokeWidth="1" stroke="GRAY"></Rectangle>
-                <Label>Current frame:</Label>
+                <Label>Current frame: -</Label>
                 <Label id="currentFrameLabel">0</Label>
+                <Label> - </Label>
+                <Label id="frameRate">0</Label>
+                <Label> -fps</Label>
             </children>
         </HBox>
     </children>

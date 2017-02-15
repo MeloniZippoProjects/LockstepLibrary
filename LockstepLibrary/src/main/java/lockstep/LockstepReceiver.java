@@ -17,6 +17,8 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 import lockstep.messages.simulation.FrameACK;
 import org.apache.log4j.Logger;
 
@@ -53,14 +55,17 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
         {
             try
             {
-               DatagramPacket p = new DatagramPacket(new byte[512], 512);
-               this.dgramSocket.receive(p);
-               ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(p.getData());
-               ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
-               
-               Object obj = objectInputStream.readObject();
-               
-               messageDispatch(obj);    //cambiare nome          
+                DatagramPacket p = new DatagramPacket(new byte[512], 512);
+                this.dgramSocket.receive(p);
+                try(
+                    ByteArrayInputStream bain = new ByteArrayInputStream(p.getData());
+                    GZIPInputStream gzin = new GZIPInputStream(bain);
+                    ObjectInputStream oin = new ObjectInputStream(gzin);
+                )
+                {
+                    Object obj = oin.readObject();
+                    messageSwitch(obj);
+                }
             }
             catch(Exception e)
             {
@@ -71,7 +76,7 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
         }
     }
     
-    private void messageDispatch(Object obj) throws Exception
+    private void messageSwitch(Object obj) throws Exception
     {
         if(obj instanceof InputMessage)
         {
@@ -133,11 +138,13 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
     {
         try(
             ByteArrayOutputStream baout = new ByteArrayOutputStream();
-            ObjectOutputStream oout = new ObjectOutputStream(baout);
+            GZIPOutputStream gzout = new GZIPOutputStream(baout);
+            ObjectOutputStream oout = new ObjectOutputStream(gzout);
         )
         {
             oout.writeObject(frameACK);
             oout.flush();
+            gzout.finish();
             byte[] data = baout.toByteArray();
             this.dgramSocket.send(new DatagramPacket(data, data.length));
             LOG.debug("Single ACK sent, payload size:" + data.length);
@@ -158,13 +165,15 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
         {
             try(
                 ByteArrayOutputStream baout = new ByteArrayOutputStream();
-                ObjectOutputStream oout = new ObjectOutputStream(baout);
+                GZIPOutputStream gzout = new GZIPOutputStream(baout);
+                ObjectOutputStream oout = new ObjectOutputStream(gzout);
             )
             {
                 selectiveACKsToInclude--;
                 frameACK.selectiveACKs = Arrays.copyOf(selectiveACKs, selectiveACKsToInclude);
                 oout.writeObject(frameACK);
                 oout.flush();
+                gzout.finish();
                 payload = baout.toByteArray();
                 payloadLength = payload.length;
             }

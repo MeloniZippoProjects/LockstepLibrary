@@ -17,6 +17,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import java.util.zip.GZIPOutputStream;
 import lockstep.messages.simulation.InputMessage;
 import lockstep.messages.simulation.InputMessageArray;
 import org.apache.log4j.Logger;
@@ -102,11 +103,13 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
     {
         try(
                 ByteArrayOutputStream baout = new ByteArrayOutputStream();
-                ObjectOutputStream oout = new ObjectOutputStream(baout);
+                GZIPOutputStream gzout = new GZIPOutputStream(baout);
+                ObjectOutputStream oout = new ObjectOutputStream(gzout);
         )
         {
             oout.writeObject(msg);
             oout.flush();
+            gzout.finish();
             byte[] data = baout.toByteArray();
             this.dgramSocket.send(new DatagramPacket(data, data.length));
             LOG.debug("Payload size " + data.length);
@@ -126,7 +129,8 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
         {
             try(
                 ByteArrayOutputStream baout = new ByteArrayOutputStream();
-                ObjectOutputStream oout = new ObjectOutputStream(baout);
+                GZIPOutputStream gzout = new GZIPOutputStream(baout);
+                ObjectOutputStream oout = new ObjectOutputStream(gzout);
             )
             {
                 framesToInclude--;
@@ -134,6 +138,7 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
                 InputMessageArray inputMessageArray = new InputMessageArray(senderID, framesToSend);
                 oout.writeObject(inputMessageArray);
                 oout.flush();
+                gzout.finish();
                 payload = baout.toByteArray();
                 payloadLength = payload.length;
             }

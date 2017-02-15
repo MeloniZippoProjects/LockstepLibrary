@@ -1,4 +1,4 @@
-﻿$nClients = 10;
+﻿$nClients = 2;
 $serverPort = 8000;
 $serverTickrate = 30;
 
