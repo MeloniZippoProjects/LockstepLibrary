@@ -20,7 +20,11 @@ public class LettoreImpostazioniXml {
             new AssociazioniTasti(KeyCode.D, KeyCode.A, KeyCode.S, KeyCode.Q),
             new IndirizzoServer("localhost", 3306),
             new IndirizzoServer("localhost", 9200),
-            new PortaAscoltoClient(9000, 9000, 9100));
+            new PortaAscoltoClient(9000, 9000, 9100),
+            60,
+            60,
+            50,
+            500);
 
     public static ImpostazioniXml leggiImpostazioni() {
         String x = "";
@@ -29,13 +33,7 @@ public class LettoreImpostazioniXml {
             x = new String(Files.readAllBytes(Paths.get(LettoreImpostazioniXml.percorsoFileXml)));
         } catch (Exception e) {
         }
-
-        if (validaImpostazioniXml(x)) {
-            return deserializzaImpostazioniXml(x);
-        } else {
-            scriviImpostazioniDefault();
-            return LettoreImpostazioniXml.impostazioniDefault;
-        }
+        return deserializzaImpostazioniXml(x);
     }
 
     private static boolean validaImpostazioniXml(String impostazioniXmlSerializzate) {

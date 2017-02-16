@@ -11,6 +11,7 @@ import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+import xeviousvs.Comando.EnumComando;
 
 public class XeviousVS extends Application {
 
@@ -21,11 +22,12 @@ public class XeviousVS extends Application {
     private String usernameGiocatore;
     private VistaGioco vistaGioco;
     private ModelloGioco modelloGioco;
-    private RicercatoreAvversario ricercatorePartita;
+    //private RicercatoreAvversario ricercatorePartita;
     private AssociazioniTasti associazioneTasti;
 
-    private TrasmettitoreComandi trasmettitoreComandi;
-    private RicevitoreComandi ricevitoreComandi;
+    private final Comando comandoCorrente = new Comando(EnumComando.NOP, usernameGiocatore);
+    
+    private XeviousLockstepClient lockstepClient;
 
     private static final int paddingInterfaccia = 15;
     private static final int altezzaContenitoreGioco = 500;
@@ -33,6 +35,11 @@ public class XeviousVS extends Application {
     private static final int altezzaPulsante = 80;
     private static final int larghezzaPulsante = 100;
     private static final int paddingPulsante = 10;
+    
+    private int framerate;
+    private int tickrate;
+    private int fillsize;
+    private int timeout;
 
     private static final String testoTitolo = "XeviousVS";
     private static final String testoEtichettaUsername = "Username";
@@ -54,7 +61,8 @@ public class XeviousVS extends Application {
     public static final String messaggioPartitaInPausaAvversario = "-?- ha messo in pausa la partita";
     public static final String messaggioVittoria = "Hai vinto contro -?-! Premi Gioca! per cercare un altro avversario";
     public static final String messaggioSconfitta = "-?- ha vinto... Premi Gioca! per cercare un altro avversario";
-
+    public static final String messaggioServerNonDisponibile = "Nessun server non disponibile";
+    
     public void start(Stage primaryStage) {
         VBox root = costruisciInterfaccia();
 
@@ -66,7 +74,7 @@ public class XeviousVS extends Application {
 
         this.impostaBottoneGioca(false);
 
-        OperazioniCacheLocale.ripristinaCache(this, modelloGioco, vistaGioco);
+        //OperazioniCacheLocale.ripristinaCache(this, modelloGioco, vistaGioco);
 
         this.campoInputUsername.setOnAction((ActionEvent ev) -> {
             this.registraUtente(this.campoInputUsername.getText());
@@ -75,21 +83,19 @@ public class XeviousVS extends Application {
 
         Scene scene = new Scene(root);
         scene.setOnKeyPressed((KeyEvent ev) -> {
-            this.riceviInputGiocatore(ev.getCode());
+            this.impostaInputGiocatore(ev.getCode());
         });
 
         primaryStage.setOnCloseRequest((WindowEvent ev) -> {
-            this.ricercatorePartita.interrompiRicerca();
-            if (this.ricevitoreComandi != null) {
-                this.ricevitoreComandi.interrupt();
+            if (lockstepClient != null) {
+                //lockstep client close
             }
-            this.ricercatorePartita.chiudiConnessioneAvversario(false);
 
             OperazioniCacheLocale.salvaCache(usernameGiocatore, modelloGioco, vistaGioco);
             LoggerEventoXml.registraEvento(LoggerEventoXml.descrizioneEventoChiusura);
             Platform.exit();
         });
-
+        
         primaryStage.setTitle(XeviousVS.testoTitolo);
         primaryStage.setScene(scene);
         primaryStage.show();
@@ -98,10 +104,14 @@ public class XeviousVS extends Application {
     private void caricaImpostazioni() {
         ImpostazioniXml impostazioniXml = LettoreImpostazioniXml.leggiImpostazioni();
         this.associazioneTasti = impostazioniXml.associazioniTasti;
-        this.ricercatorePartita = new RicercatoreAvversario(impostazioniXml.portaAscoltoClient.porta, this, this.modelloGioco);
+        //this.ricercatorePartita = new RicercatoreAvversario(impostazioniXml.portaAscoltoClient.porta, this, this.modelloGioco);
         LoggerEventoXml.impostaIndirizzoServerLog(impostazioniXml.indirizzoServerLog.indirizzoIP, impostazioniXml.indirizzoServerLog.porta);
         OperazioniDatabase.impostaIndirizzoDatabase(impostazioniXml.indirizzoDatabase.indirizzoIP, impostazioniXml.indirizzoDatabase.porta);
 
+        tickrate = impostazioniXml.tickrate;
+        fillsize = impostazioniXml.fillsize;
+        framerate = impostazioniXml.framerate;
+        
         LoggerEventoXml.registraEvento(LoggerEventoXml.descrizioneEventoAvvio);
 
         if (!impostazioniXml.associazioniTasti.equals(LettoreImpostazioniXml.impostazioniDefault.associazioniTasti)) {      //1
@@ -162,23 +172,38 @@ public class XeviousVS extends Application {
         this.vistaStatisticheUtente.setText(messaggioStatistiche);
     }
 
-    private void riceviInputGiocatore(KeyCode tasto) {
-        if (this.associazioneTasti != null && this.trasmettitoreComandi != null) {
-            if (tasto == this.associazioneTasti.tastoDestra) {
-                this.trasmettitoreComandi.inoltraComando(Comando.Destra);
-                this.modelloGioco.eseguiComandoGiocatore(Comando.Destra);
+    private void impostaInputGiocatore(KeyCode tasto) {
+        if (this.associazioneTasti != null && this.lockstepClient != null) {
+            if (tasto == this.associazioneTasti.tastoDestra ) {
+                if(comandoCorrente.comando == EnumComando.NOP)
+                    comandoCorrente.comando = EnumComando.Destra;
+                else if(comandoCorrente.comando == EnumComando.Fuoco)
+                    comandoCorrente.comando = EnumComando.FuocoDestra;
             }
             if (tasto == this.associazioneTasti.tastoSinistra) {
-                this.trasmettitoreComandi.inoltraComando(Comando.Sinistra);
-                this.modelloGioco.eseguiComandoGiocatore(Comando.Sinistra);
+                if(comandoCorrente.comando == EnumComando.NOP)
+                    comandoCorrente.comando = EnumComando.Sinistra;
+                else if(comandoCorrente.comando == EnumComando.Fuoco)
+                    comandoCorrente.comando = EnumComando.FuocoSinistra;
             }
             if (tasto == this.associazioneTasti.tastoFuoco) {
-                this.trasmettitoreComandi.inoltraComando(Comando.Fuoco);
-                this.modelloGioco.eseguiComandoGiocatore(Comando.Fuoco);
+                if(null != comandoCorrente.comando)
+                    switch (comandoCorrente.comando) {
+                    case NOP:
+                        comandoCorrente.comando = EnumComando.Fuoco;
+                        break;
+                    case Destra:
+                        comandoCorrente.comando = EnumComando.FuocoDestra;
+                        break;
+                    case Sinistra:
+                        comandoCorrente.comando = EnumComando.FuocoSinistra;
+                        break;
+                    default:
+                        break;
+                }
             }
             if (tasto == this.associazioneTasti.tastoPausa) {
-                this.trasmettitoreComandi.inoltraComando(Comando.Pausa);
-                this.modelloGioco.eseguiComandoGiocatore(Comando.Pausa);
+                comandoCorrente.comando = EnumComando.Pausa;
             }
         }
     }
@@ -192,7 +217,18 @@ public class XeviousVS extends Application {
             this.campoInputUsername.setDisable(true);
             this.vistaGioco.ottieniVistaAreaGioco().requestFocus();
             this.impostaMessaggio(XeviousVS.messaggioRicercaPartita);
-            this.ricercatorePartita.avviaRicercaNuovaPartita();
+            
+            ServerDisponibile server = RicercatoreServer.ottieniServer();
+            if(server == null)
+            {
+                Platform.runLater(() -> this.impostaMessaggio(messaggioServerNonDisponibile));
+            }
+            else
+            {
+                InetSocketAddress serverAddress = new InetSocketAddress(server.indirizzoAscolto, server.portaAscolto);
+                lockstepClient = new XeviousLockstepClient(serverAddress, framerate, tickrate, timeout, fillsize, usernameGiocatore, modelloGioco, comandoCorrente);
+            }
+            
         });
     }
 
@@ -203,7 +239,7 @@ public class XeviousVS extends Application {
             LoggerEventoXml.registraEvento(LoggerEventoXml.descrizioneEventoBottone.replace(LoggerEventoXml.segnapostoDescrizione, XeviousVS.testoBottoneAnnulla));
             this.campoInputUsername.setDisable(false);
             this.impostaBottoneGioca(true);
-            this.ricercatorePartita.interrompiRicerca();
+            //this.ricercatorePartita.interrompiRicerca();
         });
     }
 
@@ -223,11 +259,11 @@ public class XeviousVS extends Application {
         this.impostaBottoneAnnulla(false);
         this.impostaMessaggio(XeviousVS.messaggioRecuperoPartita);
         this.vistaGioco.ottieniVistaAreaGioco().requestFocus();
-        this.ricercatorePartita.avviaRecuperoPartita();
+        //this.ricercatorePartita.avviaRecuperoPartita();
     }
 
     public void impostaTerminazionePartita(boolean vittoria) {
-        this.ricercatorePartita.chiudiConnessioneAvversario(true);
+        //this.ricercatorePartita.chiudiConnessioneAvversario(true);
         OperazioniDatabase.aggiornaStatisticheUtente(usernameGiocatore, vittoria);
         this.aggiornaVistaStatistiche(OperazioniDatabase.leggiStatisticheUtente(usernameGiocatore));
         this.impostaBottoneGioca(true);
@@ -239,10 +275,10 @@ public class XeviousVS extends Application {
         return this.usernameGiocatore;
     }
 
-    public void impostaConnessionePartita(RicevitoreComandi ricevitore, TrasmettitoreComandi trasmettitore) {
-        this.ricevitoreComandi = ricevitore;
-        this.trasmettitoreComandi = trasmettitore;
-    }
+    //public void impostaConnessionePartita(RicevitoreComandi ricevitore, TrasmettitoreComandi trasmettitore) {
+    //    this.ricevitoreComandi = ricevitore;
+    //    this.trasmettitoreComandi = trasmettitore;
+    //}
 
     public static void main(String[] args) {
         launch(args);

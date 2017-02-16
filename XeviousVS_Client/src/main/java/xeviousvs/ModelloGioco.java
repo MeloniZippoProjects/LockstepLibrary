@@ -1,5 +1,7 @@
 package xeviousvs;
 
+import xeviousvs.Comando.EnumComando;
+
 public class ModelloGioco implements java.io.Serializable {
 
     private int viteGiocatore;
@@ -45,23 +47,23 @@ public class ModelloGioco implements java.io.Serializable {
         return this.usernameAvversario;
     }
 
-    public synchronized void eseguiComandoGiocatore(xeviousvs.Comando comando) {
+    public synchronized void eseguiComandoGiocatore(Comando inputCmd) {
         switch (this.statoPartita) {
             case InAttesaUtenti:
-                if (comando == Comando.Fuoco) {
+                if (inputCmd.comando == EnumComando.Fuoco) {
                     this.statoPartita = StatoPartita.InAttesaAvversario;
                     this.interfaccia.impostaMessaggio(XeviousVS.messaggioAttesaAvversario.replace(XeviousVS.segnapostoSostituizioniMessaggi, usernameAvversario));
                 }
                 break;
             case InAttesaGiocatore:
-                if (comando == Comando.Fuoco) {
+                if (inputCmd.comando == EnumComando.Fuoco) {
                     this.statoPartita = StatoPartita.Attiva;
                     this.interfaccia.impostaMessaggio(XeviousVS.messaggioPartitaInCorso);
                     this.vistaGioco.eseguiAnimazioni();
                 }
                 break;
             case InPausaDaGiocatore:
-                if (comando == Comando.Fuoco) {
+                if (inputCmd.comando == EnumComando.Fuoco) {
                     this.statoPartita = StatoPartita.Attiva;
                     this.interfaccia.impostaMessaggio(XeviousVS.messaggioPartitaInCorso);
                     this.vistaGioco.eseguiAnimazioni();
@@ -69,41 +71,48 @@ public class ModelloGioco implements java.io.Serializable {
                 }
                 break;
             case Attiva:
-                eseguiComandoPartitaAttiva(comando, Fazione.Giocatore);
+                eseguiComandoPartitaAttiva(inputCmd, Fazione.Giocatore);
         }
     }
 
-    public synchronized void eseguiComandoAvversario(xeviousvs.Comando comando) {
+    public synchronized void eseguiComandoAvversario(Comando inputCmd) {
         switch (this.statoPartita) {
             case InAttesaUtenti:
-                if (comando == Comando.Fuoco) {
+                if (inputCmd.comando == EnumComando.Fuoco) {
                     this.statoPartita = StatoPartita.InAttesaGiocatore;
                 }
                 break;
             case InAttesaAvversario:
-                if (comando == Comando.Fuoco) {
+                if (inputCmd.comando == EnumComando.Fuoco) {
                     this.statoPartita = StatoPartita.Attiva;
                     this.interfaccia.impostaMessaggio(XeviousVS.messaggioPartitaInCorso);
                     this.vistaGioco.eseguiAnimazioni();
                 }
                 break;
             case InPausaDaAvversario:
-                if (comando == Comando.Fuoco) {
+                if (inputCmd.comando == EnumComando.Fuoco) {
                     this.statoPartita = StatoPartita.Attiva;
                     this.interfaccia.impostaMessaggio(XeviousVS.messaggioPartitaInCorso);
                     this.vistaGioco.eseguiAnimazioni();
                 }
                 break;
             case Attiva:
-                eseguiComandoPartitaAttiva(comando, Fazione.Avversario);
+                eseguiComandoPartitaAttiva(inputCmd, Fazione.Avversario);
         }
     }
 
-    private synchronized void eseguiComandoPartitaAttiva(Comando comando, Fazione fazione) {
-        switch (comando) {
+    private synchronized void eseguiComandoPartitaAttiva(Comando inputCmd, Fazione fazione) {
+        switch (inputCmd.comando) {
+            
+            case NOP:
+                break;
+            case FuocoDestra:
+                this.vistaGioco.ottieniNavicella(fazione).sparaProiettile();
             case Destra:
                 this.vistaGioco.ottieniNavicella(fazione).spostaDestra();
                 break;
+            case FuocoSinistra:
+                this.vistaGioco.ottieniNavicella(fazione).sparaProiettile();
             case Sinistra:
                 this.vistaGioco.ottieniNavicella(fazione).spostaSinistra();
                 break;

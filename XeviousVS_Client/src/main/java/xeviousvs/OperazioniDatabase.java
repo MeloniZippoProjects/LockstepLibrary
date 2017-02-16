@@ -17,7 +17,7 @@ public class OperazioniDatabase {
     private static final String queryRegistraRecuperoPartita = "INSERT INTO giocatori_in_attesa_recupero_partita VALUES (?, ?, ?)";
     private static final String queryRimuoviRicercaPartita = "DELETE FROM giocatori_disponibili WHERE username = ?";
     private static final String queryRimuoviRecuperoPartita = "DELETE FROM giocatori_in_attesa_recupero_partita WHERE username = ?";
-    private static final String queryOttieniRicercaPartita = "SELECT username, indirizzo_ip, porta FROM giocatori_disponibili LIMIT 1";
+    private static final String queryOttieniRicercaPartita = "SELECT indirizzo_ip, porta FROM server_disponibili LIMIT 1";
     private static final String queryOttieniRecuperoPartita = "SELECT username, indirizzo_ip, porta FROM giocatori_in_attesa_recupero_partita WHERE username = ?";
 
     private static final String segnapostoColonne = "-?-";
@@ -118,14 +118,15 @@ public class OperazioniDatabase {
         }
     }
 
-    public static RegistrazioneUtenteInAscolto ottieniRicercaPartita() {
+    public static ServerDisponibile ottieniServerDisponibile() {
         try (
                 Connection co = DriverManager.getConnection(("jdbc:" + tipoDatabase + "://" + indirizzoDatabase + ":" + porta + "/" + nomeSchema), "root", "");
                 PreparedStatement ps = co.prepareStatement(queryOttieniRicercaPartita);) {
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                return new RegistrazioneUtenteInAscolto(rs.getString("username"), rs.getString("indirizzo_ip"), rs.getInt("porta"));
+                return new ServerDisponibile(rs.getString("indirizzo_ip"), rs.getInt("porta"));
             }
+            else return null;
         } catch (SQLException e) {
             e.printStackTrace();
         }

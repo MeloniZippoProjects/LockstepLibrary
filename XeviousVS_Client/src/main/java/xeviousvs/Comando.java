@@ -6,7 +6,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 
-class Comando implements Externalizable
+public class Comando implements Externalizable
 {
 
     @Override
