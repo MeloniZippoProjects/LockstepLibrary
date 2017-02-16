@@ -32,12 +32,12 @@ public class XeviousLockstepClient extends LockstepClient<Comando>{
 
     @Override
     protected void suspendSimulation() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        modelloGioco.vistaGioco.sospendiAnimazioni();
     }
 
     @Override
     protected void resumeSimulation() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        modelloGioco.vistaGioco.eseguiAnimazioni();
     }
 
     @Override

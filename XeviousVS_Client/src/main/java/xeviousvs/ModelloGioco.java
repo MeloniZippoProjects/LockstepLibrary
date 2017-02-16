@@ -9,7 +9,7 @@ public class ModelloGioco implements java.io.Serializable {
     private String usernameAvversario;
 
     private StatoPartita statoPartita;
-    private VistaGioco vistaGioco;
+    protected VistaGioco vistaGioco;
     private final XeviousVS interfaccia;
     public final static int massimoVite = 5;
 
