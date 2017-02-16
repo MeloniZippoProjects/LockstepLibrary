@@ -96,6 +96,7 @@ public class LockstepServer<Command extends Serializable> implements Runnable
     @Override
     public void run()
     {
+        atServerStarted();
         handshake();
         atHandshakeEnded();
         
@@ -258,6 +259,13 @@ public class LockstepServer<Command extends Serializable> implements Runnable
         }
     }
 
+    /**
+     * Optionally extended. Called before the handshake phase.
+     */
+    protected void atServerStarted()
+    {
+    }
+    
     /**
      * Optionally extended. Called after the handshake phase.
      */

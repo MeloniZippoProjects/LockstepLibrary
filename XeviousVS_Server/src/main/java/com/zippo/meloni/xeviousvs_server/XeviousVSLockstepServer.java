@@ -12,22 +12,35 @@ import lockstep.LockstepServer;
  *
  * @author Raff
  */
-public class XeviousVSLockstepServer extends LockstepServer
+public class XeviousVSLockstepServer extends LockstepServer<Comando>
 {
-    public int serverID;
+    private int serverID;
+    private String serverAddress;
+    private int tcpPort;
     
-    public XeviousVSLockstepServer(int tcpPort, int clientsNumber, int tickrate)
+    /**
+     * Standard constructor, hidden.
+     * 
+     * @param tcpPort
+     * @param clientsNumber
+     * @param tickrate 
+     */
+    private XeviousVSLockstepServer(int tcpPort, int clientsNumber, int tickrate)
     {
-        super(tcpPort, 2, tickrate);
-        Random rnd = new Random();
-        serverID = rnd.nextInt(10000);
+        super(tcpPort, clientsNumber, tickrate);
     }    
     
-    public XeviousVSLockstepServer(int tcpPort, int tickrate)
+    public XeviousVSLockstepServer(String serverAddress, int tcpPort, int tickrate)
     {
         super(tcpPort, 2, tickrate);
         Random rnd = new Random();
         serverID = rnd.nextInt(10000);
+    }
+    
+    @Override
+    protected void atServerStarted()
+    {
+        OperazioniDatabaseServer.registraServerDisponibile(serverID, serverAddress, tcpPort);
     }
     
     @Override

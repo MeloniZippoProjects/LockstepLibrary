@@ -14,13 +14,12 @@ import org.apache.commons.cli.*;
  */
 public class XeviousVS_Server
 {
-    
-    
     private static final Logger LOG = Logger.getLogger(XeviousVS_Server.class.getName());   
     
     public static void Main(String args[])
     {
         Options opts = new Options();
+        opts.addOption("i", "serverAddress", true, "IP address of the server");
         opts.addOption("p", "serverPort", true, "Listening TCP port used to initiate handshakes");
         opts.addOption("d", "databaseAddress", true, "IP address of the matchmaking database");
         opts.addOption("f", "databasePort", true, "Listening port of the matchmaking database");
@@ -41,10 +40,11 @@ public class XeviousVS_Server
         int databasePort = Integer.parseInt(commandLine.getOptionValue("databasePort"));
         OperazioniDatabaseServer.impostaIndirizzoDatabase(databaseAddress, databasePort);
         
+        String serverAddress = commandLine.getOptionValue("serverAddress");
         int serverPort = Integer.parseInt(commandLine.getOptionValue("serverPort"));
         int tickrate = Integer.parseInt(commandLine.getOptionValue("tickrate"));
         
-        Thread thread = new Thread(new XeviousVSLockstepServer(serverPort, tickrate));
+        Thread thread = new Thread(new XeviousVSLockstepServer(serverAddress, serverPort, tickrate));
         thread.setName("Main-server-thread");
         thread.start();
         
