@@ -1,9 +1,9 @@
 <project>
     <modelVersion>4.0.0</modelVersion>
     <groupId>cds.zippo.meloni</groupId>
-    <artifactId>xeviousVS_Client</artifactId>
+    <artifactId>xeviousVS_Server</artifactId>
     <version>1</version>
-    <name>xeviousVS_Client-1.0.0</name>
+    <name>xeviousVS_Server-1.0.0</name>
     <dependencies>
         <dependency>
             <groupId>org.apache.maven.plugins</groupId>
@@ -11,40 +11,14 @@
             <version>3.0.0</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>3.5</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
+            <groupId>cds.zippo.meloni</groupId>
+            <artifactId>locksteplibrary</artifactId>
+            <version>1</version>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>1.2.17</version>
-        </dependency>
-        <dependency>
-            <groupId>xstream</groupId>
-            <artifactId>xstream</artifactId>
-            <version>1.2.2</version>
-        </dependency>
-        <dependency>
-            <groupId>xmlpull</groupId>
-            <artifactId>xmlpull</artifactId>
-            <version>1.1.3.1</version>
-        </dependency>
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.34</version>
-        </dependency>
-        <dependency>
-            <groupId>cds.zippo.meloni</groupId>
-            <artifactId>locksteplibrary</artifactId>
-            <version>1</version>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
@@ -87,7 +61,7 @@
                 <archive>
                   <manifest>
                    <addClasspath>true</addClasspath>
-                   <mainClass>xeviousvs.XeviousVS</mainClass>
+                   <mainClass>xeviousvs_server.XeviousVS_Server</mainClass>
                  </manifest>
                 </archive>
                 <descriptorRefs>

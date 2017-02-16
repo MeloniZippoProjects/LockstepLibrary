@@ -11,3 +11,5 @@ LockstepLibrary/logs/.log
 *.log
 LockstepLibrary/logs/.log
 *.log
+/XeviousVS_Server/nbproject/private/
+/XeviousVS_Server/target/

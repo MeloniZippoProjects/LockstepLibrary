@@ -97,6 +97,7 @@ public class LockstepServer<Command extends Serializable> implements Runnable
     public void run()
     {
         handshake();
+        atHandshakeEnded();
         
         while(true)
         {
@@ -255,5 +256,12 @@ public class LockstepServer<Command extends Serializable> implements Runnable
                 }
             }
         }
+    }
+
+    /**
+     * Optionally extended. Called after the handshake phase.
+     */
+    protected void atHandshakeEnded()
+    {
     }
 }
