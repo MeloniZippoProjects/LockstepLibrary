@@ -12,3 +12,5 @@ LockstepLibrary/logs/.log
 LockstepLibrary/logs/.log
 *.log
 MosaicSimulation/simulation2.ps1
+/XeviousVS_Server/nbproject/private/
+/XeviousVS_Server/target/
