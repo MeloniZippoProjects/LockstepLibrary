@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.zippo.meloni.xeviousvs_server;
+package xeviousvs.server;
 
 import org.apache.log4j.Logger;
 import org.apache.commons.cli.*;
@@ -16,7 +16,7 @@ public class XeviousVS_Server
 {
     private static final Logger LOG = Logger.getLogger(XeviousVS_Server.class.getName());   
     
-    public static void Main(String args[])
+    public static void main(String args[])
     {
         Options opts = new Options();
         opts.addOption("i", "serverAddress", true, "IP address of the server");
@@ -43,6 +43,8 @@ public class XeviousVS_Server
         String serverAddress = commandLine.getOptionValue("serverAddress");
         int serverPort = Integer.parseInt(commandLine.getOptionValue("serverPort"));
         int tickrate = Integer.parseInt(commandLine.getOptionValue("tickrate"));
+        
+        LOG.debug("Server started, command line parsed");
         
         Thread thread = new Thread(new XeviousVSLockstepServer(serverAddress, serverPort, tickrate));
         thread.setName("Main-server-thread");

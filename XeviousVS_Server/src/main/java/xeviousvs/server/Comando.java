@@ -1,4 +1,4 @@
-package com.zippo.meloni.xeviousvs_server;
+package xeviousvs.server;
 
 
 
