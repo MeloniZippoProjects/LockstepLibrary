@@ -1,4 +1,5 @@
-$serverAddress = "192.168.0.100";
+$serverAddress = "localhost";
+#$serverAddress = "192.168.0.100";
 $serverPort = 8000;
 $databaseAddress = "localhost";
 $databasePort = "3306";

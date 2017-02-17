@@ -9,7 +9,9 @@ public class OperazioniDatabaseServer{
 
     private static final String tipoDatabase = "mysql";
     private static final String nomeSchema = "xeviousvs";
-
+    private static final String usernameDatabase = "xevious";
+    private static final String passwordDatabase = "xevious";
+    
     private static final String queryRegistraServerDisponibile = "INSERT INTO server_disponibili VALUES (?, ?, ?)";
     private static final String queryRimuoviServerDisponibile = "DELETE FROM server_disponibili WHERE id = ?";
 
@@ -21,7 +23,7 @@ public class OperazioniDatabaseServer{
 
     public static void registraServerDisponibile(int serverID, String indirizzoServer, int portaServer) {
         try (
-                Connection co = DriverManager.getConnection(("jdbc:" + tipoDatabase + "://" + indirizzoDatabase + ":" + portaDatabase + "/" + nomeSchema), "xevious", "xevious");
+                Connection co = DriverManager.getConnection(("jdbc:" + tipoDatabase + "://" + indirizzoDatabase + ":" + portaDatabase + "/" + nomeSchema), usernameDatabase, passwordDatabase);
                 PreparedStatement ps = co.prepareStatement(queryRegistraServerDisponibile);) {
             ps.setInt(1, serverID);
             ps.setString(2, indirizzoServer);
@@ -34,7 +36,7 @@ public class OperazioniDatabaseServer{
 
     public static void rimuoviServerDisponibile(int serverID) {
         try (
-                Connection co = DriverManager.getConnection(("jdbc:" + tipoDatabase + "://" + indirizzoDatabase + ":" + portaDatabase + "/" + nomeSchema), "xevious", "xevious");
+                Connection co = DriverManager.getConnection(("jdbc:" + tipoDatabase + "://" + indirizzoDatabase + ":" + portaDatabase + "/" + nomeSchema), usernameDatabase, passwordDatabase);
                 PreparedStatement ps = co.prepareStatement(queryRimuoviServerDisponibile);) {
             ps.setInt(1, serverID);
             ps.executeUpdate();

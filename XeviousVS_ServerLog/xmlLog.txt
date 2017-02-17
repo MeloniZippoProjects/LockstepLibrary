@@ -1,0 +1,36 @@
+<xeviousvs.client.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-02-17 13:04:19.996</timestampEvento>
+  <descrizioneEvento>ApplicazioneAvviata</descrizioneEvento>
+</xeviousvs.client.LogEventoXml>
+
+<xeviousvs.client.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-02-17 13:04:25.327</timestampEvento>
+  <descrizioneEvento>Username inserito</descrizioneEvento>
+</xeviousvs.client.LogEventoXml>
+
+<xeviousvs.client.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-02-17 13:04:27.538</timestampEvento>
+  <descrizioneEvento>Pulsante Gioca! premuto</descrizioneEvento>
+</xeviousvs.client.LogEventoXml>
+
+<xeviousvs.client.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-02-17 13:04:29.28</timestampEvento>
+  <descrizioneEvento>Pulsante Gioca! premuto</descrizioneEvento>
+</xeviousvs.client.LogEventoXml>
+
+<xeviousvs.client.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-02-17 13:05:01.314</timestampEvento>
+  <descrizioneEvento>Applicazione chiusa</descrizioneEvento>
+</xeviousvs.client.LogEventoXml>
+
+<xeviousvs.client.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-02-17 13:05:02.184</timestampEvento>
+  <descrizioneEvento>Applicazione chiusa</descrizioneEvento>
+</xeviousvs.client.LogEventoXml>
+

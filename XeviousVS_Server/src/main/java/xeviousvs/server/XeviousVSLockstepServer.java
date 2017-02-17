@@ -8,6 +8,7 @@ package xeviousvs.server;
 import java.util.Random;
 import lockstep.LockstepServer;
 import org.apache.log4j.Logger;
+import xeviousvs.Comando;
 
 /**
  *
