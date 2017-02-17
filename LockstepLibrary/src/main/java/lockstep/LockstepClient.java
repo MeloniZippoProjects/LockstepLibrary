@@ -182,7 +182,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
                 receiver = new LockstepReceiver(udpSocket, receivingExecutionQueues, transmissionQueueWrapper, "Receiver-to-"+hostID);
                 transmitter = new LockstepTransmitter(udpSocket, tickrate, transmissionQueueWrapper, transmissionSemaphore, "Transmitter-from-"+hostID);
 
-                insertBootstrapCommands(fillCommands());
+                insertBootstrapCommands(bootstrapCommands());
                                 
                 executorService = Executors.newFixedThreadPool(2);
 

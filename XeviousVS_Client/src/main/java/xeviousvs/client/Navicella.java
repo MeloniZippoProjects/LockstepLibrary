@@ -15,9 +15,10 @@ public class Navicella extends Path {
     private final VistaGioco vistaGioco;
     private boolean prontaASparare = true;
 
+    private final int framerate;
     private static final double lato = 38;
     public static final double altezza = (Math.sqrt(3) / 2) * lato;
-    private static final double lunghezzaSpostamento = lato / 2;
+    private static final double lunghezzaSpostamento = lato*5;
     private static final int tempoSpostamentoMillisecondi = 100;
     private static final int tempoAttesaFuocoMillisecondi = 500;
     private static final Color coloreNavicellaGiocatore = Color.RED;
@@ -25,7 +26,7 @@ public class Navicella extends Path {
     private static final Color coloreBordo = Color.BLACK;
     private static final double spessoreBordo = 3.5;
 
-    public Navicella(Fazione fazione, ModelloGioco modelloGioco, VistaGioco vistaGioco, double centroX, double centroY) {
+    public Navicella(Fazione fazione, ModelloGioco modelloGioco, VistaGioco vistaGioco, double centroX, double centroY, int framerate) {
         super(
                 new MoveTo(centroX - lato / 2, centroY + altezza / 2),
                 new LineTo(centroX + lato / 2, centroY + altezza / 2),
@@ -33,6 +34,7 @@ public class Navicella extends Path {
                 new ClosePath()
         );
 
+        this.framerate = framerate;
         this.fazione = fazione;
         this.vistaGioco = vistaGioco;
         this.transizioneAttiva = null;
@@ -119,8 +121,8 @@ public class Navicella extends Path {
         if (this.transizioneAttiva == null) {
             double posizioneCorrenteX = this.getLayoutX() + this.getTranslateX();
 
-            if (this.getBoundsInParent().getMaxX() + lunghezzaSpostamento < this.vistaGioco.ottieniVistaAreaGioco().getPrefWidth()) {
-                this.transizioneAttiva = new TranslateTransition(Duration.millis(tempoSpostamentoMillisecondi), this);
+            if (this.getBoundsInParent().getMaxX() + lunghezzaSpostamento/framerate < this.vistaGioco.ottieniVistaAreaGioco().getPrefWidth()) {
+                this.transizioneAttiva = new TranslateTransition(Duration.millis(1000/framerate), this);
                 this.transizioneAttiva.setFromX(posizioneCorrenteX);
                 this.transizioneAttiva.setToX(posizioneCorrenteX + lunghezzaSpostamento);
 
@@ -136,8 +138,8 @@ public class Navicella extends Path {
         if (this.transizioneAttiva == null) {
             double posizioneCorrenteX = this.getLayoutX() + this.getTranslateX();
 
-            if (this.getBoundsInParent().getMinX() - lunghezzaSpostamento > 0) {
-                this.transizioneAttiva = new TranslateTransition(Duration.millis(tempoSpostamentoMillisecondi), this);
+            if (this.getBoundsInParent().getMinX() - lunghezzaSpostamento/framerate > 0) {
+                this.transizioneAttiva = new TranslateTransition(Duration.millis(1000/framerate), this);
                 this.transizioneAttiva.setFromX(posizioneCorrenteX);
                 this.transizioneAttiva.setToX(posizioneCorrenteX - lunghezzaSpostamento);
 

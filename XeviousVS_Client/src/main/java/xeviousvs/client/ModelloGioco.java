@@ -29,17 +29,6 @@ public class ModelloGioco implements java.io.Serializable {
         return this.statoPartita;
     }
 
-    public synchronized void impostaRecuperoPartita(String usernameAvversario, int viteGiocatore, int viteAvversario) {
-        this.usernameAvversario = usernameAvversario;
-        this.viteGiocatore = viteGiocatore;
-        this.viteAvversario = viteAvversario;
-
-        this.vistaGioco.ottieniPannelloVite(Fazione.Giocatore).aggiornaVistaVite(this.viteGiocatore);
-        this.vistaGioco.ottieniPannelloVite(Fazione.Avversario).aggiornaVistaVite(this.viteAvversario);
-        
-        this.statoPartita = StatoPartita.InAttesaRecuperoConnessione;
-    }
-
     public synchronized void impostaUsernameAvversario(String usernameAvversario) {
         this.usernameAvversario = usernameAvversario;
     }
@@ -180,9 +169,9 @@ public class ModelloGioco implements java.io.Serializable {
 
     public synchronized void interrompiPartita() {
         this.vistaGioco.sospendiAnimazioni();
-        this.statoPartita = StatoPartita.InAttesaRecuperoConnessione;
+        //this.statoPartita = StatoPartita.InAttesaRecuperoConnessione;
         LoggerEventoXml.registraEvento(LoggerEventoXml.descrizioneEventoInterruzionePartita);
-        this.interfaccia.impostaRecuperoPartita();
+        //this.interfaccia.impostaRecuperoPartita();
     }
 
     private synchronized void terminaPartita(boolean vittoria) {

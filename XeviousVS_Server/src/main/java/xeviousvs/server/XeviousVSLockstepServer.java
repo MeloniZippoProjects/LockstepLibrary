@@ -38,6 +38,7 @@ public class XeviousVSLockstepServer extends LockstepServer<Comando>
     {
         super(tcpPort, 2, tickrate);
         this.serverAddress = serverAddress;
+        this.tcpPort = tcpPort;
         Random rnd = new Random();
         serverID = rnd.nextInt(10000);
         LOG.debug("Server thread created with ID " + serverID);

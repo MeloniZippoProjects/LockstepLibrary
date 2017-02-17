@@ -10,6 +10,7 @@ import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.*;
 import org.w3c.dom.Document;
 import org.xml.sax.*;
+import xeviousvs.LogEventoXml;
 
 public class LoggerEventoXml {
 

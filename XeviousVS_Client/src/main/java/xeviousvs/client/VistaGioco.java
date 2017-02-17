@@ -24,6 +24,7 @@ public class VistaGioco {
     private static final Color colorePannelloGiocatore = Color.LIGHTCORAL;
     private static final int altezzaPannelli = 30;
     private static final int raggioSpigoli = 5;
+    private int framerate;
 
     public VistaGioco(VBox contenitoreGioco) {
         this.contenitoreGioco = contenitoreGioco;
@@ -48,8 +49,9 @@ public class VistaGioco {
         this.contenitoreGioco.getChildren().addAll(vistaPannelloViteAvversario, this.vistaAreaGioco, vistaPannelloViteGiocatore);
     }
 
-    public void assegnaModelloGioco(ModelloGioco modelloGioco) {
+    public void assegnaModelloGioco(ModelloGioco modelloGioco, int framerate) {
         this.modelloGioco = modelloGioco;
+        this.framerate = framerate;
         resetVistaGioco();      //1
     }
 
@@ -73,8 +75,8 @@ public class VistaGioco {
         this.proiettiliGiocatore.clear();
         this.proiettiliAvversario.clear();
        
-        this.navicellaGiocatore = new Navicella(Fazione.Giocatore, this.modelloGioco, this, vistaAreaGioco.getPrefWidth() / 2, vistaAreaGioco.getPrefHeight() - Navicella.altezza);
-        this.navicellaAvversario = new Navicella(Fazione.Avversario, this.modelloGioco, this, vistaAreaGioco.getPrefWidth() / 2, Navicella.altezza);
+        this.navicellaGiocatore = new Navicella(Fazione.Giocatore, this.modelloGioco, this, vistaAreaGioco.getPrefWidth() / 2, vistaAreaGioco.getPrefHeight() - Navicella.altezza, framerate);
+        this.navicellaAvversario = new Navicella(Fazione.Avversario, this.modelloGioco, this, vistaAreaGioco.getPrefWidth() / 2, Navicella.altezza, framerate);
 
         this.vistaAreaGioco.getChildren().clear();
         this.vistaAreaGioco.getChildren().addAll(this.navicellaGiocatore, this.navicellaAvversario);
@@ -147,12 +149,12 @@ public class VistaGioco {
         switch (fazione) {
             case Giocatore:
                 this.vistaAreaGioco.getChildren().remove(this.navicellaGiocatore);
-                this.navicellaGiocatore = new Navicella(Fazione.Giocatore, this.modelloGioco, this, centroX, centroY);
+                this.navicellaGiocatore = new Navicella(Fazione.Giocatore, this.modelloGioco, this, centroX, centroY, framerate);
                 this.vistaAreaGioco.getChildren().add(this.navicellaGiocatore);
                 break;
             case Avversario:
                 this.vistaAreaGioco.getChildren().remove(this.navicellaAvversario);
-                this.navicellaAvversario = new Navicella(Fazione.Avversario, this.modelloGioco, this, centroX, centroY);
+                this.navicellaAvversario = new Navicella(Fazione.Avversario, this.modelloGioco, this, centroX, centroY, framerate);
                 this.vistaAreaGioco.getChildren().add(this.navicellaAvversario);
                 break;
         }

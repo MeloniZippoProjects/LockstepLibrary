@@ -5,6 +5,7 @@
  */
 package xeviousvs.client;
 import java.net.InetSocketAddress;
+import javafx.application.Platform;
 import lockstep.*;
 import org.apache.log4j.Logger;
 import xeviousvs.Comando;
@@ -18,40 +19,55 @@ public class XeviousLockstepClient extends LockstepClient<Comando>{
 
     
     public final Comando comandoCorrente;
-    public final String proprioUsername;
-    public String avversarioUsername;
+    public final String usernameProprio;
+    public String usernameAvversario;
     public final ModelloGioco modelloGioco;
     
     private final int fillSize;
     
     private static final Logger LOG = Logger.getLogger(XeviousLockstepClient.class.getName());
+    private final XeviousVS_Client interfacciaClient;
     
     @Override
     protected Comando readInput() {
-        return comandoCorrente;
+        Comando toRet;
+        synchronized(comandoCorrente)
+        {
+            toRet = new Comando(comandoCorrente);
+            //toRet = new Comando(EnumComando.Presentazione, usernameProprio);
+            comandoCorrente.reset();
+        }
+        return toRet;
     }
 
     @Override
     protected void suspendSimulation() {
-        modelloGioco.vistaGioco.sospendiAnimazioni();
+        Platform.runLater( () -> modelloGioco.vistaGioco.sospendiAnimazioni() );
     }
 
     @Override
     protected void resumeSimulation() {
-        modelloGioco.vistaGioco.eseguiAnimazioni();
+        Platform.runLater( () -> modelloGioco.vistaGioco.eseguiAnimazioni() );
     }
 
     @Override
     protected void executeCommand(Comando c) {
-        
-        if(c.comando == EnumComando.Presentazione)
-            avversarioUsername = c.username;
+        LOG.debug("Comando da eseguire di tipo " + c.comando.toString());
+        if(c.comando == EnumComando.Presentazione && !c.username.equals(usernameProprio) )
+        {
+            LOG.debug("Ricevuto username avversario: " + c.username);
+            usernameAvversario = c.username;
+            Platform.runLater(() -> {
+                modelloGioco.impostaUsernameAvversario(usernameAvversario);
+                modelloGioco.avviaPartita();
+            });
+        }
         else 
         {
-            if(c.username.equals(proprioUsername))
-                modelloGioco.eseguiComandoGiocatore(c);
-            else if(c.username.equals(avversarioUsername))
-                modelloGioco.eseguiComandoAvversario(c);
+            if(c.username.equals(usernameProprio))
+                Platform.runLater( () -> modelloGioco.eseguiComandoGiocatore(c) );
+            else if(c.username.equals(usernameAvversario))
+                Platform.runLater( () -> modelloGioco.eseguiComandoAvversario(c) );
             else
                 LOG.fatal("comando.username non valido");
         }
@@ -62,27 +78,28 @@ public class XeviousLockstepClient extends LockstepClient<Comando>{
         Comando[] fillers = new Comando[fillSize];
         
         for(int i = 0; i < fillers.length; ++i)
-            fillers[i] = new Comando(EnumComando.NOP, proprioUsername);
+            fillers[i] = new Comando(EnumComando.NOP, usernameProprio);
         
         return fillers;
     }
 
     @Override
     protected Comando[] bootstrapCommands() {
-        Comando[] fillers = new Comando[fillSize*2];
-        fillers[0] = new Comando(EnumComando.Presentazione, proprioUsername);        
+        Comando[] fillers = new Comando[1];
+        fillers[0] = new Comando(EnumComando.Presentazione, usernameProprio);        
         for(int i = 1; i < fillers.length; ++i)
-            fillers[i] = new Comando(EnumComando.NOP, proprioUsername);
+            fillers[i] = new Comando(EnumComando.NOP, usernameProprio);
         
         return fillers;
     }
     
     public XeviousLockstepClient(InetSocketAddress serverAddress, int framerate, int tickrate, int timeout, int fillSize,
-            String username, ModelloGioco modello, Comando riferimentoComando)
+            String username, XeviousVS_Client interfaccia, ModelloGioco modello, Comando riferimentoComando)
     {
         super(serverAddress, framerate, tickrate, timeout);
-        proprioUsername = username;
+        usernameProprio = username;
         comandoCorrente = riferimentoComando;
+        interfacciaClient = interfaccia;
         modelloGioco = modello;
         this.fillSize = fillSize;
     }
