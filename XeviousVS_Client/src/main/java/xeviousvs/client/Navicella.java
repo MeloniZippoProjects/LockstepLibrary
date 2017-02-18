@@ -13,14 +13,11 @@ public class Navicella extends Path {
     private final Fazione fazione;
     private final ModelloGioco modelloGioco;
     private final VistaGioco vistaGioco;
-    private boolean prontaASparare = true;
 
     private final int framerate;
     private static final double lato = 38;
     public static final double altezza = (Math.sqrt(3) / 2) * lato;
     private static final double lunghezzaSpostamento = lato/3;
-    private static final int tempoSpostamentoMillisecondi = 100;
-    private static final int tempoAttesaFuocoMillisecondi = 500;
     private static final Color coloreNavicellaGiocatore = Color.RED;
     private static final Color coloreNavicellaAvversario = Color.BLUE;
     private static final Color coloreBordo = Color.BLACK;
@@ -68,31 +65,14 @@ public class Navicella extends Path {
     }
 
     public synchronized void sparaProiettile() {
-        if (!this.prontaASparare) {
-            return;
-        }
-
         double centroX = this.getBoundsInParent().getMinX() + lato / 2;
         double centroY = (fazione == Fazione.Giocatore) ? this.getBoundsInParent().getMinY() - Proiettile.diametro : this.getBoundsInParent().getMaxY() + Proiettile.diametro;
 
-        Proiettile proiettile = new Proiettile(fazione, modelloGioco, vistaGioco, centroX, centroY);
+        Proiettile proiettile = new Proiettile(fazione, modelloGioco, vistaGioco, centroX, centroY, framerate);
         this.vistaGioco.ottieniVistaAreaGioco().getChildren().add(proiettile);
         this.vistaGioco.ottieniProiettili(fazione).add(proiettile);
 
-        proiettile.eseguiAnimazione();
-
-        this.prontaASparare = false;
-        Timer timer = new Timer(true);
-        TimerTask task = new TimerTask() {
-            public void run() {
-                impostaProntaASparare();
-            }
-        };
-        timer.schedule(task, Navicella.tempoAttesaFuocoMillisecondi);
-    }
-
-    private synchronized void impostaProntaASparare() {
-        this.prontaASparare = true;
+        proiettile.eseguiFrame();
     }
 
     public synchronized void spostaDestra() {

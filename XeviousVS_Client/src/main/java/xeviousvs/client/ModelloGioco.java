@@ -121,6 +121,8 @@ public class ModelloGioco implements java.io.Serializable {
                     this.vistaGioco.sospendiAnimazioni();
                 }
         }
+        if(fazione == Fazione.Giocatore)
+            vistaGioco.eseguiFrameProiettili();
     }
 
     public synchronized void rimuoviVita(Fazione fazione) {

@@ -7,9 +7,10 @@ import javafx.util.Duration;
 import javafx.animation.TranslateTransition;
 import javafx.event.ActionEvent;
 
-public class Proiettile extends Circle {
+public class Proiettile extends Circle
+{
 
-    private final TranslateTransition transizioneAttiva;
+    private TranslateTransition transizioneAttiva;
     private Fazione fazione;
     private final RilevatoreSpostamento rilevatoreSpostamento;
     private final ModelloGioco modelloGioco;
@@ -21,7 +22,12 @@ public class Proiettile extends Circle {
     private static final double spessoreBordo = 3;
     private static final int tempoAttraversamentoAreaGiocoMillisecondi = 1500;
 
-    public Proiettile(Fazione fazione, ModelloGioco modelloGioco, VistaGioco vistaGioco, double centroX, double centroY) {
+    double velocity = 20;
+    double posizioneObiettivoY;
+    double durataSpostamento;
+
+    public Proiettile(Fazione fazione, ModelloGioco modelloGioco, VistaGioco vistaGioco, double centroX, double centroY, int framerate)
+    {
         super(centroX, centroY, diametro / 2);
 
         this.fazione = fazione;
@@ -33,59 +39,87 @@ public class Proiettile extends Circle {
 
         this.setFill(coloreInterno);
 
-        double posizioneObiettivoY = (this.fazione == Fazione.Giocatore)
+        velocity = (this.fazione == Fazione.Giocatore) ? -velocity : velocity;
+        posizioneObiettivoY = (this.fazione == Fazione.Giocatore)
                 ? this.getLayoutY() - (this.getBoundsInParent().getMinY())
                 : this.getLayoutY() + this.vistaGioco.ottieniVistaAreaGioco().getPrefHeight() - this.getBoundsInParent().getMinY();
 
-        double durataSpostamento = (Math.abs(posizioneObiettivoY) / this.vistaGioco.ottieniVistaAreaGioco().getPrefHeight()) * Proiettile.tempoAttraversamentoAreaGiocoMillisecondi;
-
-        this.transizioneAttiva = new TranslateTransition(Duration.millis(durataSpostamento), this);
-        this.transizioneAttiva.setFromY(this.getLayoutY());
-        this.transizioneAttiva.setToY(posizioneObiettivoY);
-
-        this.transizioneAttiva.setOnFinished((ActionEvent event) -> {
-            this.vistaGioco.ottieniVistaAreaGioco().getChildren().remove(this);
-            this.vistaGioco.ottieniProiettili(this.fazione).remove(this);
-        });
+        durataSpostamento = 1000 / framerate;
 
         this.rilevatoreSpostamento = new RilevatoreSpostamento(this);
         this.boundsInParentProperty().addListener(this.rilevatoreSpostamento);
     }
 
-    public Fazione ottieniFazione() {
+    public Fazione ottieniFazione()
+    {
         return this.fazione;
     }
 
-    public void eseguiAnimazione() {
-        if (this.transizioneAttiva != null) {
+    public void eseguiAnimazione()
+    {
+        if (this.transizioneAttiva != null)
+        {
             this.transizioneAttiva.play();
         }
     }
 
-    public void sospendiAnimazione() {
-        if (this.transizioneAttiva != null) {
+    public void sospendiAnimazione()
+    {
+        if (this.transizioneAttiva != null)
+        {
             this.transizioneAttiva.pause();
         }
     }
-    
+
+    public void eseguiFrame()
+    {
+        this.transizioneAttiva = new TranslateTransition(Duration.millis(durataSpostamento), this);
+        double posizioneCorrenteY = this.getLayoutY() + this.getTranslateY();
+        this.transizioneAttiva.setFromY(posizioneCorrenteY);
+        this.transizioneAttiva.setToY(posizioneCorrenteY + velocity);
+
+        double nextPosition = posizioneCorrenteY + velocity;
+        if ( (velocity < 0 && nextPosition <= posizioneObiettivoY) || (velocity > 0 && nextPosition >= posizioneObiettivoY))
+        {
+            this.transizioneAttiva.setOnFinished((ActionEvent event) ->
+            {
+                this.vistaGioco.ottieniVistaAreaGioco().getChildren().remove(this);
+                this.vistaGioco.ottieniProiettili(this.fazione).remove(this);
+            });
+        }
+        else
+        {
+            this.transizioneAttiva.setOnFinished((ActionEvent event) ->
+            {
+                this.transizioneAttiva = null;
+            });
+        }
+        this.transizioneAttiva.play();
+    }
+
     public void disattivaControlloImpatto()
     {
         this.boundsInParentProperty().removeListener(rilevatoreSpostamento);
     }
-    
-    public void controllaImpatto() {        //1
-        if (!this.controllaImpattoProiettili()) {
+
+    public void controllaImpatto()
+    {        //1
+        if (!this.controllaImpattoProiettili())
+        {
             this.controllaImpattoNavicella();
         }
     }
 
-    private boolean controllaImpattoProiettili() {
+    private boolean controllaImpattoProiettili()
+    {
         boolean eliminato = false;
         Fazione fazioneOpposta = (fazione == Fazione.Giocatore) ? Fazione.Avversario : Fazione.Giocatore;
         Iterator<Proiettile> iterator = this.vistaGioco.ottieniProiettili(fazioneOpposta).iterator();
-        while (iterator.hasNext() && !eliminato) {
+        while (iterator.hasNext() && !eliminato)
+        {
             Proiettile obiettivo = iterator.next();
-            if (((Path) Shape.intersect(this, obiettivo)).getElements().size() > 0) {
+            if (((Path) Shape.intersect(this, obiettivo)).getElements().size() > 0)
+            {
                 this.vistaGioco.rimuoviProiettile(obiettivo);
                 this.vistaGioco.rimuoviProiettile(this);
                 eliminato = true;
@@ -96,10 +130,12 @@ public class Proiettile extends Circle {
         return eliminato;
     }
 
-    private void controllaImpattoNavicella() {
+    private void controllaImpattoNavicella()
+    {
         Fazione fazioneOpposta = (fazione == Fazione.Giocatore) ? Fazione.Avversario : Fazione.Giocatore;
 
-        if (((Path) Shape.intersect(this, this.vistaGioco.ottieniNavicella(fazioneOpposta))).getElements().size() > 0) {
+        if (((Path) Shape.intersect(this, this.vistaGioco.ottieniNavicella(fazioneOpposta))).getElements().size() > 0)
+        {
             this.vistaGioco.rimuoviProiettile(this);
             this.modelloGioco.rimuoviVita(fazioneOpposta);
         }
@@ -109,4 +145,4 @@ public class Proiettile extends Circle {
 /*
 1: Il listener utilizzato rileva come cambiamento della posizione anche la rimozione del proiettile dall'area di gioco, che possono portare a interazioni indeterminate con altri elementi del gioco.
     Pertanto, prima di rimuovere un proiettile dall'area di gioco, è necessario utilizzare questo metodo per rimuoverne il listener.
-*/
+ */

@@ -82,6 +82,14 @@ public class VistaGioco {
         this.vistaAreaGioco.getChildren().addAll(this.navicellaGiocatore, this.navicellaAvversario);
     }
 
+    public void eseguiFrameProiettili()
+    {
+        for(Proiettile p : this.proiettiliAvversario)
+            p.eseguiFrame();
+        for(Proiettile p : this.proiettiliGiocatore)
+            p.eseguiFrame();
+    }
+    
     public void eseguiAnimazioni() {
         this.navicellaGiocatore.eseguiAnimazione();
         this.navicellaAvversario.eseguiAnimazione();
@@ -156,20 +164,6 @@ public class VistaGioco {
                 this.vistaAreaGioco.getChildren().remove(this.navicellaAvversario);
                 this.navicellaAvversario = new Navicella(Fazione.Avversario, this.modelloGioco, this, centroX, centroY, framerate);
                 this.vistaAreaGioco.getChildren().add(this.navicellaAvversario);
-                break;
-        }
-    }
-
-    void aggiungiProiettile(Fazione fazione, double centroX, double centroY) {
-        Proiettile proiettile = new Proiettile(fazione, this.modelloGioco, this, centroX, centroY);
-        this.vistaAreaGioco.getChildren().add(proiettile);
-
-        switch (fazione) {
-            case Giocatore:
-                this.proiettiliGiocatore.add(proiettile);
-                break;
-            case Avversario:
-                this.proiettiliAvversario.add(proiettile);
                 break;
         }
     }
