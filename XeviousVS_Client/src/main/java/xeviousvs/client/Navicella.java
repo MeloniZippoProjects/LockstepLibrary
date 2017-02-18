@@ -18,7 +18,7 @@ public class Navicella extends Path {
     private final int framerate;
     private static final double lato = 38;
     public static final double altezza = (Math.sqrt(3) / 2) * lato;
-    private static final double lunghezzaSpostamento = lato*5;
+    private static final double lunghezzaSpostamento = lato/3;
     private static final int tempoSpostamentoMillisecondi = 100;
     private static final int tempoAttesaFuocoMillisecondi = 500;
     private static final Color coloreNavicellaGiocatore = Color.RED;

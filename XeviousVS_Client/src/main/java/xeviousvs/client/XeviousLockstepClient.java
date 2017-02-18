@@ -75,7 +75,7 @@ public class XeviousLockstepClient extends LockstepClient<Comando>{
 
     @Override
     protected Comando[] fillCommands() {
-        Comando[] fillers = new Comando[fillSize];
+        Comando[] fillers = new Comando[0];
         
         for(int i = 0; i < fillers.length; ++i)
             fillers[i] = new Comando(EnumComando.NOP, usernameProprio);
@@ -93,7 +93,7 @@ public class XeviousLockstepClient extends LockstepClient<Comando>{
         return fillers;
     }
     
-    public XeviousLockstepClient(InetSocketAddress serverAddress, int framerate, int tickrate, int timeout, int fillSize,
+    public XeviousLockstepClient(InetSocketAddress serverAddress, int framerate, int tickrate, int timeout, int protocolDelay,
             String username, XeviousVS_Client interfaccia, ModelloGioco modello, Comando riferimentoComando)
     {
         super(serverAddress, framerate, tickrate, timeout);
@@ -101,7 +101,7 @@ public class XeviousLockstepClient extends LockstepClient<Comando>{
         comandoCorrente = riferimentoComando;
         interfacciaClient = interfaccia;
         modelloGioco = modello;
-        this.fillSize = fillSize;
+        this.fillSize = (int) Math.ceil( protocolDelay / ( 1000 / framerate ) );
     }
         
 }

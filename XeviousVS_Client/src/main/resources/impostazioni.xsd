@@ -21,7 +21,7 @@
 				
                                 <xs:element name="framerate" type="xs:short"/>
                                 <xs:element name="tickrate" type="xs:short"/>
-                                <xs:element name="fillsize" type="xs:short"/>
+                                <xs:element name="delay" type="xs:short"/>
                                 <xs:element name="fillTimeout" type="xs:short"/>                                
 			</xs:sequence>
 		</xs:complexType>

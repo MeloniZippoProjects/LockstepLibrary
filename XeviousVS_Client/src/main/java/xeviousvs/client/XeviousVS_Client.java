@@ -42,7 +42,7 @@ public class XeviousVS_Client extends Application
 
     private int framerate;
     private int tickrate;
-    private int fillsize;
+    private int delay;
     private int timeout;
 
     private static final String testoTitolo = "XeviousVS";
@@ -122,7 +122,7 @@ public class XeviousVS_Client extends Application
         OperazioniDatabaseClient.impostaIndirizzoDatabase(impostazioniXml.indirizzoDatabase.indirizzoIP, impostazioniXml.indirizzoDatabase.porta);
 
         tickrate = impostazioniXml.tickrate;
-        fillsize = impostazioniXml.fillsize;
+        delay = impostazioniXml.delay;
         framerate = impostazioniXml.framerate;
 
         LoggerEventoXml.registraEvento(LoggerEventoXml.descrizioneEventoAvvio);
@@ -267,7 +267,7 @@ public class XeviousVS_Client extends Application
                 modelloGioco.resetPartita();
                 this.impostaMessaggio(messaggioServerTrovato);
                 InetSocketAddress serverAddress = new InetSocketAddress(server.indirizzoAscolto, server.portaAscolto);
-                lockstepClient = new XeviousLockstepClient(serverAddress, framerate, tickrate, timeout, fillsize, usernameGiocatore, this, modelloGioco, comandoCorrente);
+                lockstepClient = new XeviousLockstepClient(serverAddress, framerate, tickrate, timeout, delay, usernameGiocatore, this, modelloGioco, comandoCorrente);
                 lockstepClientThread = new Thread(lockstepClient);
                 lockstepClientThread.start();
             }
