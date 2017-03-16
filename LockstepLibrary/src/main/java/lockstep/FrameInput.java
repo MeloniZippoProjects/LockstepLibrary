@@ -61,10 +61,5 @@ public class FrameInput<Command extends Serializable> implements Serializable
             return false;
         }
         return true;
-    }
-
-    
-   
-    
-    
+    }   
 }

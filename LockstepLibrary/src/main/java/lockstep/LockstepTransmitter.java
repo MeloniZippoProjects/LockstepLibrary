@@ -29,11 +29,12 @@ import org.apache.log4j.Logger;
  */
 public class LockstepTransmitter<Command extends Serializable> implements Runnable
 {
-    DatagramSocket dgramSocket;
-    Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues;
+    volatile DatagramSocket dgramSocket;
+    volatile Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues;
     
-    Semaphore transmissionSemaphore;
-    long interTransmissionTimeout = 100;
+    volatile Semaphore transmissionSemaphore;
+    
+    long interTransmissionTimeout;
     static final int maxPayloadLength = 512;
     final String name;
     
@@ -44,6 +45,7 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
     {
         this.dgramSocket = socket;
         this.tickrate = tickrate;
+        this.interTransmissionTimeout = 3*(1000/tickrate);
         this.transmissionFrameQueues = transmissionFrameQueues;
         this.transmissionSemaphore = transmissionSemaphore;
         this.name = name;

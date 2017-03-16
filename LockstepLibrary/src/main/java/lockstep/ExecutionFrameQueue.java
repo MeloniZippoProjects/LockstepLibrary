@@ -35,18 +35,18 @@ class ExecutionFrameQueue<Command extends Serializable>
      * accessed.
      */
     
-    int nextFrame;
+    AtomicInteger nextFrame;
     //int baseFrameNumber;
     //FrameInput[] frameBuffer;
 
-    ConcurrentSkipListMap<Integer, Command> commandBuffer;
-    ConcurrentSkipListSet<Integer> selectiveACKsSet;
-    AtomicInteger lastInOrder;
+    volatile ConcurrentSkipListMap<Integer, Command> commandBuffer;
+    volatile ConcurrentSkipListSet<Integer> selectiveACKsSet;
+    volatile AtomicInteger lastInOrder;
 
-    CyclicCountDownLatch cyclicExecutionLatch;
+    volatile CyclicCountDownLatch cyclicExecutionLatch;
     
     private static final Logger LOG = Logger.getLogger(ExecutionFrameQueue.class.getName());
-    private final int hostID;
+    private final int senderID;
     
     /**
      * Creates a new ExecutionFrameQueue
@@ -56,13 +56,13 @@ class ExecutionFrameQueue<Command extends Serializable>
      * @param initialFrameNumber First frame's number. Must be the same for all 
      * the clients using the protocol
      */
-    public ExecutionFrameQueue(int initialFrameNumber, int hostID, CyclicCountDownLatch cyclicExecutionLatch)
+    public ExecutionFrameQueue(int initialFrameNumber, int senderID, CyclicCountDownLatch cyclicExecutionLatch)
     {
         this.commandBuffer = new ConcurrentSkipListMap<>();
-        this.nextFrame = initialFrameNumber;
+        this.nextFrame = new AtomicInteger(initialFrameNumber);
         this.lastInOrder = new AtomicInteger(initialFrameNumber - 1);
         this.selectiveACKsSet = new ConcurrentSkipListSet<>();
-        this.hostID = hostID;
+        this.senderID = senderID;
         this.cyclicExecutionLatch = cyclicExecutionLatch;
         
         LOG.debug("BufferHead initialized at " + initialFrameNumber);
@@ -75,22 +75,22 @@ class ExecutionFrameQueue<Command extends Serializable>
      */
     public Command pop()
     {
-        Command nextCommand = this.commandBuffer.get(nextFrame);
+        Command nextCommand = this.commandBuffer.get(nextFrame.get());
         if( nextCommand != null )
         {
-            nextFrame++;
-            for(Integer key : commandBuffer.headMap(nextFrame).keySet())
+            nextFrame.incrementAndGet();
+            for(Integer key : commandBuffer.headMap(nextFrame.get()).keySet())
                 commandBuffer.remove(key);
             
-            if(commandBuffer.get(nextFrame) != null)
+            if(commandBuffer.get(nextFrame.get()) != null)
             {
-                LOG.debug("Countdown to " + ( cyclicExecutionLatch.getCount() - 1) + "made by " + hostID);
+                LOG.debug("Countdown to " + ( cyclicExecutionLatch.getCount() - 1) + "made by " + senderID);
                 cyclicExecutionLatch.countDown();          
             }
         }
         else
         {
-            LOG.debug("ExecutionFrameQueue " + hostID + ": FrameInput missing for current frame");
+            LOG.debug("ExecutionFrameQueue " + senderID + ": FrameInput missing for current frame");
         }
         return nextCommand;
     }
@@ -101,7 +101,7 @@ class ExecutionFrameQueue<Command extends Serializable>
      */
     public FrameInput head()
     {
-        return new FrameInput(nextFrame, commandBuffer.get(nextFrame));
+        return new FrameInput(nextFrame.get(), commandBuffer.get(nextFrame.get()));
     }
     
     /**
@@ -153,9 +153,9 @@ class ExecutionFrameQueue<Command extends Serializable>
                         this.selectiveACKsSet.remove(this.selectiveACKsSet.first());
                     }
 
-                    if(input.getFrameNumber() == this.nextFrame)
+                    if(input.getFrameNumber() == this.nextFrame.get())
                     {
-                        LOG.debug("Countdown to " + ( cyclicExecutionLatch.getCount() - 1) + " made by " + hostID);
+                        LOG.debug("Countdown to " + ( cyclicExecutionLatch.getCount() - 1) + " made by " + senderID);
                         cyclicExecutionLatch.countDown();
                     }
                 }
@@ -171,7 +171,7 @@ class ExecutionFrameQueue<Command extends Serializable>
         }
         catch(NullPointerException e)
         {
-            LOG.debug("SEGFAULT for " + hostID);
+            LOG.debug("SEGFAULT for " + senderID);
             e.printStackTrace();
             System.exit(1);
         }
@@ -194,12 +194,12 @@ class ExecutionFrameQueue<Command extends Serializable>
     {
         String string = new String();
         
-        string += "ExecutionFrameQueue[" + hostID + "] = {";
+        string += "ExecutionFrameQueue[" + senderID + "] = {";
         for(Entry<Integer, Command> entry : this.commandBuffer.entrySet())
         {
             string += " " + entry.getKey();
         }
-        string += " } nextFrame = " + nextFrame + " lastInOrder " + lastInOrder.get();
+        string += " } nextFrame = " + nextFrame.get() + " lastInOrder " + lastInOrder.get();
                 
         return string;
     }

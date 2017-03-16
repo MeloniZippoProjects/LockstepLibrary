@@ -257,10 +257,13 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
         if(cyclicExecutionLatch.getCount() > 0)
         {
             suspendSimulation();
+            
+            debugSimulation();
+            
             if( !cyclicExecutionLatch.await(fillTimeout, TimeUnit.MILLISECONDS))
             {
 //                LOG.debug("Inserting fillers to escape deadlock");
-                insertFillCommands(fillCommands());
+                //insertFillCommands(fillCommands());
                 cyclicExecutionLatch.await();
             }
             else
@@ -285,5 +288,23 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
             commands.add(frameQueue.pop());
         
         return commands;
+    }
+
+    private void debugSimulation()
+    {
+        System.out.println("---------------------------------------------");
+        System.out.println("SIMULAZIONE SOSPESA, STAMPA STATO SIMULAZIONE");
+        
+        System.out.println("Stato execution frame queues");
+        for(ExecutionFrameQueue<Command> exeFrameQueue : this.executionFrameQueues.values())
+            System.out.println(exeFrameQueue);
+        
+        System.out.println("Stato transmission frame queue");
+        System.out.println(transmissionFrameQueue);
+        
+        System.out.println("Stato numero frame");
+        System.out.println("Current User Frame: " + currentUserFrame);
+        System.out.println("Current Execution Frame: " + currentExecutionFrame);
+        System.out.println("FrameExecutionDistance: " + frameExecutionDistance);
     }
 }

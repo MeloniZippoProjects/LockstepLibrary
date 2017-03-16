@@ -36,20 +36,20 @@ import org.apache.log4j.Logger;
  */
 public class LockstepServer<Command extends Serializable> implements Runnable
 {
-    ConcurrentSkipListSet<Integer> hostIDs;
+    volatile ConcurrentSkipListSet<Integer> hostIDs;
     
     /**
      * Used without interframe times. As soon as all inputs for a frame are 
      * available, they're forwarded to all the clients
      */
-    Map<Integer, ExecutionFrameQueue<Command>> executionFrameQueues;
+    volatile Map<Integer, ExecutionFrameQueue<Command>> executionFrameQueues;
     
     /**
      * Buffers for frame input to send to clients. 
      * For each client partecipating in the session there's a queue for each of
      * the other clients.
      */
-    Map<Integer, Map<Integer, TransmissionFrameQueue<Command>>> transmissionFrameQueueTree;
+    volatile Map<Integer, Map<Integer, TransmissionFrameQueue<Command>>> transmissionFrameQueueTree;
     
     /**
      * Threads used for receiving and transmitting of frames. 
@@ -61,9 +61,9 @@ public class LockstepServer<Command extends Serializable> implements Runnable
     /**
      * Used for synchronization between server and executionFrameQueues
      */
-    Map<Integer, Boolean> executionQueuesHeadsAvailability;
+    volatile Map<Integer, Boolean> executionQueuesHeadsAvailability;
     
-    CyclicCountDownLatch cyclicExecutionLatch;
+    volatile CyclicCountDownLatch cyclicExecutionLatch;
     
     int tcpPort;
     int clientsNumber;
@@ -234,26 +234,36 @@ public class LockstepServer<Command extends Serializable> implements Runnable
     
     private Map<Integer, Command> collectCommands()
     {        
-        Map<Integer, Command> commands = new TreeMap<>();
+        Map<Integer, Command> nextCommands = new TreeMap<>();
         for(Entry<Integer, ExecutionFrameQueue<Command>> executionFrameQueueEntry : this.executionFrameQueues.entrySet())
-            commands.put(executionFrameQueueEntry.getKey(), executionFrameQueueEntry.getValue().pop());
-        return commands;
+        {
+            Integer senderID = executionFrameQueueEntry.getKey();
+            Command command = executionFrameQueueEntry.getValue().pop();
+            if(command == null)
+                System.out.println("ERRORE MADORNALE DIO POVERO GESU MADONNA NEGRA");
+            nextCommands.put(senderID, command);
+        }
+        return nextCommands;
     }
     
-    private void distributeCommands(Map<Integer, Command> commands)
+    private void distributeCommands(Map<Integer, Command> nextCommands)
     {
         //For each command
-        for(Entry<Integer, Command> commandEntry : commands.entrySet())
+        for(Entry<Integer, Command> commandEntry : nextCommands.entrySet())
         {
+            Integer senderID = commandEntry.getKey();
+
             //For each client, take its tree of transmission queues
             for(Entry<Integer, Map<Integer, TransmissionFrameQueue<Command>>> transmissionFrameQueueMapEntry : this.transmissionFrameQueueTree.entrySet())
             {
+                Integer recipientID = transmissionFrameQueueMapEntry.getKey();
+                
                 //If the frameInput doesn't come from that client, forward the frameInput though the correct transmission queue
-                if(!transmissionFrameQueueMapEntry.getKey().equals(commandEntry.getKey()))
+                if(!recipientID.equals(senderID))
                 {
-                    Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueueMap = transmissionFrameQueueMapEntry.getValue();
-                    TransmissionFrameQueue<Command> transmissionFrameQueue = transmissionFrameQueueMap.get(commandEntry.getKey());
-                    transmissionFrameQueue.push(commandEntry.getValue());
+                    Map<Integer, TransmissionFrameQueue<Command>> recipientTransmissionQueueMap = transmissionFrameQueueMapEntry.getValue();
+                    TransmissionFrameQueue<Command> transmissionFrameQueueFromSender = recipientTransmissionQueueMap.get(senderID);
+                    transmissionFrameQueueFromSender.push(commandEntry.getValue());
                 }
             }
         }

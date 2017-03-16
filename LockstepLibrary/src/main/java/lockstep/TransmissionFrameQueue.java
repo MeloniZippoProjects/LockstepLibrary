@@ -34,14 +34,15 @@ public class TransmissionFrameQueue<Command extends Serializable>
      * accessed.
      */
     
-    int lastFrame;
-    ConcurrentSkipListMap<Integer, Command> commandsBuffer;
+    
+    volatile ConcurrentSkipListMap<Integer, Command> commandsBuffer;
+    AtomicInteger lastFrame;
     AtomicInteger lastACKed;
     
     Semaphore transmissionSemaphore;
     
     private static final Logger LOG = Logger.getLogger(TransmissionFrameQueue.class.getName());
-    private final int hostID;
+    private final int senderID;
 
     /**
      * 
@@ -49,32 +50,32 @@ public class TransmissionFrameQueue<Command extends Serializable>
      * @param initialFrameNumber First frame's number. Must be the same for all 
      * the clients using the protocol
      */
-    public TransmissionFrameQueue(int initialFrameNumber, Semaphore transmissionSemaphore, int hostID)
+    public TransmissionFrameQueue(int initialFrameNumber, Semaphore transmissionSemaphore, int senderID)
     {
-        this.lastFrame = initialFrameNumber - 1;
+        this.lastFrame = new AtomicInteger(initialFrameNumber - 1);
         this.commandsBuffer = new ConcurrentSkipListMap<>();
         this.lastACKed = new AtomicInteger(initialFrameNumber - 1);
         this.transmissionSemaphore = transmissionSemaphore;
-        this.hostID = hostID;
+        this.senderID = senderID;
     }
     
     /**
      * Inserts the input passed, provided it is in the interval currently
      * accepted. Otherwise it's discarded.
      * 
-     * @param input the FrameInput to insert
+     * @param command input the FrameInput to insert
      */
     public void push(Command command)
     {
-        commandsBuffer.put(++lastFrame, command);
+        commandsBuffer.put(lastFrame.incrementAndGet(), command);
         this.transmissionSemaphore.release();
-        LOG.debug("Released a permit for semaphore[" + hostID + "], current permits: " + transmissionSemaphore.availablePermits());
+        LOG.debug("Released a permit for semaphore[" + senderID + "], current permits: " + transmissionSemaphore.availablePermits());
     }
     
     /**
      * Inserts all inputs passed, provided it is in the interval currently 
      * accepted. Otherwise it is discarded.
-     * @param inputs array of inputs to be transmitted
+     * @param commands array of inputs to be transmitted
      */
     public void push(Command[] commands)
     {
@@ -97,7 +98,9 @@ public class TransmissionFrameQueue<Command extends Serializable>
         Set<Entry<Integer, Command>> commandEntries = commandsBuffer.entrySet();
         ArrayList<FrameInput<Command>> toRet = new ArrayList<>();        
         for (Entry<Integer, Command> commandEntry : commandEntries) {
-            toRet.add(new FrameInput<>(commandEntry.getKey(), commandEntry.getValue()));
+            int frameNumber = commandEntry.getKey();
+            Command command = commandEntry.getValue();
+            toRet.add(new FrameInput<>(frameNumber, command));
         }
         
         return toRet.toArray(new FrameInput[0]);
@@ -143,7 +146,7 @@ public class TransmissionFrameQueue<Command extends Serializable>
     {
         String string = new String();
         
-        string += "TransmissionFrameQueue[" + hostID + "] = {";
+        string += "TransmissionFrameQueue[" + senderID + "] = {";
         for(Entry<Integer, Command> entry : this.commandsBuffer.entrySet())
         {
             string += " " + entry.getKey();

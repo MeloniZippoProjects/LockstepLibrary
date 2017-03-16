@@ -25,8 +25,8 @@ import org.apache.log4j.Logger;
  */
 public class MosaicSimulation extends Application
 {
-    static final int columns = 50;
-    static final int rows = 50;
+    static final int columns = 5;
+    static final int rows = 5;
     
     GridPane mosaicView;
     Rectangle[][] mosaic;
@@ -49,8 +49,8 @@ public class MosaicSimulation extends Application
             for (int column = 1; column <= columns; column++)
             {
                 Rectangle rectangle = new Rectangle();
-                rectangle.setHeight(7);
-                rectangle.setWidth(7);
+                rectangle.setHeight(70);
+                rectangle.setWidth(70);
                 rectangle.setStrokeWidth(1);
                 rectangle.setStroke(Color.GRAY);
                 rectangle.setFill(Color.BLACK);

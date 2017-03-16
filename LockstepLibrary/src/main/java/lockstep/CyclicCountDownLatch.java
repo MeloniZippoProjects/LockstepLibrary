@@ -13,19 +13,19 @@ import java.util.concurrent.TimeUnit;
  * @author enric
  */
 public class CyclicCountDownLatch {
-    CountDownLatch latch;
-    int count;
+    volatile CountDownLatch latch;
+    final int countResetValue;
     
     public CyclicCountDownLatch(int count)
     {
-        this.count = count;
+        this.countResetValue = count;
         this.latch = new CountDownLatch(count);
     }
     
     public void await() throws InterruptedException
     {
         this.latch.await();
-        this.latch = new CountDownLatch(count);
+        this.latch = new CountDownLatch(countResetValue);
     }
     
     public boolean await(long timeout, TimeUnit unit) throws InterruptedException
@@ -45,6 +45,6 @@ public class CyclicCountDownLatch {
     
     public void reset()
     {
-        this.latch = new CountDownLatch(count);
+        this.latch = new CountDownLatch(countResetValue);
     }
 }

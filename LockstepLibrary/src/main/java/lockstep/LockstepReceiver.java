@@ -28,9 +28,9 @@ import org.apache.log4j.Logger;
  */
 public class LockstepReceiver<Command extends Serializable> implements Runnable
 {
-    DatagramSocket dgramSocket;
-    Map<Integer, ExecutionFrameQueue<Command>> executionFrameQueues;
-    Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues;
+    volatile DatagramSocket dgramSocket;
+    volatile Map<Integer, ExecutionFrameQueue<Command>> executionFrameQueues;
+    volatile Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues;
     
     static final int maxPayloadLength = 512;
     
