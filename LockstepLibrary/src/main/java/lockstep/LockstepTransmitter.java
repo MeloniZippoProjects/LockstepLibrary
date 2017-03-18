@@ -108,6 +108,7 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
             }
             catch(InterruptedException e)
             {
+                e.printStackTrace();
                 //Shutdown signal... may be changed
                 return;
             }
@@ -159,6 +160,8 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
             }
             catch(IOException e)
             {
+                            e.printStackTrace();
+
                 LOG.fatal(e.getStackTrace());
                 System.exit(1);
             }
@@ -169,6 +172,8 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
             this.dgramSocket.send(new DatagramPacket(payload, payload.length));
         } catch (IOException ex)
         {
+                        ex.printStackTrace();
+
             LOG.fatal("Can't send dgramsocket");
             System.exit(1);
         }

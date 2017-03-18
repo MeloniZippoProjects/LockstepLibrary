@@ -180,6 +180,7 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
             catch(IOException e)
             {
                 LOG.fatal(e.getStackTrace());
+                e.printStackTrace();
                 System.exit(1);
             }
         }
@@ -191,6 +192,7 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
         catch(IOException e)
         {
             LOG.fatal("Can't send dgramsocket");
+            e.printStackTrace();
             System.exit(1);
         }
         LOG.debug("" + selectiveACKsToInclude + " selectiveACKs sent");

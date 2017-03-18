@@ -214,6 +214,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
         catch(ClassNotFoundException e)
         {
             LOG.fatal("The received Object class cannot be found");
+            e.printStackTrace();
             System.exit(1);
         }
         catch(IOException e)

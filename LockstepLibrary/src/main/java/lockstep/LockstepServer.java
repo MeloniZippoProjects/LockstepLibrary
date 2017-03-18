@@ -121,6 +121,7 @@ public class LockstepServer<Command extends Serializable> implements Runnable
             } catch (InterruptedException ex)
             {
                 LOG.fatal("Server interrupted while waiting for frames");
+                ex.printStackTrace();
                 System.exit(1);
             }
         }
@@ -148,6 +149,7 @@ public class LockstepServer<Command extends Serializable> implements Runnable
         } catch (IOException | InterruptedException ex)
         {
             LOG.fatal("Error in handshake " + ex.getMessage());
+            ex.printStackTrace();
             System.exit(1);
         }
     }
@@ -206,6 +208,7 @@ public class LockstepServer<Command extends Serializable> implements Runnable
         } catch (IOException | ClassNotFoundException | InterruptedException | BrokenBarrierException ex)
         {
             LOG.fatal("Exception at clientHandshake " + ex.getMessage());
+            ex.printStackTrace();
             System.exit(1);
         }            
     }
