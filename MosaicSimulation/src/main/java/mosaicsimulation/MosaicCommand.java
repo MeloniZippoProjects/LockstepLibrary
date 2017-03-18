@@ -103,5 +103,5 @@ public class MosaicCommand implements Externalizable{
         nop = in.readBoolean();
         ownFrame = in.readInt();
         frame--;
-    }      
+    }
 }

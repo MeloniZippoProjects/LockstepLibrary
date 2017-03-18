@@ -104,6 +104,9 @@ public class LockstepServer<Command extends Serializable> implements Runnable
         {
             try
             {
+                
+                //debugSimulation();
+                
                 for(ExecutionFrameQueue exQ : executionFrameQueues.values())
                     LOG.debug(exQ);
                 
@@ -220,6 +223,7 @@ public class LockstepServer<Command extends Serializable> implements Runnable
     private void clientTransmissionSetup(int clientID, int firstFrameNumber, DatagramSocket udpSocket, Map<Integer, TransmissionFrameQueue<Command>> clientTransmissionFrameQueues)
     {
         Semaphore transmissionSemaphore = new Semaphore(0);
+        System.out.println("Setting up transmission to client " + clientID);
         for(int hostID : hostIDs)
         {
             if(hostID != clientID)
@@ -235,12 +239,24 @@ public class LockstepServer<Command extends Serializable> implements Runnable
     private Map<Integer, Command> collectCommands()
     {        
         Map<Integer, Command> nextCommands = new TreeMap<>();
+        int currFrame = -1;
         for(Entry<Integer, ExecutionFrameQueue<Command>> executionFrameQueueEntry : this.executionFrameQueues.entrySet())
         {
+            //DEBUG STUFF
+            if(currFrame == -1)
+                currFrame = executionFrameQueueEntry.getValue().nextFrame.get();
+            
+            if(currFrame != executionFrameQueueEntry.getValue().nextFrame.get())
+                System.out.println("ERRORE GRAVE CURR FRAME DIVERSI");
+            
+            //END DEBUG
+            
             Integer senderID = executionFrameQueueEntry.getKey();
             Command command = executionFrameQueueEntry.getValue().pop();
             if(command == null)
-                System.out.println("ERRORE MADORNALE DIO POVERO GESU MADONNA NEGRA");
+                System.out.println("ERRORE GRAVE CMD = NULL");
+            
+            
             nextCommands.put(senderID, command);
         }
         return nextCommands;
@@ -281,5 +297,28 @@ public class LockstepServer<Command extends Serializable> implements Runnable
      */
     protected void atHandshakeEnded()
     {
+    }
+    
+    public void debugSimulation()
+    {
+        
+        System.out.println("EXECUTION QUEUES");
+        for(Entry<Integer, ExecutionFrameQueue<Command>> exeFrameQueues : executionFrameQueues.entrySet())
+        {
+            System.out.println(exeFrameQueues);
+        }
+        
+        System.out.println("TRANSMISSION QUEUES");
+        for(Entry<Integer, Map<Integer, TransmissionFrameQueue<Command>>> transmissionMap : transmissionFrameQueueTree.entrySet())
+        {
+            System.out.println("Transmission Queues to " + transmissionMap.getKey());
+            
+            for(Entry<Integer, TransmissionFrameQueue<Command>> txQ : transmissionMap.getValue().entrySet())
+            {
+                System.out.println(txQ);
+            }
+        }
+        
+        
     }
 }

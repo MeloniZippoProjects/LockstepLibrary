@@ -30,7 +30,14 @@ public class CyclicCountDownLatch {
     
     public boolean await(long timeout, TimeUnit unit) throws InterruptedException
     {
-        return this.latch.await(timeout, unit);
+        if(this.latch.await(timeout, unit))
+        {
+            reset();
+            return true;
+        }
+        
+        return false;
+        
     }
     
     public void countDown()

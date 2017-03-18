@@ -27,7 +27,7 @@ public class TransmissionFrameQueueTest {
     public TransmissionFrameQueueTest() {
     }
     
-    TransmissionFrameQueue tfq;
+    TransmissionFrameQueue<Command> tfq;
     FrameInput<Command>[] frames;
     
     
@@ -47,7 +47,7 @@ public class TransmissionFrameQueueTest {
     @Test
     public void singlePush()
     {     
-        tfq.push(frames[0]);
+        tfq.push(frames[0].getCommand());
         FrameInput<Command>[] popped = tfq.pop(); 
         assertArrayEquals("Check single push", new FrameInput[] { frames[0] }, popped);
     }
@@ -55,7 +55,10 @@ public class TransmissionFrameQueueTest {
     @Test
     public void multiplePush()
     {
-        tfq.push(frames);
+        Command[] cmds = new Command[3];
+        for(int i = 0; i < 3; ++i)
+            cmds[i] = frames[i].getCommand();
+        tfq.push(cmds);
         FrameInput<Command>[] popped = tfq.pop();
         assertArrayEquals("Check multiple push", frames, popped);
     }
@@ -63,7 +66,10 @@ public class TransmissionFrameQueueTest {
     @Test
     public void cumulativeACK()
     {
-        tfq.push(frames);
+        Command[] cmds = new Command[3];
+        for(int i = 0; i < 3; ++i)
+            cmds[i] = frames[i].getCommand();
+        tfq.push(cmds);
         FrameACK ack = new FrameACK(8, null);
         tfq.processACK(ack);
         
@@ -74,12 +80,22 @@ public class TransmissionFrameQueueTest {
     @Test 
     public void selectiveACK()
     {
-        tfq.push(frames);
+        Command[] cmds = new Command[3];
+        for(int i = 0; i < 3; ++i)
+            cmds[i] = frames[i].getCommand();
+        tfq.push(cmds);
         FrameACK ack = new FrameACK(7, new int[] { 9 } );
         tfq.processACK(ack);
         
         FrameInput<Command>[] popped = tfq.pop();
         assertArrayEquals("Check multiple push", new FrameInput[] { frames[1] }, popped);
+    }
+    
+    @Test
+    public void emptyTFQ()
+    {
+        FrameInput<Command>[] inputs = tfq.pop();
+        
     }
     
     private FrameInput<Command> createFrame(int n, int upd,int rl)

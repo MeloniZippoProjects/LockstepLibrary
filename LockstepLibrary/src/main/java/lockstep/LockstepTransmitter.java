@@ -20,6 +20,7 @@ import java.util.logging.Level;
 import java.util.zip.GZIPOutputStream;
 import lockstep.messages.simulation.InputMessage;
 import lockstep.messages.simulation.InputMessageArray;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.log4j.Logger;
 
 /**
@@ -65,32 +66,44 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
                     LOG.debug(txQ);
                 }
                 
-                LOG.debug("Try acquire semaphore");
-                if(!transmissionSemaphore.tryAcquire(interTransmissionTimeout, TimeUnit.MILLISECONDS))
+                //LOG.debug("Try acquire semaphore");
+                /*if(!transmissionSemaphore.tryAcquire(interTransmissionTimeout, TimeUnit.MILLISECONDS))
                 {
                     LOG.debug("Transmission timeout reached");
-                }                
-                LOG.debug("Out of Semaphore");
+                } */
+                
+                //transmissionSemaphore.acquire();
+                //LOG.debug("Out of Semaphore");
                 for(Entry<Integer, TransmissionFrameQueue<Command>> transmissionQueueEntry : transmissionFrameQueues.entrySet())
                 {
-                    int senderID = transmissionQueueEntry.getKey();
-
-                    LOG.debug("Entry " + senderID);
-                    FrameInput[] frames = transmissionQueueEntry.getValue().pop();                  
-
-                    if(frames.length == 1)
+                    if(transmissionQueueEntry.getValue().hasFramesToSend())
                     {
-                        InputMessage msg = new InputMessage(senderID, frames[0]);
-                        this.send(msg);
-                        LOG.debug("1 message sent for " + senderID);
-                    }
-                    else if(frames.length > 1)
-                    {
-                        this.send(senderID, frames);
+                        int senderID = transmissionQueueEntry.getKey();
+
+                        LOG.debug("Entry " + senderID);
+                        FrameInput[] frames = transmissionQueueEntry.getValue().pop();      
+                        
+                        /*System.out.println("txq " + senderID + "has to send: ");
+                        for(int i = 0; i < frames.length; ++i)
+                        {
+                            System.out.println("Frame " + i + ": " + frames[i].getFrameNumber());
+                        }
+                        */
+
+                        if(frames.length == 1)
+                        {
+                            InputMessage msg = new InputMessage(senderID, frames[0]);
+                            this.send(msg);
+                            LOG.debug("1 message sent for " + senderID);
+                        }
+                        else if(frames.length > 1)
+                        {
+                            this.send(senderID, frames);
+                        }
                     }
                 }
-                transmissionSemaphore.drainPermits();
-                LOG.debug("Drained permits from semaphore");
+                //transmissionSemaphore.drainPermits();
+                //LOG.debug("Drained permits from semaphore");
                 Thread.sleep(1000/tickrate);
             }
             catch(InterruptedException e)

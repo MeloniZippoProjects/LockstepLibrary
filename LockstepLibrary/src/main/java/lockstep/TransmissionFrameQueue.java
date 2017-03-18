@@ -83,6 +83,11 @@ public class TransmissionFrameQueue<Command extends Serializable>
             push(command);
     }
     
+    public boolean hasFramesToSend()
+    {
+        return !this.commandsBuffer.isEmpty();
+    }
+    
     /**
      * Extracts the all frame inputs to send. This method is not destructive,
      * as items are removed only after the relative ACK is received.

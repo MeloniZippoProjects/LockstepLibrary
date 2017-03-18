@@ -4,8 +4,8 @@ $serverPort = 8000;
 $clientFramerate = 60;
 $clientTickrate = 30;
 $serverTickrate = 30;
-$fillTimeout = 500;
-$fillSize = 10;
+$fillTimeout = 5000;
+$fillSize = 180;
 
 $log = gci -Filter "logs";
 Remove-Item $log -Recurse;

@@ -16,6 +16,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -249,6 +250,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     
     private void executeInputs() throws InterruptedException
     {
+        
         for(ExecutionFrameQueue exQ : executionFrameQueues.values())
                 LOG.debug(exQ);
 
@@ -258,17 +260,13 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
         {
             suspendSimulation();
             
-            debugSimulation();
+            //debugSimulation();
             
-            if( !cyclicExecutionLatch.await(fillTimeout, TimeUnit.MILLISECONDS))
+            while( !cyclicExecutionLatch.await(fillTimeout, TimeUnit.MILLISECONDS))
             {
 //                LOG.debug("Inserting fillers to escape deadlock");
                 //insertFillCommands(fillCommands());
-                cyclicExecutionLatch.await();
-            }
-            else
-            {
-                cyclicExecutionLatch.reset();
+                //cyclicExecutionLatch.await();
             }
             
             resumeSimulation();
@@ -285,7 +283,10 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     {
         ArrayList<Command> commands = new ArrayList<>();
         for(ExecutionFrameQueue<Command> frameQueue : this.executionFrameQueues.values())
-            commands.add(frameQueue.pop());
+        {
+            Command cmd = frameQueue.pop();
+            commands.add(cmd);
+        }
         
         return commands;
     }
