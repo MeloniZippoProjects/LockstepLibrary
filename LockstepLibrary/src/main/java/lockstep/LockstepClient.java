@@ -18,7 +18,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
@@ -39,7 +41,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     int currentUserFrame;
     int frameExecutionDistance;
     int hostID;
-    Map<Integer, ExecutionFrameQueue<Command>> executionFrameQueues; 
+    ConcurrentSkipListMap<Integer, ExecutionFrameQueue<Command>> executionFrameQueues; 
     TransmissionFrameQueue<Command> transmissionFrameQueue;
     
     InetSocketAddress serverTCPAddress;
@@ -165,7 +167,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
 
                 clientsNumber = helloReply.clientsNumber;
                 cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
-                this.executionFrameQueues = new ConcurrentHashMap<>();
+                this.executionFrameQueues = new ConcurrentSkipListMap<>();
                 this.executionFrameQueues.put(hostID, new ExecutionFrameQueue<>(helloReply.firstFrameNumber, hostID, cyclicExecutionLatch));
 
                 //Network setup
@@ -282,13 +284,24 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
 
     private ArrayList<Command> collectCommands()
     {
+        System.out.println("------------ Collecting commands at frame " + currentExecutionFrame);
+        
         ArrayList<Command> commands = new ArrayList<>();
-        for(ExecutionFrameQueue<Command> frameQueue : this.executionFrameQueues.values())
+        
+        for(Entry<Integer, ExecutionFrameQueue<Command>> frameQueueEntry : this.executionFrameQueues.entrySet())
         {
+            Integer senderID = frameQueueEntry.getKey();
+            ExecutionFrameQueue<Command> frameQueue = frameQueueEntry.getValue();
+           
             Command cmd = frameQueue.pop();
             commands.add(cmd);
+            
+            if(senderID != this.hostID)
+            {
+                System.out.println("Buffer length for " + senderID + ": " + (frameQueue.lastInOrder.get() - currentExecutionFrame));
+            }
         }
-        
+                
         return commands;
     }
 
