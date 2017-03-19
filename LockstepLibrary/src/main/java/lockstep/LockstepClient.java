@@ -262,17 +262,19 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
         if(cyclicExecutionLatch.getCount() > 0)
         {
             suspendSimulation();
+            cyclicExecutionLatch.await();
+            resumeSimulation();
             
             //debugSimulation();
+//            
+//            while( !cyclicExecutionLatch.await(fillTimeout, TimeUnit.MILLISECONDS))
+//            {
+////                LOG.debug("Inserting fillers to escape deadlock");
+//                //insertFillCommands(fillCommands());
+//                //cyclicExecutionLatch.await();
+//            }
             
-            while( !cyclicExecutionLatch.await(fillTimeout, TimeUnit.MILLISECONDS))
-            {
-//                LOG.debug("Inserting fillers to escape deadlock");
-                //insertFillCommands(fillCommands());
-                //cyclicExecutionLatch.await();
-            }
-            
-            resumeSimulation();
+            //resumeSimulation();
         }
         else
             cyclicExecutionLatch.reset();
