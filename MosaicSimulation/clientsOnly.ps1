@@ -2,8 +2,8 @@
 
 $serverAddress = "192.168.0.100";
 $serverPort = 8000;
-$clientFramerate = 40;
-$clientTickrate = 30;
+$clientFramerate = 60;
+$clientTickrate = 40;
 $fillTimeout = 500;
 $fillSize = 50;
 

@@ -199,14 +199,14 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
         
         LOG.debug("SelectiveACKsToInclude = " + selectiveACKsToInclude);
         LOG.debug("SelectiveACKs.length = .... " + selectiveACKs.length);
-        if(selectiveACKsToInclude < selectiveACKs.length)
+        /*if(selectiveACKsToInclude < selectiveACKs.length)
         {
             LOG.debug("SPlitting acks");
             frameACK.selectiveACKs = Arrays.copyOfRange(selectiveACKs, selectiveACKsToInclude, selectiveACKs.length);
             if(frameACK.selectiveACKs == null)
                 LOG.debug("selectiveacks è diventato null");
             sendSplitACKs(frameACK);
-        }
+        }*/
     }
     
     private void send(InputMessage msg)
