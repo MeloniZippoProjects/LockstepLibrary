@@ -1,8 +1,8 @@
-﻿$nClients = 1;
+﻿$nClients = 4;
 
 $serverAddress = "192.168.0.100";
 $serverPort = 8000;
-$clientFramerate = 60;
+$clientFramerate = 30;
 $clientTickrate = 40;
 $fillTimeout = 500;
 $fillSize = 50;

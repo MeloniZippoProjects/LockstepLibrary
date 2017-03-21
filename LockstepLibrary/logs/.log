@@ -2865,3 +2865,41 @@ DEBUG [main]: Released a permit for semaphore[5], current permits: 1
 DEBUG [main]: Released a permit for semaphore[5], current permits: 2
 DEBUG [main]: Released a permit for semaphore[5], current permits: 3
 DEBUG [main]: 2 ACKs received
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: ExecutionFrameQueue 1: FrameInput missing for current frame
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: ExecutionFrameQueue 1: FrameInput missing for current frame
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: BufferHead initialized at 4
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 1
+DEBUG [main]: Released a permit for semaphore[5], current permits: 2
+DEBUG [main]: Released a permit for semaphore[5], current permits: 3
+DEBUG [main]: 2 ACKs received
