@@ -26,7 +26,7 @@ import org.apache.log4j.Logger;
  * data structure.
  * @author Raff
  */
-public class TransmissionFrameQueue<Command extends Serializable>
+public class TransmissionQueue<Command extends Serializable>
 {
     /**
      * Internally it behaves as an infinite array of which, at any time, only
@@ -35,13 +35,13 @@ public class TransmissionFrameQueue<Command extends Serializable>
      */
     
     
-    volatile ConcurrentSkipListMap<Integer, Command> commandsBuffer;
+    ConcurrentSkipListMap<Integer, Command> commandsBuffer;
     AtomicInteger lastFrame;
     AtomicInteger lastACKed;
     
     Semaphore transmissionSemaphore;
     
-    private static final Logger LOG = Logger.getLogger(TransmissionFrameQueue.class.getName());
+    private static final Logger LOG = Logger.getLogger(TransmissionQueue.class.getName());
     private final int senderID;
 
     /**
@@ -50,7 +50,7 @@ public class TransmissionFrameQueue<Command extends Serializable>
      * @param initialFrameNumber First frame's number. Must be the same for all 
      * the clients using the protocol
      */
-    public TransmissionFrameQueue(int initialFrameNumber, Semaphore transmissionSemaphore, int senderID)
+    public TransmissionQueue(int initialFrameNumber, Semaphore transmissionSemaphore, int senderID)
     {
         this.lastFrame = new AtomicInteger(initialFrameNumber - 1);
         this.commandsBuffer = new ConcurrentSkipListMap<>();

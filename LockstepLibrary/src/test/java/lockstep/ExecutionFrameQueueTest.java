@@ -34,13 +34,13 @@ public class ExecutionFrameQueueTest {
     }
     
     final static int initialFrame = 4;
-    ExecutionFrameQueue efq;
+    ClientReceivingQueue efq;
     FrameInput<Command>[] frames;
     
     @Before
     public void setUp() {
         Semaphore sem = new Semaphore(0);
-        efq = new ExecutionFrameQueue<Command>(initialFrame, 1, sem);
+        efq = new ClientReceivingQueue<Command>(initialFrame, 1, sem);
         FrameInput frame1 = createFrame(4,1,-1), frame2 = createFrame(5,-1,-1), frame3 = createFrame(6,-1,1); 
         frames = new FrameInput[] { frame1, frame2, frame3 };
     }

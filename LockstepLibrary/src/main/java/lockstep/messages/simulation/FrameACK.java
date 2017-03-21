@@ -17,7 +17,7 @@ import java.io.ObjectOutput;
  * 
  * @author Raff
  */
-public class FrameACK implements java.io.Externalizable
+public class FrameACK implements java.io.Externalizable, Comparable<FrameACK>
 {
     public int senderID;
     public int cumulativeACK;
@@ -69,4 +69,14 @@ public class FrameACK implements java.io.Externalizable
         cumulativeACK = in.readInt();
         selectiveACKs = (int[]) in.readObject();
     }
+
+    @Override
+    public int compareTo(FrameACK o) 
+    {
+        int firstCompare = o.cumulativeACK - this.cumulativeACK;
+        
+        return firstCompare;
+    }
+    
+    
 }

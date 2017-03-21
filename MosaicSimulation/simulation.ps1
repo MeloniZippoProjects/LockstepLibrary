@@ -1,9 +1,9 @@
 ﻿$nClients = 2;
 $serverAddress = "localhost";
 $serverPort = 8000;
-$clientFramerate = 30;
-$clientTickrate = 60;
-$serverTickrate = 60;
+$clientFramerate = 60;
+$clientTickrate = 30;
+$serverTickrate = 30;
 $fillTimeout = 5000;
 $fillSize = 30;
 
