@@ -65,9 +65,9 @@ public class TransmissionFrameQueue<Command extends Serializable>
      * 
      * @param command input the FrameInput to insert
      */
-    public void push(Command command)
+    public void push(FrameInput<Command> frameInput)
     {
-        commandsBuffer.put(lastFrame.incrementAndGet(), command);
+        commandsBuffer.putIfAbsent(frameInput.getFrameNumber(), frameInput.getCommand());
         this.transmissionSemaphore.release();
         LOG.debug("Released a permit for semaphore[" + senderID + "], current permits: " + transmissionSemaphore.availablePermits());
     }
@@ -77,10 +77,10 @@ public class TransmissionFrameQueue<Command extends Serializable>
      * accepted. Otherwise it is discarded.
      * @param commands array of inputs to be transmitted
      */
-    public void push(Command[] commands)
+    public void push(FrameInput<Command>[] frameInputs)
     {
-        for(Command command : commands)
-            push(command);
+        for(FrameInput<Command> frameInput : frameInputs)
+            push(frameInput);
     }
     
     public boolean hasFramesToSend()

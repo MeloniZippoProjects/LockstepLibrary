@@ -83,12 +83,12 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
                         LOG.debug("Entry " + senderID);
                         FrameInput[] frames = transmissionQueueEntry.getValue().pop();      
                         
-                        /*System.out.println("txq " + senderID + "has to send: ");
+                        //System.out.println("txq " + senderID + "has to send: ");
                         for(int i = 0; i < frames.length; ++i)
                         {
-                            System.out.println("Frame " + i + ": " + frames[i].getFrameNumber());
+                            //System.out.println("Frame " + i + ": " + frames[i].getFrameNumber());
                         }
-                        */
+                        
 
                         if(frames.length == 1)
                         {
@@ -179,12 +179,12 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
         }
         LOG.debug("" + framesToInclude + "sent for " + senderID);
         LOG.debug("Payload size " + payloadLength);
-        
+        /*
         if(framesToInclude < frames.length)
         {
             frames = Arrays.copyOfRange(frames, framesToInclude, frames.length);
             send(senderID, frames);
-        }
+        }*/
     }
 }
 

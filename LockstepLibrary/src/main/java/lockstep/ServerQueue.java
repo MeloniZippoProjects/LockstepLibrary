@@ -6,7 +6,6 @@
 package lockstep;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -17,26 +16,13 @@ import lockstep.messages.simulation.FrameACK;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.log4j.Logger;
 
-
 /**
- * This frame queue supports out of order and simultaneous insertion, but only 
- * in order single extraction.
  *
- * It is thread safe, as producer and consumer access different locations of this
- * data structure.
- * 
- * @author Raff
+ * @author enric
  */
-
-class ExecutionFrameQueue<Command extends Serializable> implements ReceivingQueue
-{
-    /**
-     * Internally it behaves as an infinite array of which, at any time, only
-     * indexes in [baseFrameNumber, baseFrameNumber + bufferSize - 1] can be
-     * accessed.
-     */
+public class ServerQueue<Command extends Serializable> implements ReceivingQueue {
     
-    AtomicInteger nextFrame;
+    //AtomicInteger nextFrame;
     //int baseFrameNumber;
     //FrameInput[] frameBuffer;
 
@@ -57,10 +43,10 @@ class ExecutionFrameQueue<Command extends Serializable> implements ReceivingQueu
      * @param initialFrameNumber First frame's number. Must be the same for all 
      * the clients using the protocol
      */
-    public ExecutionFrameQueue(int initialFrameNumber, int senderID, Semaphore executionSemaphore)
+    public ServerQueue(int initialFrameNumber, int senderID, Semaphore executionSemaphore)
     {
         this.commandBuffer = new ConcurrentSkipListMap<>();
-        this.nextFrame = new AtomicInteger(initialFrameNumber);
+        //this.nextFrame = new AtomicInteger(initialFrameNumber);
         this.lastInOrder = new AtomicInteger(initialFrameNumber - 1);
         this.selectiveACKsSet = new ConcurrentSkipListSet<>();
         this.senderID = senderID;
@@ -76,27 +62,19 @@ class ExecutionFrameQueue<Command extends Serializable> implements ReceivingQueu
      */
     public FrameInput<Command> pop()
     {
-        Command nextCommand = this.commandBuffer.get(nextFrame.get());
-        int frame = nextFrame.get();
-        FrameInput frameInput = null;
-        if( nextCommand != null )
+        //Command nextCommand = this.commandBuffer.get(nextFrame.get());
+        
+        Entry<Integer, Command> firstFrame = commandBuffer.pollFirstEntry();
+        
+        if( firstFrame != null ) //there's something in Q
         {
-            frameInput = new FrameInput(frame, nextCommand);
-            nextFrame.incrementAndGet();
-            for(Integer key : commandBuffer.headMap(nextFrame.get()).keySet())
-                commandBuffer.remove(key);
-            
-            if(commandBuffer.get(nextFrame.get()) != null)
-            {
-                //LOG.debug("Countdown to " + ( executionSemaphore.getCount() - 1) + "made by " + senderID);
+            if(commandBuffer.firstEntry() != null) //if there is something else, let the semaphore know
                 executionSemaphore.release();
-            }
+            
+            return new FrameInput(firstFrame.getKey(), firstFrame.getValue());
         }
-        else
-        {
-            LOG.debug("ExecutionFrameQueue " + senderID + ": FrameInput missing for current frame");
-        }
-        return frameInput;
+        
+        return null;
     }
     
     /**
@@ -105,7 +83,8 @@ class ExecutionFrameQueue<Command extends Serializable> implements ReceivingQueu
      */
     public FrameInput<Command> head()
     {
-        return new FrameInput(nextFrame.get(), commandBuffer.get(nextFrame.get()));
+        Entry<Integer,Command> firstFrame = commandBuffer.firstEntry();
+        return new FrameInput(firstFrame.getKey(), firstFrame.getValue());
     }
     
     /**
@@ -118,6 +97,8 @@ class ExecutionFrameQueue<Command extends Serializable> implements ReceivingQueu
     {
         for(FrameInput input : inputs)
             _push(input);
+        
+        executionSemaphore.release();
         
         return new FrameACK(lastInOrder.get(), _getSelectiveACKs());
     }
@@ -133,6 +114,7 @@ class ExecutionFrameQueue<Command extends Serializable> implements ReceivingQueu
     {
         _push(input);
         
+        executionSemaphore.release(); //let sem know there is something new
         return new FrameACK(lastInOrder.get(), _getSelectiveACKs());
     }
         
@@ -157,11 +139,13 @@ class ExecutionFrameQueue<Command extends Serializable> implements ReceivingQueu
                         this.selectiveACKsSet.remove(this.selectiveACKsSet.first());
                     }
 
+                    /*
                     if(input.getFrameNumber() == this.nextFrame.get())
                     {
                         //LOG.debug("Countdown to " + ( executionSemaphore.getCount() - 1) + " made by " + senderID);
                         executionSemaphore.release();
                     }
+                    */
                 }
                 else
                 {
@@ -199,12 +183,13 @@ class ExecutionFrameQueue<Command extends Serializable> implements ReceivingQueu
         String string = new String();
         
         string += "ExecutionFrameQueue[" + senderID + "] = {";
-        for(Entry<Integer, Command> entry : this.commandBuffer.entrySet())
+        for(Map.Entry<Integer, Command> entry : this.commandBuffer.entrySet())
         {
             string += " " + entry.getKey();
         }
-        string += " } nextFrame = " + nextFrame.get() + " lastInOrder " + lastInOrder.get();
+        //string += " } nextFrame = " + nextFrame.get() + " lastInOrder " + lastInOrder.get();
                 
         return string;
     }
+    
 }

@@ -47,7 +47,7 @@ public class TransmissionFrameQueueTest {
     @Test
     public void singlePush()
     {     
-        tfq.push(frames[0].getCommand());
+        tfq.push(frames[0]);
         FrameInput<Command>[] popped = tfq.pop(); 
         assertArrayEquals("Check single push", new FrameInput[] { frames[0] }, popped);
     }
@@ -58,7 +58,7 @@ public class TransmissionFrameQueueTest {
         Command[] cmds = new Command[3];
         for(int i = 0; i < 3; ++i)
             cmds[i] = frames[i].getCommand();
-        tfq.push(cmds);
+        tfq.push(frames);
         FrameInput<Command>[] popped = tfq.pop();
         assertArrayEquals("Check multiple push", frames, popped);
     }
@@ -69,7 +69,7 @@ public class TransmissionFrameQueueTest {
         Command[] cmds = new Command[3];
         for(int i = 0; i < 3; ++i)
             cmds[i] = frames[i].getCommand();
-        tfq.push(cmds);
+        tfq.push(frames);
         FrameACK ack = new FrameACK(8, null);
         tfq.processACK(ack);
         
@@ -83,7 +83,7 @@ public class TransmissionFrameQueueTest {
         Command[] cmds = new Command[3];
         for(int i = 0; i < 3; ++i)
             cmds[i] = frames[i].getCommand();
-        tfq.push(cmds);
+        tfq.push(frames);
         FrameACK ack = new FrameACK(7, new int[] { 9 } );
         tfq.processACK(ack);
         

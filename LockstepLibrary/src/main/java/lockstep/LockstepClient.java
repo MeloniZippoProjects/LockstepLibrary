@@ -58,7 +58,8 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     /**
      * Used for synchronization between server and executionFrameQueues
      */
-    CyclicCountDownLatch cyclicExecutionLatch;
+    //CyclicCountDownLatch cyclicExecutionLatch;
+    Semaphore executionSemaphore;
     private int clientsNumber;
     private final int tickrate;
     
@@ -166,9 +167,10 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
                 this.currentUserFrame = helloReply.firstFrameNumber;
 
                 clientsNumber = helloReply.clientsNumber;
-                cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
+                //cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
+                executionSemaphore = new Semaphore(0);
                 this.executionFrameQueues = new ConcurrentSkipListMap<>();
-                this.executionFrameQueues.put(hostID, new ExecutionFrameQueue<>(helloReply.firstFrameNumber, hostID, cyclicExecutionLatch));
+                this.executionFrameQueues.put(hostID, new ExecutionFrameQueue<>(helloReply.firstFrameNumber, hostID, executionSemaphore));
 
                 //Network setup
                 LOG.info("Setting up network threads and stub frames");
@@ -199,7 +201,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
                 {
                     if(clientID != hostID)
                     {
-                        ExecutionFrameQueue executionFrameQueue = new ExecutionFrameQueue(helloReply.firstFrameNumber, clientID, cyclicExecutionLatch);
+                        ExecutionFrameQueue executionFrameQueue = new ExecutionFrameQueue(helloReply.firstFrameNumber, clientID, executionSemaphore);
                         executionFrameQueues.put(clientID, executionFrameQueue);
                         receivingExecutionQueues.put(clientID, executionFrameQueue);
                     }
@@ -239,16 +241,18 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
         for (int i = 0; i < fillCommands.length; i++)
         {
             Command cmd = fillCommands[i];
-            executionFrameQueues.get(this.hostID).push(new FrameInput(currentUserFrame++, cmd));
-            transmissionFrameQueue.push(cmd);
+            FrameInput<Command> newFrame = new FrameInput(currentUserFrame++, cmd);
+            executionFrameQueues.get(this.hostID).push(newFrame);
+            transmissionFrameQueue.push(newFrame);
         }
     }
     
     private void readUserInput()
     {
         Command cmd = readInput();
-        executionFrameQueues.get(this.hostID).push(new FrameInput(currentUserFrame++, cmd));
-        transmissionFrameQueue.push(cmd);
+        FrameInput<Command> newFrame = new FrameInput(currentUserFrame++, cmd);
+        executionFrameQueues.get(this.hostID).push(newFrame);
+        transmissionFrameQueue.push(newFrame);
     }
     
     private void executeInputs() throws InterruptedException
@@ -259,10 +263,11 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
 
         LOG.debug(transmissionFrameQueue);
         
-        if(cyclicExecutionLatch.getCount() > 0)
+        if(!executionSemaphore.tryAcquire(clientsNumber))
         {
             suspendSimulation();
-            cyclicExecutionLatch.await();
+            //Thread.sleep(10000);
+            executionSemaphore.acquire(clientsNumber);
             resumeSimulation();
             
             //debugSimulation();
@@ -276,8 +281,6 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
             
             //resumeSimulation();
         }
-        else
-            cyclicExecutionLatch.reset();
         
         ArrayList<Command> commands = collectCommands();
         for(Command command : commands)
@@ -286,7 +289,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
 
     private ArrayList<Command> collectCommands()
     {
-        System.out.println("------------ Collecting commands at frame " + currentExecutionFrame);
+        //System.out.println("------------ Collecting commands at frame " + currentExecutionFrame);
         
         ArrayList<Command> commands = new ArrayList<>();
         
@@ -295,13 +298,15 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
             Integer senderID = frameQueueEntry.getKey();
             ExecutionFrameQueue<Command> frameQueue = frameQueueEntry.getValue();
            
-            Command cmd = frameQueue.pop();
+            Command cmd = frameQueue.pop().getCommand();
             commands.add(cmd);
+            
             
             if(senderID != this.hostID)
             {
-                System.out.println("Buffer length for " + senderID + ": " + (frameQueue.lastInOrder.get() - currentExecutionFrame));
+                //System.out.println("Buffer length for " + senderID + ": " + (frameQueue.lastInOrder.get() - currentExecutionFrame));
             }
+            
         }
                 
         return commands;

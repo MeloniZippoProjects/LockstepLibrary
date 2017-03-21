@@ -29,7 +29,7 @@ import org.apache.log4j.Logger;
 public class LockstepReceiver<Command extends Serializable> implements Runnable
 {
     volatile DatagramSocket dgramSocket;
-    volatile Map<Integer, ExecutionFrameQueue<Command>> executionFrameQueues;
+    volatile Map<Integer, ReceivingQueue<Command>> receivingQueues;
     volatile Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues;
     
     static final int maxPayloadLength = 512;
@@ -38,10 +38,10 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
     
     private final String name;
     
-    public LockstepReceiver(DatagramSocket socket, Map<Integer, ExecutionFrameQueue<Command>> executionFrameQueues, Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues, String name)
+    public LockstepReceiver(DatagramSocket socket, Map<Integer, ReceivingQueue<Command>> receivingQueues, Map<Integer, TransmissionFrameQueue<Command>> transmissionFrameQueues, String name)
     {
         dgramSocket = socket;
-        this.executionFrameQueues = executionFrameQueues;
+        this.receivingQueues = receivingQueues;
         this.transmissionFrameQueues = transmissionFrameQueues;
         this.name = name;
     }
@@ -102,8 +102,8 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
     private void processInput(InputMessage input)
     {
         LOG.debug("1 InputMessage received from " + input.senderID + ": " + input.frame.getFrameNumber());
-        ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(input.senderID);
-        FrameACK frameACK = executionFrameQueue.push(input.frame);
+        ReceivingQueue receivingQueue = this.receivingQueues.get(input.senderID);
+        FrameACK frameACK = receivingQueue.push(input.frame);
         frameACK.setSenderID(input.senderID);
         sendACK(frameACK);
     }
@@ -114,8 +114,8 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
         for(FrameInput frame : inputs.frames)
             numbers += frame.getFrameNumber() + ", ";
         LOG.debug("" + inputs.frames.length + " InputMessages received from " + inputs.senderID + ": [ " + numbers + "]");
-        ExecutionFrameQueue executionFrameQueue = this.executionFrameQueues.get(inputs.senderID);
-        FrameACK frameACK = executionFrameQueue.push(inputs.frames);
+        ReceivingQueue receivingQueue = this.receivingQueues.get(inputs.senderID);
+        FrameACK frameACK = receivingQueue.push(inputs.frames);
         frameACK.setSenderID(inputs.senderID);
         sendACK(frameACK);
     }
