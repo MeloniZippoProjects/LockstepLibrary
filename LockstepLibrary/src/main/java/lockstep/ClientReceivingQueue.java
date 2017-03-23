@@ -6,8 +6,6 @@
 package lockstep;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -20,26 +18,16 @@ import org.apache.log4j.Logger;
 
 /**
  * This frame queue supports out of order and simultaneous insertion, but only 
- * in order single extraction.
- *
- * It is thread safe, as producer and consumer access different locations of this
- * data structure.
+ * in order single extraction. A semaphore is released when the next frame
+ * input is available.
  * 
- * @author Raff
+ * It is thread safe.
  */
 
 class ClientReceivingQueue<Command extends Serializable> implements ReceivingQueue
 {
-    /**
-     * Internally it behaves as an infinite array of which, at any time, only
-     * indexes in [baseFrameNumber, baseFrameNumber + bufferSize - 1] can be
-     * accessed.
-     */
-    
     AtomicInteger nextFrame;
-    //int baseFrameNumber;
-    //FrameInput[] frameBuffer;
-
+    
     volatile ConcurrentSkipListMap<Integer, Command> commandBuffer;
     volatile ConcurrentSkipListSet<Integer> selectiveACKsSet;
     volatile AtomicInteger lastInOrder;
@@ -50,28 +38,34 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
     private final int senderID;
     
     /**
-     * Creates a new ExecutionFrameQueue
-     * @param bufferSize Size of the internal buffer. It's important to
-     * dimension this large enough to store the received frames without forcing
-     * retransmissions
+     * Constructor.
+     * 
      * @param initialFrameNumber First frame's number. Must be the same for all 
-     * the clients using the protocol
+     * the hosts using the protocol
+     * 
+     * @param senderID ID of the client whose frames are collected in this queue
+     * 
+     * @param clientExecutionSemaphore semaphore used by to signal the client of
+     * the availability of the next frame input. The client awaits that all the 
+     * queues are ready before collecting the next frame inputs
      */
-    public ClientReceivingQueue(int initialFrameNumber, int senderID, Semaphore executionSemaphore)
+    public ClientReceivingQueue(int initialFrameNumber, int senderID, Semaphore clientExecutionSemaphore)
     {
         this.commandBuffer = new ConcurrentSkipListMap<>();
         this.nextFrame = new AtomicInteger(initialFrameNumber);
         this.lastInOrder = new AtomicInteger(initialFrameNumber - 1);
         this.selectiveACKsSet = new ConcurrentSkipListSet<>();
         this.senderID = senderID;
-        this.executionSemaphore = executionSemaphore;
+        this.executionSemaphore = clientExecutionSemaphore;
         
         LOG.debug("BufferHead initialized at " + initialFrameNumber);
     }
     
     /**
      * Extracts the next frame input only if it's in order. 
-     * This method will change the queue, extracting the head, only if it's present.
+     * This method will change the queue, extracting the head, only if it's 
+     * present.
+     * 
      * @return the next in order frame input, or null if not present. 
      */
     public FrameInput<Command> pop()
@@ -101,6 +95,7 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
     
     /**
      * Shows the head of the buffer. This method won't modify the queue.
+     * 
      * @return next in order frame input, or null if not present.
      */
     public FrameInput<Command> head()
@@ -109,8 +104,9 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
     }
     
     /**
-     * Inserts all the inputs passed, provided they're in the interval currently
-     * accepted. If a FrameInput it's out of the interval it's discarded. 
+     * Inserts all the inputs passed. 
+     * Duplicate inputs are individually discarded.
+     * 
      * @param inputs the FrameInputs to insert
      * @return the FrameACK to send back
      */
@@ -123,8 +119,7 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
     }
         
     /**
-     * Inserts the input passed, provided it is in the interval currently
-     * accepted. Otherwise it's discarded.
+     * Inserts the input passed, provided it's not a duplicate.
      * 
      * @param input the FrameInput to insert
      * @return the FrameACK to send back
@@ -138,9 +133,10 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
         
     /**
      * Internal method to push a single input into the queue.
+     * It checks if the input is not a duplicate before insertion, and updates
+     * ACK data after insertion.
      * 
      * @param input the input to push into the queue
-     * @return A boolean indicating whether the input should be selectively ACKed
      */
     private void _push(FrameInput<Command> input)
     {
@@ -186,7 +182,13 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
             System.exit(1);
         }
     }
-        
+
+    /**
+     * Extract an int array containing the selective ACKs
+     * 
+     * @return the int array of selective ACKs
+     */
+    
     private int[] _getSelectiveACKs()
     {
         Integer[] selectiveACKsIntegerArray = this.selectiveACKsSet.toArray(new Integer[0]);

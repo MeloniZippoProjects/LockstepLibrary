@@ -179,14 +179,13 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
                 udpSocket.connect(serverUDPAddress);
 
                 Map<Integer, ClientReceivingQueue> receivingExecutionQueues = new ConcurrentHashMap<>();
-                Semaphore transmissionSemaphore = new Semaphore(0);
-                transmissionFrameQueue = new TransmissionQueue(helloReply.firstFrameNumber, transmissionSemaphore, hostID);
+                transmissionFrameQueue = new TransmissionQueue(helloReply.firstFrameNumber, hostID);
                 HashMap<Integer,TransmissionQueue> transmissionQueueWrapper = new HashMap<>();
                 transmissionQueueWrapper.put(hostID, transmissionFrameQueue);
 
                 ACKQueue ackQueue = new ACKQueue();
                 receiver = new LockstepReceiver(udpSocket, tickrate, receivingExecutionQueues, transmissionQueueWrapper, "Receiver-to-"+hostID, ackQueue);
-                transmitter = new LockstepTransmitter(udpSocket, tickrate, transmissionQueueWrapper, transmissionSemaphore, "Transmitter-from-"+hostID, ackQueue);
+                transmitter = new LockstepTransmitter(udpSocket, tickrate, transmissionQueueWrapper, "Transmitter-from-"+hostID, ackQueue);
 
                 insertBootstrapCommands(bootstrapCommands());
                                 

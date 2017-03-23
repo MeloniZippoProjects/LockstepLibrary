@@ -235,17 +235,16 @@ public class LockstepServer<Command extends Serializable> implements Runnable
     
     private void clientTransmissionSetup(int clientID, int firstFrameNumber, DatagramSocket udpSocket, Map<Integer, TransmissionQueue<Command>> clientTransmissionFrameQueues)
     {
-        Semaphore transmissionSemaphore = new Semaphore(0);
         //System.out.println("Setting up transmission to client " + clientID);
         for(int hostID : hostIDs)
         {
             if(hostID != clientID)
             {
-                TransmissionQueue transmissionFrameQueue = new TransmissionQueue(firstFrameNumber, transmissionSemaphore, hostID);
+                TransmissionQueue transmissionFrameQueue = new TransmissionQueue(firstFrameNumber, hostID);
                 clientTransmissionFrameQueues.put(hostID, transmissionFrameQueue);
             }
         }
-        LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, tickrate ,clientTransmissionFrameQueues, transmissionSemaphore, "Transmitter-to-"+clientID, ackQueues.get(clientID));
+        LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, tickrate ,clientTransmissionFrameQueues, "Transmitter-to-"+clientID, ackQueues.get(clientID));
         transmitters.submit(transmitter);
     }
     

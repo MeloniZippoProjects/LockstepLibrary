@@ -7,55 +7,42 @@ package lockstep;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import lockstep.messages.simulation.FrameACK;
 import org.apache.log4j.Logger;
 
 /**
- * This frame queue supports out of order insertions, while extractions get the 
+ * This frame queue supports out of order insertions, while extractions gets the 
  * whole queue. pop() does not remove items, as they are removed only after the
  * relative ACK is received.
  *
- * It's thread safe, as producer and consumer access different locations of this
- * data structure.
- * @author Raff
+ * It is thread safe.
  */
+
 public class TransmissionQueue<Command extends Serializable>
-{
-    /**
-     * Internally it behaves as an infinite array of which, at any time, only
-     * indexes in [baseFrameNumber, baseFrameNumber + bufferSize - 1] can be
-     * accessed.
-     */
-    
-    
+{    
     ConcurrentSkipListMap<Integer, Command> commandsBuffer;
     AtomicInteger lastFrame;
     AtomicInteger lastACKed;
-    
-    Semaphore transmissionSemaphore;
-    
+        
     private static final Logger LOG = Logger.getLogger(TransmissionQueue.class.getName());
     private final int senderID;
 
     /**
-     * 
-     * @param transmissionSemaphore
+     * Constructor.
      * @param initialFrameNumber First frame's number. Must be the same for all 
-     * the clients using the protocol
+     * the hosts using the protocol
+     * @param senderID ID of the client whose frames are collected by this queue
      */
-    public TransmissionQueue(int initialFrameNumber, Semaphore transmissionSemaphore, int senderID)
+    public TransmissionQueue(int initialFrameNumber, int senderID)
     {
         this.lastFrame = new AtomicInteger(initialFrameNumber - 1);
         this.commandsBuffer = new ConcurrentSkipListMap<>();
         this.lastACKed = new AtomicInteger(initialFrameNumber - 1);
-        this.transmissionSemaphore = transmissionSemaphore;
         this.senderID = senderID;
     }
     
@@ -68,8 +55,6 @@ public class TransmissionQueue<Command extends Serializable>
     public void push(FrameInput<Command> frameInput)
     {
         commandsBuffer.putIfAbsent(frameInput.getFrameNumber(), frameInput.getCommand());
-        this.transmissionSemaphore.release();
-        LOG.debug("Released a permit for semaphore[" + senderID + "], current permits: " + transmissionSemaphore.availablePermits());
     }
     
     /**
@@ -141,9 +126,7 @@ public class TransmissionQueue<Command extends Serializable>
                 acked++;
             }
         }
-        
-        transmissionSemaphore.release(commandsBuffer.size());
-        
+                
         LOG.debug("" + acked + " ACKs received");
     }
     
