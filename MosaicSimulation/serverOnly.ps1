@@ -1,6 +1,6 @@
-﻿$nClients = 2;
+﻿$nClients = 8;
 $serverPort = 8000;
-$serverTickrate = 30;
+$serverTickrate = 20;
 
 $log = gci -Filter "logs";
 Remove-Item $log -Recurse;

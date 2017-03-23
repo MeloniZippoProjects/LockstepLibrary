@@ -34,9 +34,7 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
     volatile DatagramSocket dgramSocket;
     volatile Map<Integer, TransmissionQueue<Command>> transmissionQueues;
     volatile ACKQueue ackQueue;
-    
-    volatile Semaphore transmissionSemaphore;
-    
+        
     long interTransmissionTimeout;
     static final int maxPayloadLength = 300;
     final String name;
@@ -44,13 +42,12 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
     private static final Logger LOG = Logger.getLogger(LockstepTransmitter.class.getName());
     private final int tickrate;
     
-    public LockstepTransmitter(DatagramSocket socket, int tickrate, Map<Integer, TransmissionQueue<Command>> transmissionFrameQueues, Semaphore transmissionSemaphore, String name, ACKQueue ackQueue)
+    public LockstepTransmitter(DatagramSocket socket, int tickrate, Map<Integer, TransmissionQueue<Command>> transmissionFrameQueues, String name, ACKQueue ackQueue)
     {
         this.dgramSocket = socket;
         this.tickrate = tickrate;
         this.interTransmissionTimeout = 3*(1000/tickrate);
         this.transmissionQueues = transmissionFrameQueues;
-        this.transmissionSemaphore = transmissionSemaphore;
         this.name = name;
         this.ackQueue = ackQueue;
     }
@@ -199,14 +196,14 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
         
         LOG.debug("SelectiveACKsToInclude = " + selectiveACKsToInclude);
         LOG.debug("SelectiveACKs.length = .... " + selectiveACKs.length);
-        /*if(selectiveACKsToInclude < selectiveACKs.length)
+        if(selectiveACKsToInclude < selectiveACKs.length)
         {
             LOG.debug("SPlitting acks");
             frameACK.selectiveACKs = Arrays.copyOfRange(selectiveACKs, selectiveACKsToInclude, selectiveACKs.length);
             if(frameACK.selectiveACKs == null)
                 LOG.debug("selectiveacks è diventato null");
             sendSplitACKs(frameACK);
-        }*/
+        }
     }
     
     private void send(InputMessage msg)
@@ -279,12 +276,12 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
         }
         LOG.debug("" + framesToInclude + "sent for " + senderID);
         LOG.debug("Payload size " + payloadLength);
-        /*
+
         if(framesToInclude < frames.length)
         {
             frames = Arrays.copyOfRange(frames, framesToInclude, frames.length);
             send(senderID, frames);
-        }*/
+        }
     }
 }
 

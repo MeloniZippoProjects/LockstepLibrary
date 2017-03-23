@@ -9,11 +9,15 @@ import java.io.Serializable;
 import lockstep.messages.simulation.FrameACK;
 
 /**
- *
- * @author enric
+ * Interface for the frame queues used at receiving side, provides methods to be
+ * used by the receiver to treate the frames received.
+ * 
+ * Implementations specialize the behavior based on the needs of clients and
+ * servers at extraction time.
+ * 
  */
 public interface ReceivingQueue<Command extends Serializable> {
-    
+
     public FrameInput<Command> pop();
     
     public FrameInput<Command> head();

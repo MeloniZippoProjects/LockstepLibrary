@@ -17,14 +17,15 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.log4j.Logger;
 
 /**
- *
- * @author enric
+ * This frame queue supports out of order and simultaneous insertion, amd single
+ * extraction of the first available frame. 
+ * A semaphore is released when a frame input is available.
+ * 
+ * It is thread safe.
  */
+
 public class ServerReceivingQueue<Command extends Serializable> implements ReceivingQueue {
     
-    //AtomicInteger nextFrame;
-    //int baseFrameNumber;
-    //FrameInput[] frameBuffer;
 
     volatile ConcurrentSkipListMap<Integer, Command> commandBuffer;
     volatile ConcurrentSkipListSet<Integer> selectiveACKsSet;
@@ -36,28 +37,32 @@ public class ServerReceivingQueue<Command extends Serializable> implements Recei
     private final int senderID;
     
     /**
-     * Creates a new ExecutionFrameQueue
-     * @param bufferSize Size of the internal buffer. It's important to
-     * dimension this large enough to store the received frames without forcing
-     * retransmissions
+     * Constructor.
+     * 
      * @param initialFrameNumber First frame's number. Must be the same for all 
-     * the clients using the protocol
+     * the hosts using the protocol
+     * 
+     * @param senderID ID of the client whose frames are collected in this queue
+     * 
+     * @param serverExecutionSemaphore semaphore used by to signal the client of
+     * the availability of the next frame input. The client awaits that all the 
+     * queues are ready before collecting the next frame inputs
      */
-    public ServerReceivingQueue(int initialFrameNumber, int senderID, Semaphore executionSemaphore)
+    public ServerReceivingQueue(int initialFrameNumber, int senderID, Semaphore serverExecutionSemaphore)
     {
         this.commandBuffer = new ConcurrentSkipListMap<>();
-        //this.nextFrame = new AtomicInteger(initialFrameNumber);
         this.lastInOrder = new AtomicInteger(initialFrameNumber - 1);
         this.selectiveACKsSet = new ConcurrentSkipListSet<>();
         this.senderID = senderID;
-        this.executionSemaphore = executionSemaphore;
+        this.executionSemaphore = serverExecutionSemaphore;
         
         System.out.println("BufferHead["+senderID+"] initialized at " + initialFrameNumber);
     }
     
     /**
-     * Extracts the next frame input only if it's in order. 
+     * Extracts the first available frame input. 
      * This method will change the queue, extracting the head, only if it's present.
+     * 
      * @return the next in order frame input, or null if not present. 
      */
     public FrameInput<Command> pop()
