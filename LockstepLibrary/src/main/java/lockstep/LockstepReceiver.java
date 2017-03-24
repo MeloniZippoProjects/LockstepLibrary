@@ -8,20 +8,15 @@ package lockstep;
 import lockstep.messages.simulation.InputMessageArray;
 import lockstep.messages.simulation.InputMessage;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.util.Arrays;
+import java.net.SocketTimeoutException;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 import lockstep.messages.simulation.FrameACK;
-import org.apache.commons.lang3.ArrayUtils;
+import lockstep.messages.simulation.KeepAlive;
 import org.apache.log4j.Logger;
 
 /**
@@ -73,6 +68,11 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
                     messageSwitch(obj);
                 }
             }
+            catch(SocketTimeoutException stEx)
+            {
+                //TO DO: termination handling
+                stEx.printStackTrace();
+            }
             catch(Exception e)
             {
                 e.printStackTrace();
@@ -107,7 +107,10 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
             FrameACK ack = (FrameACK)obj;
             this.processACK(ack);
         }
-        else 
+        else if(obj instanceof KeepAlive)
+        {   //No processing required
+        }
+        else
         {
             throw(new Exception("Unrecognized message received"));
         }
