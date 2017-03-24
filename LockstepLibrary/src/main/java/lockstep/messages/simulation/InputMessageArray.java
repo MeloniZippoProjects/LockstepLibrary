@@ -22,4 +22,16 @@ public class InputMessageArray implements Serializable
         this.senderID = hostID;
         this.frames = frames;
     }
+    
+    @Override
+    public String toString()
+    {
+        String str = "[ ";
+        
+        for(int i = 0; i < frames.length; ++i)
+            str += "" + frames[i] + " ";
+        
+        str += "]";
+        return str;
+    }
 }

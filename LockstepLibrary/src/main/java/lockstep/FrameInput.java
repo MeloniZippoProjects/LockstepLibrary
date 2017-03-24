@@ -62,4 +62,10 @@ public class FrameInput<Command extends Serializable> implements Serializable
         }
         return true;
     }   
+    
+    @Override
+    public String toString()
+    {
+        return "" + frameNumber;
+    }
 }

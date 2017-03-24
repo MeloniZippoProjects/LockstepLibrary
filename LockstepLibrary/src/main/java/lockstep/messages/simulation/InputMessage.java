@@ -22,4 +22,11 @@ public class InputMessage implements Serializable
         this.senderID = senderID;
         this.frame = frame;
     }
+    
+    
+    @Override
+    public String toString()
+    {
+        return "[ " + frame + " ]";
+    }
 }
