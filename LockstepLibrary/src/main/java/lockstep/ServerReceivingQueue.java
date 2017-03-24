@@ -22,19 +22,23 @@ import org.apache.log4j.Logger;
  * A semaphore is released when a frame input is available.
  * 
  * It is thread safe.
+ * @param <Command> Application class containing the data to transmit
  */
 
 public class ServerReceivingQueue<Command extends Serializable> implements ReceivingQueue {
     
-
-    volatile ConcurrentSkipListMap<Integer, Command> commandBuffer;
-    volatile ConcurrentSkipListSet<Integer> selectiveACKsSet;
-    volatile AtomicInteger lastInOrder;
-
-    volatile Semaphore executionSemaphore;
+    private final int senderID;
+    
+    ConcurrentSkipListMap<Integer, Command> commandBuffer;
+    Semaphore executionSemaphore;
+        
+    AtomicInteger lastInOrderACK;
+    ConcurrentSkipListSet<Integer> selectiveACKsSet;
+    
+    //AtomicInteger lastInOrderProcessed;
+    //ConcurrentSkipListSet<Integer> selectiveProcessedSet;
     
     private static final Logger LOG = Logger.getLogger(ClientReceivingQueue.class.getName());
-    private final int senderID;
     
     /**
      * Constructor.
@@ -50,42 +54,60 @@ public class ServerReceivingQueue<Command extends Serializable> implements Recei
      */
     public ServerReceivingQueue(int initialFrameNumber, int senderID, Semaphore serverExecutionSemaphore)
     {
-        this.commandBuffer = new ConcurrentSkipListMap<>();
-        this.lastInOrder = new AtomicInteger(initialFrameNumber - 1);
-        this.selectiveACKsSet = new ConcurrentSkipListSet<>();
         this.senderID = senderID;
+    
+        this.commandBuffer = new ConcurrentSkipListMap<>();
         this.executionSemaphore = serverExecutionSemaphore;
+
+        this.lastInOrderACK = new AtomicInteger(initialFrameNumber - 1);
+        this.selectiveACKsSet = new ConcurrentSkipListSet<>();
+        
+        //this.lastInOrderProcessed = new AtomicInteger(initialFrameNumber - 1);
+        //this.selectiveProcessedSet = new ConcurrentSkipListSet<>();
         
         System.out.println("BufferHead["+senderID+"] initialized at " + initialFrameNumber);
     }
     
     /**
      * Extracts the first available frame input. 
-     * This method will change the queue, extracting the head, only if it's present.
+     * This method will change the queue, extracting the first packet if present.
      * 
-     * @return the next in order frame input, or null if not present. 
+     * @return the next available frame input, or null if not present.
      */
+    @Override
     public FrameInput<Command> pop()
-    {
-        //Command nextCommand = this.commandBuffer.get(nextFrame.get());
+    {        
+        Entry<Integer, Command> firstFrameEntry = commandBuffer.pollFirstEntry();
         
-        Entry<Integer, Command> firstFrame = commandBuffer.pollFirstEntry();
-        
-        if( firstFrame != null ) //there's something in Q
+        if( firstFrameEntry != null )
         {
-            if(commandBuffer.firstEntry() != null) //if there is something else, let the semaphore know
+//            if(firstFrameEntry.getKey() == this.lastInOrderProcessed.get() + 1)
+//            {
+//                lastInOrderProcessed.incrementAndGet();
+//                
+//                while(!selectiveProcessedSet.isEmpty() && selectiveProcessedSet.first() == (lastInOrderProcessed.get() + 1))
+//                {
+//                    lastInOrderProcessed.incrementAndGet();
+//                    selectiveProcessedSet.removeAll(selectiveProcessedSet.headSet(lastInOrderProcessed.get(), true));
+//                }
+//            }
+            
+            if(commandBuffer.firstEntry() != null)
                 executionSemaphore.release();
             
-            return new FrameInput(firstFrame.getKey(), firstFrame.getValue());
+            return new FrameInput(firstFrameEntry.getKey(), firstFrameEntry.getValue());
         }
-        
-        return null;
+        else
+        {
+            return null;
+        }        
     }
     
     /**
      * Shows the head of the buffer. This method won't modify the queue.
      * @return next in order frame input, or null if not present.
      */
+    @Override
     public FrameInput<Command> head()
     {
         Entry<Integer,Command> firstFrame = commandBuffer.firstEntry();
@@ -98,6 +120,7 @@ public class ServerReceivingQueue<Command extends Serializable> implements Recei
      * @param inputs the FrameInputs to insert
      * @return the FrameACK to send back
      */
+    @Override
     public FrameACK push(FrameInput[] inputs)
     {
         for(FrameInput input : inputs)
@@ -105,7 +128,7 @@ public class ServerReceivingQueue<Command extends Serializable> implements Recei
         
         executionSemaphore.release();
         
-        return new FrameACK(lastInOrder.get(), _getSelectiveACKs());
+        return new FrameACK(lastInOrderACK.get(), _getSelectiveACKs());
     }
         
     /**
@@ -115,12 +138,13 @@ public class ServerReceivingQueue<Command extends Serializable> implements Recei
      * @param input the FrameInput to insert
      * @return the FrameACK to send back
      */
+    @Override
     public FrameACK push(FrameInput input)
     {
         _push(input);
         
         executionSemaphore.release(); //let sem know there is something new
-        return new FrameACK(lastInOrder.get(), _getSelectiveACKs());
+        return new FrameACK(lastInOrderACK.get(), _getSelectiveACKs());
     }
         
     /**
@@ -131,50 +155,35 @@ public class ServerReceivingQueue<Command extends Serializable> implements Recei
      */
     private void _push(FrameInput<Command> input)
     {
-        try
+        if(input.getFrameNumber() > lastInOrderACK.get() && !selectiveACKsSet.contains(input.getFrameNumber())) 
         {
-            if( input.getFrameNumber() > lastInOrder.get() && this.commandBuffer.putIfAbsent(input.getFrameNumber(), input.getCommand()) == null)
+            commandBuffer.putIfAbsent(input.getFrameNumber(), input.getCommand());
+            if(input.getFrameNumber() == this.lastInOrderACK.get() + 1)
             {
-                if(input.getFrameNumber() == this.lastInOrder.get() + 1)
-                {
-                    lastInOrder.incrementAndGet();
-                    
-                    //System.out.println("["+senderID+"]first: " + (selectiveACKsSet.isEmpty() ? "vuoto" : selectiveACKsSet.first() ) + "; lastinorder: " + (lastInOrder.get() + 1));
+                lastInOrderACK.incrementAndGet();
 
-                    //System.out.println("["+senderID+"] lastInOrder prima: " + lastInOrder.get());
-                    while(!this.selectiveACKsSet.isEmpty() && this.selectiveACKsSet.first() == (this.lastInOrder.get() + 1))
-                    {
-                        //System.out.println("Entrato");
-                        this.lastInOrder.incrementAndGet();
-                        this.selectiveACKsSet.removeAll(this.selectiveACKsSet.headSet(lastInOrder.get(), true));
-                    }
-                    //System.out.println("["+senderID+"]lastInOrder dopo: " + lastInOrder.get());
-                    /*
-                    if(input.getFrameNumber() == this.nextFrame.get())
-                    {
-                        //LOG.debug("Countdown to " + ( executionSemaphore.getCount() - 1) + " made by " + senderID);
-                        executionSemaphore.release();
-                    }
-                    */
-                }
-                else
+                while(!this.selectiveACKsSet.isEmpty() && this.selectiveACKsSet.first() == (this.lastInOrderACK.get() + 1))
                 {
-                    this.selectiveACKsSet.add(input.getFrameNumber());
+                    this.lastInOrderACK.incrementAndGet();
+                    this.selectiveACKsSet.removeAll(this.selectiveACKsSet.headSet(lastInOrderACK.get(), true));
                 }
             }
             else
             {
-                LOG.debug("Duplicate frame arrived");
+                this.selectiveACKsSet.add(input.getFrameNumber());
             }
         }
-        catch(NullPointerException e)
+        else
         {
-            LOG.debug("SEGFAULT for " + senderID);
-            e.printStackTrace();
-            System.exit(1);
-        }
+            LOG.debug("Duplicate frame arrived");
+        }        
     }
         
+     /**
+     * Extract an int array containing the selective ACKs
+     * 
+     * @return the int array of selective ACKs
+     */
     private int[] _getSelectiveACKs()
     {
         Integer[] selectiveACKsIntegerArray = this.selectiveACKsSet.toArray(new Integer[0]);
@@ -197,7 +206,6 @@ public class ServerReceivingQueue<Command extends Serializable> implements Recei
         {
             string += " " + entry.getKey();
         }
-        //string += " } nextFrame = " + nextFrame.get() + " lastInOrder " + lastInOrder.get();
                 
         return string;
     }
