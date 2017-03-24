@@ -161,6 +161,11 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
                     this.lastInOrderACK.incrementAndGet();
                     this.selectiveACKsSet.removeAll(this.selectiveACKsSet.headSet(lastInOrderACK.get(), true));
                 }
+                
+                if(input.getFrameNumber() == this.nextFrame.get())
+                {
+                    executionSemaphore.release();
+                }
             }
             else
             {
