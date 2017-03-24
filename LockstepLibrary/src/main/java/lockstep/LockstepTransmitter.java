@@ -21,6 +21,7 @@ import java.util.zip.GZIPOutputStream;
 import lockstep.messages.simulation.FrameACK;
 import lockstep.messages.simulation.InputMessage;
 import lockstep.messages.simulation.InputMessageArray;
+import lockstep.messages.simulation.KeepAlive;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -67,8 +68,10 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
                     LOG.debug(txQ);
                 }
                 
-                processCommands();
-                processACKs();
+                boolean sentSomething = ( processCommands() || processACKs() );
+                if(!sentSomething)
+                    sendKeepAlive();
+                
                 
                 Thread.sleep(1000/tickrate);
             }
@@ -81,11 +84,15 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
         }
     }
 
-    private void processCommands() {
+    private boolean processCommands() {
+        boolean sentSomething = false;
+        
         for(Entry<Integer, TransmissionQueue<Command>> transmissionQueueEntry : transmissionQueues.entrySet())
         {
             if(transmissionQueueEntry.getValue().hasFramesToSend())
             {
+                sentSomething = true;
+                
                 int senderID = transmissionQueueEntry.getKey();
                 
                 LOG.debug("Entry " + senderID);
@@ -110,14 +117,23 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
                 }
             }
         }
+        
+        return sentSomething;
     }
     
-    private void processACKs()
+    private boolean processACKs()
     {
         FrameACK[] acks = ackQueue.getACKs();
+        boolean sentSomething = false;
         
         for(FrameACK ack : acks)
-            sendACK(ack);
+            if(ack != null)
+            {
+                sendACK(ack);
+                sentSomething = true;
+            }
+            
+        return sentSomething;
     }
     
     private void sendACK(FrameACK frameACK)
@@ -263,8 +279,6 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
         
         //System.out.println("["+senderID+"] I just sent: ("+payload.length+")" + inputMessageArray);
         
-        
-        
         try
         {
             this.dgramSocket.send(new DatagramPacket(payload, payload.length));
@@ -282,6 +296,29 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
         {
             frames = Arrays.copyOfRange(frames, framesToInclude, frames.length);
             send(senderID, frames);
+        }
+    }
+
+    private void sendKeepAlive()
+    { 
+        try(
+            ByteArrayOutputStream baout = new ByteArrayOutputStream();
+            GZIPOutputStream gzout = new GZIPOutputStream(baout);
+            ObjectOutputStream oout = new ObjectOutputStream(gzout);
+        )
+        {
+            oout.writeObject(new KeepAlive());
+            oout.flush();
+            gzout.finish();
+            byte[] payload = baout.toByteArray();
+            dgramSocket.send(new DatagramPacket(payload, payload.length));
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+
+            LOG.fatal(e.getStackTrace());
+            System.exit(1);
         }
     }
 }

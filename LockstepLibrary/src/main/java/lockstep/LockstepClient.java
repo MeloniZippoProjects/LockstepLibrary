@@ -178,7 +178,9 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
 
                 InetSocketAddress serverUDPAddress = new InetSocketAddress(serverTCPAddress.getAddress(), helloReply.serverUDPPort);
                 udpSocket.connect(serverUDPAddress);
-
+                //TO DO: review timeout settings
+                udpSocket.setSoTimeout(5000);
+                
                 Map<Integer, ClientReceivingQueue> receivingExecutionQueues = new ConcurrentHashMap<>();
                 transmissionFrameQueue = new TransmissionQueue(helloReply.firstFrameNumber, hostID);
                 HashMap<Integer,TransmissionQueue> transmissionQueueWrapper = new HashMap<>();

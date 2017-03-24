@@ -178,6 +178,8 @@ public class LockstepServer<Command extends Serializable> implements Runnable
                 DatagramSocket udpSocket = new DatagramSocket();
                 InetSocketAddress clientUDPAddress = new InetSocketAddress(tcpSocket.getInetAddress().getHostAddress(), hello.clientUDPPort);
                 udpSocket.connect(clientUDPAddress);
+                //TO DO: review timeout settings
+                udpSocket.setSoTimeout(5000);
 
                 int assignedHostID;
                 do{
