@@ -22,7 +22,8 @@ import lockstep.messages.simulation.FrameACK;
 import lockstep.messages.simulation.InputMessage;
 import lockstep.messages.simulation.InputMessageArray;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  * 
@@ -39,7 +40,7 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
     static final int maxPayloadLength = 300;
     final String name;
     
-    private static final Logger LOG = Logger.getLogger(LockstepTransmitter.class.getName());
+    private static final Logger LOG = LogManager.getLogger(LockstepTransmitter.class);
     private final int tickrate;
     
     public LockstepTransmitter(DatagramSocket socket, int tickrate, Map<Integer, TransmissionQueue<Command>> transmissionFrameQueues, String name, ACKQueue ackQueue)

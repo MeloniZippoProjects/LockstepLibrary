@@ -13,7 +13,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import lockstep.messages.simulation.FrameACK;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 
 /**
@@ -37,7 +38,7 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
     AtomicInteger lastInOrderACK;
     ConcurrentSkipListSet<Integer> selectiveACKsSet;
         
-    private static final Logger LOG = Logger.getLogger(ClientReceivingQueue.class.getName());
+    private static final Logger LOG = LogManager.getLogger(ClientReceivingQueue.class);
     
     
     /**

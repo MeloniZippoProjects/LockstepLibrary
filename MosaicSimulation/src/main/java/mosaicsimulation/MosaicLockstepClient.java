@@ -12,7 +12,9 @@ import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import lockstep.LockstepClient;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  *
@@ -25,7 +27,8 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
     private final int columns;
     private final Random rand;
     
-    private static final Logger LOG = Logger.getLogger(MosaicLockstepClient.class.getName());
+    private static final Logger LOG = LogManager.getLogger(MosaicLockstepClient.class);
+    private static final Logger logSim = LogManager.getLogger("Simulation");
     private final Label currentFrameLabel;
     private final int fillSize;
     private final Label currentFPSLabel;
@@ -46,6 +49,10 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
         this.currentFrameLabel = currentFrameLabel;
         this.currentFPSLabel = currentFPSLabel;
         this.rand = new Random();
+        
+        
+        
+        logSim.log(Level.getLevel("SIMULATION"), "Prova simulazione");
     }
 
     @Override

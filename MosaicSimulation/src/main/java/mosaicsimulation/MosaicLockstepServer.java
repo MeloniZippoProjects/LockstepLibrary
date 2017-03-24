@@ -7,7 +7,8 @@ package mosaicsimulation;
 
 import java.util.logging.Level;
 import lockstep.LockstepServer;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.apache.commons.cli.*;
 
 /**
@@ -15,7 +16,7 @@ import org.apache.commons.cli.*;
  * @author enric
  */
 public class MosaicLockstepServer {
-    private static final Logger LOG = org.apache.log4j.Logger.getLogger(MosaicLockstepServer.class.getName());
+    private static final Logger LOG = LogManager.getLogger(MosaicLockstepServer.class);
     
     public static void main(String[] args)
     {

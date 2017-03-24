@@ -14,7 +14,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import lockstep.messages.simulation.FrameACK;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  * This frame queue supports out of order and simultaneous insertion, amd single
@@ -38,7 +39,7 @@ public class ServerReceivingQueue<Command extends Serializable> implements Recei
     //AtomicInteger lastInOrderProcessed;
     //ConcurrentSkipListSet<Integer> selectiveProcessedSet;
     
-    private static final Logger LOG = Logger.getLogger(ClientReceivingQueue.class.getName());
+    private static final Logger LOG = LogManager.getLogger(ClientReceivingQueue.class);
     
     /**
      * Constructor.

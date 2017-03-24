@@ -22,7 +22,8 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import lockstep.messages.simulation.FrameACK;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  *
@@ -36,7 +37,7 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
     volatile ACKQueue ackQueue;
     static final int maxPayloadLength = 300;
     
-    private static final Logger LOG = Logger.getLogger(LockstepReceiver.class.getName());
+    private static final Logger LOG = LogManager.getLogger(LockstepReceiver.class);
     
     private final String name;
     

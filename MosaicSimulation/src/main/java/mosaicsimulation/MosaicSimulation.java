@@ -17,7 +17,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  *
@@ -32,7 +33,7 @@ public class MosaicSimulation extends Application
     Rectangle[][] mosaic;
     Color clientColor;
     
-    private static final Logger LOG = Logger.getLogger(MosaicSimulation.class.getName());
+    private static final Logger LOG = LogManager.getLogger(MosaicSimulation.class.getName());
     
     @Override
     public void start(Stage stage) throws Exception

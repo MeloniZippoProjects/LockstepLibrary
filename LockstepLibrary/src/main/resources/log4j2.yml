@@ -1,0 +1,55 @@
+Configuration:
+  name: Default
+  Properties:
+    Property:
+      name: log-path
+      value: "logs"    
+  CustomLevels:
+      CustomLevel:
+          name: SIMULATION
+          intLevel: 550
+  Appenders:
+    Console:
+      name: Console_Appender
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n"
+    File:
+      - name: DebugFile_Appender
+        fileName: ${log-path}/debug/${sys:logfile}.log
+        PatternLayout:
+          pattern: "[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n"
+      - name: SimFile_Appender
+        filename: ${log-path}/simulation/${sys:logfile}.log
+        PatternLayout:
+          pattern: "[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n"
+        
+    
+    RollingFile:
+        - name: RollingFile_Appender
+          fileName: ${log-path}/${sys:logfile}.log
+          filePattern: "logs/archive/${sys:logfile}.log.%d{yyyy-MM-dd-hh-mm}.gz"
+          PatternLayout:
+            pattern: "[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n"
+          Policies:
+            SizeBasedTriggeringPolicy:
+              size: 10 KB
+          DefaultRollOverStrategy:
+            max: 30
+  Loggers:
+    Root:
+      level: debug
+      AppenderRef:
+        - ref: Console_Appender
+          level: warn
+        - ref: RollingFile_Appender
+          level: info
+        - ref: DebugFile_Appender
+          level: debug
+    Logger:
+      name: Simulation
+      level: simulation
+      AppenderRef:
+        - ref: SimFile_Appender
+          level: simulation
+          

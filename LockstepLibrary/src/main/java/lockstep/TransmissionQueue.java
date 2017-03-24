@@ -13,7 +13,8 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import lockstep.messages.simulation.FrameACK;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  * This frame queue supports out of order insertions, while extractions gets the 
@@ -29,7 +30,7 @@ public class TransmissionQueue<Command extends Serializable>
     AtomicInteger lastFrame;
     AtomicInteger lastACKed;
         
-    private static final Logger LOG = Logger.getLogger(TransmissionQueue.class.getName());
+    private static final Logger LOG = LogManager.getLogger(TransmissionQueue.class);
     private final int senderID;
 
     /**

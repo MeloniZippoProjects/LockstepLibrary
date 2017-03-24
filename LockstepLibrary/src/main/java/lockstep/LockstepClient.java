@@ -25,7 +25,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  *
@@ -53,7 +54,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     
     private int UDPPort = 10240;
     
-    private static final Logger LOG = Logger.getLogger(LockstepClient.class.getName());
+    private static final Logger LOG = LogManager.getLogger(LockstepClient.class);
         
     /**
      * Used for synchronization between server and executionFrameQueues

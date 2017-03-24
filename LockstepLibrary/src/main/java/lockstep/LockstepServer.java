@@ -28,7 +28,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import lockstep.messages.handshake.*;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  *
@@ -72,7 +73,7 @@ public class LockstepServer<Command extends Serializable> implements Runnable
     int tcpPort;
     int clientsNumber;
     
-    private static final Logger LOG = Logger.getLogger(LockstepServer.class.getName());
+    private static final Logger LOG = LogManager.getLogger(LockstepServer.class);
     private final int tickrate;
     
     public LockstepServer(int tcpPort, int clientsNumber, int tickrate)
