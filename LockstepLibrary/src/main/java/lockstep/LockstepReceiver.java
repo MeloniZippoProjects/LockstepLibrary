@@ -15,12 +15,14 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import lockstep.messages.simulation.FrameACK;
+import lockstep.messages.simulation.KeepAlive;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -74,6 +76,11 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
                     messageSwitch(obj);
                 }
             }
+            catch(SocketTimeoutException stEx)
+            {
+                //TODO: termination handling
+                stEx.printStackTrace();
+            }
             catch(Exception e)
             {
                 e.printStackTrace();
@@ -107,6 +114,10 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
         {
             FrameACK ack = (FrameACK)obj;
             this.processACK(ack);
+        }
+        else if(obj instanceof KeepAlive)
+        {   
+            //Connection timer is reset at packet reception
         }
         else 
         {

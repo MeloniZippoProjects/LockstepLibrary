@@ -178,6 +178,7 @@ public class LockstepServer<Command extends Serializable> implements Runnable
                 DatagramSocket udpSocket = new DatagramSocket();
                 InetSocketAddress clientUDPAddress = new InetSocketAddress(tcpSocket.getInetAddress().getHostAddress(), hello.clientUDPPort);
                 udpSocket.connect(clientUDPAddress);
+                udpSocket.setSoTimeout(5000);
 
                 int assignedHostID;
                 do{
@@ -245,7 +246,7 @@ public class LockstepServer<Command extends Serializable> implements Runnable
                 clientTransmissionFrameQueues.put(hostID, transmissionFrameQueue);
             }
         }
-        LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, tickrate ,clientTransmissionFrameQueues, "Transmitter-to-"+clientID, ackQueues.get(clientID));
+        LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, tickrate, 0, clientTransmissionFrameQueues, "Transmitter-to-"+clientID, ackQueues.get(clientID));
         transmitters.submit(transmitter);
     }
     

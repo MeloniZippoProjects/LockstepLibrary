@@ -178,6 +178,8 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
 
                 InetSocketAddress serverUDPAddress = new InetSocketAddress(serverTCPAddress.getAddress(), helloReply.serverUDPPort);
                 udpSocket.connect(serverUDPAddress);
+                
+                udpSocket.setSoTimeout(5000);
 
                 Map<Integer, ClientReceivingQueue> receivingExecutionQueues = new ConcurrentHashMap<>();
                 transmissionFrameQueue = new TransmissionQueue(helloReply.firstFrameNumber, hostID);
@@ -186,7 +188,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
 
                 ACKQueue ackQueue = new ACKQueue();
                 receiver = new LockstepReceiver(udpSocket, tickrate, receivingExecutionQueues, transmissionQueueWrapper, "Receiver-to-"+hostID, ackQueue);
-                transmitter = new LockstepTransmitter(udpSocket, tickrate, transmissionQueueWrapper, "Transmitter-from-"+hostID, ackQueue);
+                transmitter = new LockstepTransmitter(udpSocket, tickrate, 1000, transmissionQueueWrapper, "Transmitter-from-"+hostID, ackQueue);
 
                 insertBootstrapCommands(bootstrapCommands());
                                 
