@@ -13,10 +13,8 @@ import java.io.Serializable;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,7 +22,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -33,7 +30,7 @@ import org.apache.logging.log4j.LogManager;
  * @author Raff
  * @param <Command>
  */
-public abstract class LockstepClient<Command extends Serializable> implements Runnable
+public class LockstepClient<Command extends Serializable> implements Runnable
 {
     int framerate;
     int fillTimeout;
@@ -63,57 +60,17 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     Semaphore executionSemaphore;
     private int clientsNumber;
     private final int tickrate;
+    private final LockstepApplication<Command> application;
     
-    public LockstepClient(InetSocketAddress serverTCPAddress, int framerate, int tickrate, int fillTimeout)
+    public LockstepClient(InetSocketAddress serverTCPAddress, int framerate, int tickrate, int fillTimeout, LockstepApplication<Command> application)
     {
         this.serverTCPAddress = serverTCPAddress;
         this.framerate = framerate;
         this.tickrate = tickrate;
         this.fillTimeout = fillTimeout;
+        this.application = application;
     }
 
-    /**
-     * Must read input from user, and return a Command object to be executed.
-     * If there is no input in a frame a Command object must still be returned,
-     * possibly representing the lack of an user input in the semantic of the application
-     * 
-     * @return the Command object collected in the current frame
-     */
-    protected abstract Command readInput();
-
-
-    /**
-     * Must suspend the simulation execution due to a synchronization issue
-     */
-    protected abstract void suspendSimulation();
-    
-    /**
-     * Must resume the simulation execution, as input are now synchronized
-     */
-    protected abstract void resumeSimulation();
-
-    /**
-     * Must get the command contained in the frame input and execute it
-     * 
-     * @param c the command to execute
-     */
-    protected abstract void executeCommand(Command c);
-
-    /**
-     * Provides void commands to resume from a deadlock situation.
-     * Their number should be dimensioned to take less time than the user to
-     * react from the simulation being resumed
-     * 
-     * @return array of commands to bootstart the simulation
-     */
-    protected abstract Command[] fillCommands();
-        
-    /**
-     * Provides the first commands to bootstrap the simulation.
-     * 
-     * @return 
-     */
-    protected abstract Command[] bootstrapCommands();
         
     @Override
     public void run()
@@ -190,7 +147,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
                 receiver = new LockstepReceiver(udpSocket, tickrate, receivingExecutionQueues, transmissionQueueWrapper, "Receiver-to-"+hostID, ackQueue);
                 transmitter = new LockstepTransmitter(udpSocket, tickrate, 1000, transmissionQueueWrapper, "Transmitter-from-"+hostID, ackQueue);
 
-                insertBootstrapCommands(bootstrapCommands());
+                insertBootstrapCommands(application.bootstrapCommands());
                                 
                 executorService = Executors.newFixedThreadPool(2);
 
@@ -252,7 +209,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
     
     private void readUserInput()
     {
-        Command cmd = readInput();
+        Command cmd = application.readInput();
         FrameInput<Command> newFrame = new FrameInput(currentUserFrame++, cmd);
         executionFrameQueues.get(this.hostID).push(newFrame);
         transmissionFrameQueue.push(newFrame);
@@ -268,10 +225,10 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
         
         if(!executionSemaphore.tryAcquire(clientsNumber))
         {
-            suspendSimulation();
+            application.suspendSimulation();
             //Thread.sleep(10000);
             executionSemaphore.acquire(clientsNumber);
-            resumeSimulation();
+            application.resumeSimulation();
             
             //debugSimulation();
 //            
@@ -287,7 +244,7 @@ public abstract class LockstepClient<Command extends Serializable> implements Ru
         
         ArrayList<Command> commands = collectCommands();
         for(Command command : commands)
-            executeCommand(command);
+            application.executeCommand(command);
     }
 
     private ArrayList<Command> collectCommands()

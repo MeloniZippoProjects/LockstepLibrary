@@ -17,6 +17,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
+import lockstep.LockstepClient;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -87,7 +88,10 @@ public class MosaicSimulation extends Application
         
         LOG.debug("Creation of lockstep client");
         MosaicLockstepClient mosaicLockstepClient = new MosaicLockstepClient(serverTCPAddress, framerate, tickrate, fillTimeout, fillSize, mosaic, rows, columns, clientColor, currentFrameLabel, currentFPSLabel);
-        Thread clientThread = new Thread(mosaicLockstepClient);
+        
+        LockstepClient lockstepClient = new LockstepClient(serverTCPAddress, framerate, tickrate, fillTimeout, mosaicLockstepClient);
+        
+        Thread clientThread = new Thread(lockstepClient);
         clientThread.setName("main-client-thread");
         clientThread.start();
         LOG.debug("thread started");

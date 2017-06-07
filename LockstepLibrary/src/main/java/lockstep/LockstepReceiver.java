@@ -15,6 +15,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.PortUnreachableException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Map;
@@ -76,10 +77,11 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
                     messageSwitch(obj);
                 }
             }
-            catch(SocketTimeoutException stEx)
+            catch(SocketTimeoutException | PortUnreachableException disconnectionException)
             {
                 //TODO: termination handling
-                stEx.printStackTrace();
+                
+                System.out.println("Disconnecteded socket (which one?)");
             }
             catch(Exception e)
             {
@@ -117,7 +119,7 @@ public class LockstepReceiver<Command extends Serializable> implements Runnable
         }
         else if(obj instanceof KeepAlive)
         {   
-            //Connection timer is reset at packet reception
+            //Socket connection timeout is reset at packet reception
         }
         else 
         {
