@@ -5,7 +5,6 @@
  */
 package lockstep.messages.simulation;
 
-import java.io.Externalizable;
 import java.io.Serializable;
 
 /**
