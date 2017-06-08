@@ -56,10 +56,15 @@ public class LockstepServer<Command extends Serializable> implements Runnable
     volatile Map<Integer, ACKQueue> ackQueues;
     
     /**
-     * Threads used for receiving and transmitting of frames. 
-     * A pair for each client partecipating in the session.
+     * Threads used for receiving frames. 
+     * The key is the ID of the host from which the thread receives frames
      */
     Map<Integer, Thread> receivers;
+    
+    /**
+     * Threads used for transmitting frames.
+     * The key is the ID of the host to which the frames are transmitted
+     */
     Map<Integer, Thread> transmitters;
 
     /**
