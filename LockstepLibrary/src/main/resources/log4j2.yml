@@ -41,7 +41,7 @@ Configuration:
       level: debug
       AppenderRef:
         - ref: Console_Appender
-          level: warn
+          level: info
         - ref: RollingFile_Appender
           level: info
         - ref: DebugFile_Appender
