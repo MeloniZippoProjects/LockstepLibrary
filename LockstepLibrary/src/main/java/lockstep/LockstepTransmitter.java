@@ -338,28 +338,5 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
             send(senderID, frames);
         }
     }
-
-    private void sendKeepAlive()
-    { 
-        try(
-            ByteArrayOutputStream baout = new ByteArrayOutputStream();
-            GZIPOutputStream gzout = new GZIPOutputStream(baout);
-            ObjectOutputStream oout = new ObjectOutputStream(gzout);
-        )
-        {
-            oout.writeObject(new KeepAlive());
-            oout.flush();
-            gzout.finish();
-            byte[] payload = baout.toByteArray();
-            dgramSocket.send(new DatagramPacket(payload, payload.length));
-        }
-        catch(IOException e)
-        {
-            e.printStackTrace();
-
-            LOG.fatal(e.getStackTrace());
-            System.exit(1);
-        }
-    }
 }
 
