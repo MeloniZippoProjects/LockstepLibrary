@@ -59,8 +59,8 @@ public class LockstepServer<Command extends Serializable> implements Runnable
      * Threads used for receiving and transmitting of frames. 
      * A pair for each client partecipating in the session.
      */
-    ExecutorService transmitters;
-    ExecutorService receivers;
+    Map<Integer, Thread> receivers;
+    Map<Integer, Thread> transmitters;
 
     /**
      * Used for synchronization between server and executionFrameQueues
@@ -81,9 +81,9 @@ public class LockstepServer<Command extends Serializable> implements Runnable
         this.tcpPort = tcpPort;
         this.clientsNumber = clientsNumber;
         this.tickrate = tickrate;
-    
-        transmitters = Executors.newFixedThreadPool(clientsNumber);
-        receivers = Executors.newFixedThreadPool(clientsNumber);
+        
+        receivers = new HashMap<>();
+        transmitters = new HashMap<>();
         
         //cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
         executionSemaphore = new Semaphore(0);
@@ -142,14 +142,15 @@ public class LockstepServer<Command extends Serializable> implements Runnable
         {
             CyclicBarrier barrier = new CyclicBarrier(this.clientsNumber);
             CountDownLatch latch = new CountDownLatch(this.clientsNumber);
-            ExecutorService handshakes = Executors.newFixedThreadPool(clientsNumber);
+            
             int firstFrameNumber = (new Random()).nextInt(1000) + 100;
             
             for(int i = 0; i < clientsNumber; i++)
             {
                 Socket tcpConnectionSocket = tcpServerSocket.accept();
                 LOG.info("Connection " + i + " accepted from " +  tcpConnectionSocket.getInetAddress().getHostAddress());
-                handshakes.submit(() -> clientHandshake(tcpConnectionSocket, firstFrameNumber, barrier, latch));
+                Thread handshake = new Thread(() -> clientHandshake(tcpConnectionSocket, firstFrameNumber, barrier, latch));
+                handshake.start();
             }
             latch.await();
             LOG.info("All handshakes completed");
@@ -233,7 +234,9 @@ public class LockstepServer<Command extends Serializable> implements Runnable
         HashMap<Integer,ServerReceivingQueue> receivingQueueWrapper = new HashMap<>();
         receivingQueueWrapper.put(clientID, receivingQueue);
         LockstepReceiver receiver = new LockstepReceiver(clientUDPSocket, tickrate, receivingQueueWrapper, transmissionFrameQueues, "Receiver-from-"+clientID, ackQueues.get(clientID));
-        receivers.submit(receiver);
+        Thread receiverThread = new Thread(receiver);
+        receivers.put(clientID, receiverThread);
+        receiverThread.start();
     }
     
     private void clientTransmissionSetup(int clientID, int firstFrameNumber, DatagramSocket udpSocket, Map<Integer, TransmissionQueue<Command>> clientTransmissionFrameQueues)
@@ -248,7 +251,10 @@ public class LockstepServer<Command extends Serializable> implements Runnable
             }
         }
         LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, tickrate, 0, clientTransmissionFrameQueues, "Transmitter-to-"+clientID, ackQueues.get(clientID));
-        transmitters.submit(transmitter);
+        Thread transmitterThread = new Thread(transmitter);
+        transmitters.put(clientID, transmitterThread);
+        transmitterThread.start();
+        
     }
     
     private Map<Integer, FrameInput> collectCommands()

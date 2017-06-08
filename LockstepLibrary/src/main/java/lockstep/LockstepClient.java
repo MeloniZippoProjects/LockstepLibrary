@@ -43,11 +43,11 @@ public class LockstepClient<Command extends Serializable> implements Runnable
     TransmissionQueue<Command> transmissionFrameQueue;
     
     InetSocketAddress serverTCPAddress;
-        
-    ExecutorService executorService;
     
     LockstepReceiver receiver;
+    Thread receiverThread;
     LockstepTransmitter transmitter;
+    Thread transmitterThread;
     
     private int UDPPort = 10240;
     
@@ -146,12 +146,13 @@ public class LockstepClient<Command extends Serializable> implements Runnable
                 ACKQueue ackQueue = new ACKQueue();
                 receiver = new LockstepReceiver(udpSocket, tickrate, receivingExecutionQueues, transmissionQueueWrapper, "Receiver-to-"+hostID, ackQueue);
                 transmitter = new LockstepTransmitter(udpSocket, tickrate, 1000, transmissionQueueWrapper, "Transmitter-from-"+hostID, ackQueue);
-
+                
+                transmitterThread = new Thread(transmitter);
+                receiverThread = new Thread(receiver);
+                
                 insertBootstrapCommands(application.bootstrapCommands());
-                                
-                executorService = Executors.newFixedThreadPool(2);
-
-                executorService.submit(transmitter);
+                
+                transmitterThread.start();
 
                 //Receive and process second server reply
                 LOG.info("Waiting for list of clients from server");
@@ -167,7 +168,7 @@ public class LockstepClient<Command extends Serializable> implements Runnable
                     }
                 }
                 
-                executorService.submit(receiver);
+                receiverThread.start();
                 
                 //Wait for simulation start signal to proceed executing
                 LOG.info("Waiting for simulation start signal");
