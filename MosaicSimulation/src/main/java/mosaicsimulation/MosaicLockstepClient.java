@@ -11,6 +11,7 @@ import javafx.application.Platform;
 import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import lockstep.LockstepApplication;
 import lockstep.LockstepClient;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
@@ -20,7 +21,7 @@ import org.apache.logging.log4j.LogManager;
  *
  * @author enric
  */
-public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
+public class MosaicLockstepClient implements LockstepApplication<MosaicCommand> {
     private final Rectangle[][] mosaic;
     private final Color clientColor;
     private final int rows;
@@ -39,7 +40,7 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
     double alpha = 0.125;
     
     public MosaicLockstepClient(InetSocketAddress serverTCPAddress, int framerate, int tickrate, int fillTimeout, int fillSize, Rectangle[][] mosaic, int rows, int columns, Color clientColor, Label currentFrameLabel, Label currentFPSLabel) {
-        super(serverTCPAddress, framerate, tickrate, fillTimeout);
+        //super(serverTCPAddress, framerate, tickrate, fillTimeout);
         this.fillSize = fillSize;
         
         this.mosaic = mosaic;
@@ -56,7 +57,7 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
     }
 
     @Override
-    protected MosaicCommand readInput() {
+    public MosaicCommand readInput() {
         int row = rand.nextInt(rows);
         int column = rand.nextInt(columns);
         
@@ -64,17 +65,17 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
     }
 
     @Override
-    protected void suspendSimulation() {
+    public void suspendSimulation() {
         LOG.debug("Simulation suspended");
     }
 
     @Override
-    protected void resumeSimulation() {
+    public void resumeSimulation() {
         LOG.debug("Simulation resumed");
     }
 
     @Override
-    protected void executeCommand(MosaicCommand cmd)
+    public void executeCommand(MosaicCommand cmd)
     {
         try{
             if(!cmd.nop)
@@ -106,7 +107,7 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
     }
 
     @Override
-    protected MosaicCommand[] fillCommands() {
+    public MosaicCommand[] fillCommands() {
         MosaicCommand[] fillers = new MosaicCommand[fillSize];
         
         for (int i = 0; i < fillers.length; i++)
@@ -118,7 +119,7 @@ public class MosaicLockstepClient extends LockstepClient<MosaicCommand> {
     }   
     
     @Override
-    protected MosaicCommand[] bootstrapCommands() {
+    public MosaicCommand[] bootstrapCommands() {
         MosaicCommand[] fillers = new MosaicCommand[fillSize*2];
         
         for (int i = 0; i < fillers.length; i++)

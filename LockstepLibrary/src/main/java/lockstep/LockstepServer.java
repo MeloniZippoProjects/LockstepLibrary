@@ -247,7 +247,7 @@ public class LockstepServer<Command extends Serializable> implements Runnable
                 clientTransmissionFrameQueues.put(hostID, transmissionFrameQueue);
             }
         }
-        LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, tickrate ,clientTransmissionFrameQueues, "Transmitter-to-"+clientID, ackQueues.get(clientID));
+        LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, tickrate, 0, clientTransmissionFrameQueues, "Transmitter-to-"+clientID, ackQueues.get(clientID));
         transmitters.submit(transmitter);
     }
     

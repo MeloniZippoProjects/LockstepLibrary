@@ -44,7 +44,11 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
     private static final Logger LOG = LogManager.getLogger(LockstepTransmitter.class);
     private final int tickrate;
     
-    public LockstepTransmitter(DatagramSocket socket, int tickrate, Map<Integer, TransmissionQueue<Command>> transmissionFrameQueues, String name, ACKQueue ackQueue)
+    final boolean sendKeepAliveSwitch;
+    final int keepAliveTicksTimeout;
+    int keepAliveTicksCounter;
+    
+    public LockstepTransmitter(DatagramSocket socket, int tickrate, int keepAliveTimeout, Map<Integer, TransmissionQueue<Command>> transmissionFrameQueues, String name, ACKQueue ackQueue)
     {
         this.dgramSocket = socket;
         this.tickrate = tickrate;
@@ -52,6 +56,18 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
         this.transmissionQueues = transmissionFrameQueues;
         this.name = name;
         this.ackQueue = ackQueue;
+        
+        if(keepAliveTimeout <= 0)
+        {
+            this.sendKeepAliveSwitch = false;
+            keepAliveTicksTimeout = 0;
+        }
+        else
+        {
+            this.sendKeepAliveSwitch = true;
+            int tempKeepAliveTicksTimeout = Math.round(keepAliveTimeout / (1000/tickrate));
+            this.keepAliveTicksTimeout = (tempKeepAliveTicksTimeout > 1) ? tempKeepAliveTicksTimeout : 1;
+        }
     }
     
     @Override
@@ -68,10 +84,13 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
                     LOG.debug(txQ);
                 }
                 
-                boolean sentSomething = ( processCommands() || processACKs() );
-                if(!sentSomething)
-                    sendKeepAlive();
+                boolean sentCommands = processCommands();
+                boolean sentACKs = processACKs();
                 
+                boolean sentSomething = sentCommands || sentACKs;
+                
+                if(sendKeepAliveSwitch && !sentSomething)
+                    sendKeepAlive();
                 
                 Thread.sleep(1000/tickrate);
             }
@@ -83,16 +102,39 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
             }
         }
     }
+    
+    private void sendKeepAlive()
+    {
+        try(
+            ByteArrayOutputStream baout = new ByteArrayOutputStream();
+            GZIPOutputStream gzout = new GZIPOutputStream(baout);
+            ObjectOutputStream oout = new ObjectOutputStream(gzout);
+        )
+        {
+            oout.writeObject(new KeepAlive());
+            oout.flush();
+            gzout.finish();
+            byte[] payload = baout.toByteArray();
+            dgramSocket.send(new DatagramPacket(payload, payload.length));
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+
+            LOG.fatal(e.getStackTrace());
+            System.exit(1);
+        }
+        System.out.println("SENT KEEP ALIVE");
+    }
+    
 
     private boolean processCommands() {
         boolean sentSomething = false;
-        
         for(Entry<Integer, TransmissionQueue<Command>> transmissionQueueEntry : transmissionQueues.entrySet())
         {
             if(transmissionQueueEntry.getValue().hasFramesToSend())
             {
                 sentSomething = true;
-                
                 int senderID = transmissionQueueEntry.getKey();
                 
                 LOG.debug("Entry " + senderID);
@@ -117,7 +159,6 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
                 }
             }
         }
-        
         return sentSomething;
     }
     
@@ -127,12 +168,11 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
         boolean sentSomething = false;
         
         for(FrameACK ack : acks)
-            if(ack != null)
-            {
-                sendACK(ack);
-                sentSomething = true;
-            }
-            
+        {
+            sendACK(ack);
+            sentSomething = true;
+        }
+        
         return sentSomething;
     }
     

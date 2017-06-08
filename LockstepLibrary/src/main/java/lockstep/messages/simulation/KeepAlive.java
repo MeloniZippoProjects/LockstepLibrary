@@ -5,11 +5,12 @@
  */
 package lockstep.messages.simulation;
 
+import java.io.Serializable;
+
 /**
  *
- * @author Raff
+ * @author enric
  */
-public class KeepAlive
-{
+public class KeepAlive implements Serializable {
     
 }
