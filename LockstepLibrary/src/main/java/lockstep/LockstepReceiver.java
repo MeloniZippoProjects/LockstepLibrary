@@ -14,20 +14,19 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.PortUnreachableException;
 import java.net.SocketTimeoutException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 import lockstep.messages.simulation.FrameACK;
 import lockstep.messages.simulation.KeepAlive;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
 /**
  *
  * @author Raff
+ * @param <Command>
  */
-public class LockstepReceiver<Command extends Serializable> implements Runnable
+public class LockstepReceiver<Command extends Serializable> extends Thread
 {
     volatile DatagramSocket dgramSocket;
     volatile Map<Integer, ReceivingQueue<Command>> receivingQueues;

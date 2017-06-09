@@ -35,7 +35,7 @@ import org.apache.logging.log4j.LogManager;
  *
  * @author Raff
  */
-public class LockstepServer<Command extends Serializable> implements Runnable
+public class LockstepServer<Command extends Serializable> extends LockstepCoreThread
 {
     volatile ConcurrentSkipListSet<Integer> hostIDs;
     
@@ -342,7 +342,11 @@ public class LockstepServer<Command extends Serializable> implements Runnable
                 //System.out.println(txQ);
             }
         }
-        
-        
+    }
+
+    @Override
+    public void temporaryName()
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
