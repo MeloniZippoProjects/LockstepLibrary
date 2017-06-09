@@ -13,6 +13,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import lockstep.LockstepApplication;
 import lockstep.LockstepClient;
+import lockstep.messages.simulation.LockstepCommand;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -21,7 +22,7 @@ import org.apache.logging.log4j.LogManager;
  *
  * @author enric
  */
-public class MosaicLockstepClient implements LockstepApplication<MosaicCommand> {
+public class MosaicLockstepClient implements LockstepApplication {
     private final Rectangle[][] mosaic;
     private final Color clientColor;
     private final int rows;
@@ -75,8 +76,9 @@ public class MosaicLockstepClient implements LockstepApplication<MosaicCommand> 
     }
 
     @Override
-    public void executeCommand(MosaicCommand cmd)
+    public void executeCommand(LockstepCommand lstepCmd)
     {
+        MosaicCommand cmd = (MosaicCommand)lstepCmd;
         try{
             if(!cmd.nop)
             {

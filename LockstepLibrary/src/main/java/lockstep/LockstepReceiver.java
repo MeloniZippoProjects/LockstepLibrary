@@ -9,13 +9,13 @@ import lockstep.messages.simulation.InputMessageArray;
 import lockstep.messages.simulation.InputMessage;
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.PortUnreachableException;
 import java.net.SocketTimeoutException;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
+import lockstep.messages.simulation.DisconnectionSignal;
 import lockstep.messages.simulation.FrameACK;
 import lockstep.messages.simulation.KeepAlive;
 import org.apache.logging.log4j.Logger;
@@ -26,11 +26,11 @@ import org.apache.logging.log4j.LogManager;
  * @author Raff
  * @param <Command>
  */
-public class LockstepReceiver<Command extends Serializable> extends Thread
+public class LockstepReceiver implements Runnable
 {
     volatile DatagramSocket dgramSocket;
-    volatile Map<Integer, ReceivingQueue<Command>> receivingQueues;
-    volatile Map<Integer, TransmissionQueue<Command>> transmissionFrameQueues;
+    volatile Map<Integer, ReceivingQueue> receivingQueues;
+    volatile Map<Integer, TransmissionQueue> transmissionFrameQueues;
     volatile ACKQueue ackQueue;
     static final int maxPayloadLength = 300;
     
@@ -44,7 +44,7 @@ public class LockstepReceiver<Command extends Serializable> extends Thread
     
     private final int tickrate;
     
-    public LockstepReceiver(DatagramSocket socket, int tickrate, LockstepCoreThread coreThread , Map<Integer, ReceivingQueue<Command>> receivingQueues, Map<Integer, TransmissionQueue<Command>> transmissionFrameQueues, String name, int ownID, ACKQueue ackQueue)
+    public LockstepReceiver(DatagramSocket socket, int tickrate, LockstepCoreThread coreThread , Map<Integer, ReceivingQueue> receivingQueues, Map<Integer, TransmissionQueue> transmissionFrameQueues, String name, int ownID, ACKQueue ackQueue)
     {
         dgramSocket = socket;
         this.coreThread = coreThread;
@@ -79,6 +79,7 @@ public class LockstepReceiver<Command extends Serializable> extends Thread
             }
             catch(SocketTimeoutException | PortUnreachableException disconnectionException)
             {
+                signalDisconnection();
                 handleDisconnection(ownID);
                 return;
             }
@@ -134,7 +135,7 @@ public class LockstepReceiver<Command extends Serializable> extends Thread
         frameACK.setSenderID(input.senderID);
         ackQueue.pushACKs(frameACK);
 
-        if(input.frame.getCommand() istanceof DisconnectionSignal)
+        if(input.frame.getCommand() instanceof DisconnectionSignal)
             handleDisconnection(input.senderID);
     }
 
@@ -149,7 +150,7 @@ public class LockstepReceiver<Command extends Serializable> extends Thread
         frameACK.setSenderID(inputs.senderID);
         ackQueue.pushACKs(frameACK);
         
-        if(inputs.frames[inputs.frames.length - 1].getCommand() istanceof DisconnectionSignal)
+        if(inputs.frames[inputs.frames.length - 1].getCommand() instanceof DisconnectionSignal)
             handleDisconnection(inputs.senderID);
     }
     
@@ -161,6 +162,13 @@ public class LockstepReceiver<Command extends Serializable> extends Thread
     
     private void handleDisconnection(int disconnectedNode)
     {
-        coreThread.temporaryName(disconnectedNode);
+        coreThread.disconnectTransmittingQueues(disconnectedNode);
+    }
+
+    private void signalDisconnection()
+    {
+        ReceivingQueue rcvQ = receivingQueues.get(ownID);
+        if(rcvQ != null)
+            rcvQ.push(new FrameInput(rcvQ.getACK().cumulativeACK + 1, new DisconnectionSignal()));
     }
 }

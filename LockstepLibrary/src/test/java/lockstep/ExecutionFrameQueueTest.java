@@ -35,12 +35,12 @@ public class ExecutionFrameQueueTest {
     
     final static int initialFrame = 4;
     ClientReceivingQueue efq;
-    FrameInput<Command>[] frames;
+    FrameInput[] frames;
     
     @Before
     public void setUp() {
         Semaphore sem = new Semaphore(0);
-        efq = new ClientReceivingQueue<Command>(initialFrame, 1, sem);
+        efq = new ClientReceivingQueue(initialFrame, 1, sem);
         FrameInput frame1 = createFrame(4,1,-1), frame2 = createFrame(5,-1,-1), frame3 = createFrame(6,-1,1); 
         frames = new FrameInput[] { frame1, frame2, frame3 };
     }
@@ -48,7 +48,7 @@ public class ExecutionFrameQueueTest {
     @Test
     public void singlePushTest()
     {
-        FrameInput<Command> frame = createFrame(4,1,-1);
+        FrameInput frame = createFrame(4,1,-1);
         efq.push(frame);
         assertSame("Check single push", frame.getFrameNumber(), efq.head().getFrameNumber());
         assertSame("Check single push", frame.getCommand(), efq.head().getCommand());
@@ -112,9 +112,9 @@ public class ExecutionFrameQueueTest {
         assertArrayEquals("Check selective ACKs", null, ack.selectiveACKs);    
     }
     
-    private FrameInput<Command> createFrame(int n, int upd,int rl)
+    private FrameInput createFrame(int n, int upd,int rl)
     {
-        return new FrameInput<>(n, new Command(upd, rl));
+        return new FrameInput(n, new Command(upd, rl));
     }
     
 }

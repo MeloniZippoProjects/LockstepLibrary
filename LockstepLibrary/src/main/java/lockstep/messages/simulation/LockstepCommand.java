@@ -5,10 +5,13 @@
  */
 package lockstep.messages.simulation;
 
+import java.io.Serializable;
+
 /**
  *
- * @author Raff
+ * @author enric
  */
-public class DisconnectionSignal implements LockstepCommand
+public interface LockstepCommand extends Serializable
 {
+    
 }

@@ -27,8 +27,8 @@ public class TransmissionFrameQueueTest {
     public TransmissionFrameQueueTest() {
     }
     
-    TransmissionQueue<Command> tfq;
-    FrameInput<Command>[] frames;
+    TransmissionQueue tfq;
+    FrameInput[] frames;
     
     
     @Before
@@ -47,7 +47,7 @@ public class TransmissionFrameQueueTest {
     public void singlePush()
     {     
         tfq.push(frames[0]);
-        FrameInput<Command>[] popped = tfq.pop(); 
+        FrameInput[] popped = tfq.pop(); 
         assertArrayEquals("Check single push", new FrameInput[] { frames[0] }, popped);
     }
     
@@ -56,9 +56,9 @@ public class TransmissionFrameQueueTest {
     {
         Command[] cmds = new Command[3];
         for(int i = 0; i < 3; ++i)
-            cmds[i] = frames[i].getCommand();
+            cmds[i] = (Command)frames[i].getCommand();
         tfq.push(frames);
-        FrameInput<Command>[] popped = tfq.pop();
+        FrameInput[] popped = tfq.pop();
         assertArrayEquals("Check multiple push", frames, popped);
     }
     
@@ -67,12 +67,12 @@ public class TransmissionFrameQueueTest {
     {
         Command[] cmds = new Command[3];
         for(int i = 0; i < 3; ++i)
-            cmds[i] = frames[i].getCommand();
+            cmds[i] = (Command)frames[i].getCommand();
         tfq.push(frames);
         FrameACK ack = new FrameACK(8, null);
         tfq.processACK(ack);
         
-        FrameInput<Command>[] popped = tfq.pop();
+        FrameInput[] popped = tfq.pop();
         assertArrayEquals("Check multiple push", new FrameInput[] { frames[2] }, popped);
     }
     
@@ -81,24 +81,24 @@ public class TransmissionFrameQueueTest {
     {
         Command[] cmds = new Command[3];
         for(int i = 0; i < 3; ++i)
-            cmds[i] = frames[i].getCommand();
+            cmds[i] = (Command)frames[i].getCommand();
         tfq.push(frames);
         FrameACK ack = new FrameACK(7, new int[] { 9 } );
         tfq.processACK(ack);
         
-        FrameInput<Command>[] popped = tfq.pop();
+        FrameInput[] popped = tfq.pop();
         assertArrayEquals("Check multiple push", new FrameInput[] { frames[1] }, popped);
     }
     
     @Test
     public void emptyTFQ()
     {
-        FrameInput<Command>[] inputs = tfq.pop();
+        FrameInput[] inputs = tfq.pop();
         
     }
     
-    private FrameInput<Command> createFrame(int n, int upd,int rl)
+    private FrameInput createFrame(int n, int upd,int rl)
     {
-        return new FrameInput<>(n, new Command(upd, rl));
+        return new FrameInput(n, new Command(upd, rl));
     }
 }

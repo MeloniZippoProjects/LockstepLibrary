@@ -13,6 +13,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import lockstep.messages.simulation.DisconnectionSignal;
 import lockstep.messages.simulation.FrameACK;
+import lockstep.messages.simulation.LockstepCommand;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -27,12 +28,12 @@ import org.apache.logging.log4j.LogManager;
  * @param <Command> Application class containing the data to transmit
  */
 
-class ClientReceivingQueue<Command extends Serializable> implements ReceivingQueue<Command>
+class ClientReceivingQueue implements ReceivingQueue
 {
     private final int senderID;
     
     AtomicInteger nextFrame;
-    ConcurrentSkipListMap<Integer, Serializable> commandBuffer;
+    ConcurrentSkipListMap<Integer, LockstepCommand> commandBuffer;
     
     Semaphore executionSemaphore;
         
@@ -78,7 +79,7 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
     @Override
     public FrameInput pop()
     {
-        Serializable nextCommand = this.commandBuffer.get(nextFrame.get());
+        LockstepCommand nextCommand = this.commandBuffer.get(nextFrame.get());
         int frame = nextFrame.get();
         FrameInput frameInput = null;
         if( nextCommand != null )
@@ -120,12 +121,12 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
      * @return the FrameACK to send back
      */
     @Override
-    public FrameACK push(FrameInput<Command>[] inputs)
+    public FrameACK push(FrameInput[] inputs)
     {
         for(FrameInput input : inputs)
             _push(input);
         
-        return new FrameACK(lastInOrderACK.get(), _getSelectiveACKs());
+        return getACK();
     }
         
     /**
@@ -135,27 +136,13 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
      * @return the FrameACK to send back
      */
     @Override
-    public FrameACK push(FrameInput<Command> input)
+    public FrameACK push(FrameInput input)
     {
         _push(input);
         
-        return new FrameACK(lastInOrderACK.get(), _getSelectiveACKs());
+        return getACK();
     }
-    
-    /**
-     * Inserts the signal passed, provided it's not a duplicate.
-     * 
-     * @param signal the FrameInput to insert
-     * @return the FrameACK to send back
-     */
-    @Override
-    public FrameACK pushDisconnectionSignal(FrameInput<DisconnectionSignal> signal)
-    {
-        _push(signal);
         
-        return new FrameACK(lastInOrderACK.get(), _getSelectiveACKs());
-    }
-    
     /**
      * Internal method to push a single input into the queue.
      * As it's accessed via the push methods, the command can only be a Command
@@ -196,6 +183,12 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
         }       
     }
 
+    @Override
+    public FrameACK getACK()
+    {
+        return new FrameACK(lastInOrderACK.get(), _getSelectiveACKs());
+    }
+    
     /**
      * Extract an int array containing the selective ACKs
      * 
@@ -219,7 +212,7 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
         String string = new String();
         
         string += "ExecutionFrameQueue[" + senderID + "] = {";
-        for(Entry<Integer, Serializable> entry : this.commandBuffer.entrySet())
+        for(Entry<Integer, LockstepCommand> entry : this.commandBuffer.entrySet())
         {
             string += " " + entry.getKey();
         }
