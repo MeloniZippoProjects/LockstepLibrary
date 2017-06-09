@@ -10,12 +10,13 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import javafx.scene.paint.Color;
+import lockstep.messages.simulation.LockstepCommand;
 
 /**
  *
  * @author enric
  */
-public class MosaicCommand implements Externalizable{
+public class MosaicCommand implements Externalizable, LockstepCommand{
     static int frame = 0;
     double colorRed;
     double colorGreen;

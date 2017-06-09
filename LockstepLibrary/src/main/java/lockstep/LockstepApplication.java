@@ -6,12 +6,13 @@
 package lockstep;
 
 import java.io.Serializable;
+import lockstep.messages.simulation.LockstepCommand;
 
 /**
  *
  * @author enric
  */
-public interface LockstepApplication<Command extends Serializable> {
+public interface LockstepApplication {
     /**
      * Must read input from user, and return a Command object to be executed.
      * If there is no input in a frame a Command object must still be returned,
@@ -19,7 +20,7 @@ public interface LockstepApplication<Command extends Serializable> {
      * 
      * @return the Command object collected in the current frame
      */
-    abstract Command readInput();
+    abstract LockstepCommand readInput();
 
 
     /**
@@ -37,7 +38,7 @@ public interface LockstepApplication<Command extends Serializable> {
      * 
      * @param c the command to execute
      */
-    abstract void executeCommand(Command c);
+    abstract void executeCommand(LockstepCommand c);
 
     /**
      * Provides void commands to resume from a deadlock situation.
@@ -46,13 +47,13 @@ public interface LockstepApplication<Command extends Serializable> {
      * 
      * @return array of commands to bootstart the simulation
      */
-    abstract Command[] fillCommands();
+    abstract LockstepCommand[] fillCommands();
         
     /**
      * Provides the first commands to bootstrap the simulation.
      * 
      * @return 
      */
-    abstract Command[] bootstrapCommands();
+    abstract LockstepCommand[] bootstrapCommands();
     
 }

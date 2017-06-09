@@ -18,7 +18,7 @@ import lockstep.messages.simulation.FrameACK;
  * 
  * @param <Command> Application class containing the data to transmit
  */
-public interface ReceivingQueue<Command extends Serializable> {
+public interface ReceivingQueue {
 
     public FrameInput pop();
     

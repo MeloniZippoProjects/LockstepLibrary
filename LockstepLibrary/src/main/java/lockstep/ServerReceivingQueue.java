@@ -14,6 +14,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import lockstep.messages.simulation.DisconnectionSignal;
 import lockstep.messages.simulation.FrameACK;
+import lockstep.messages.simulation.LockstepCommand;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -27,12 +28,11 @@ import org.apache.logging.log4j.LogManager;
  * @param <Command> Application class containing the data to transmit
  */
 
-public class ServerReceivingQueue<Command extends Serializable> implements ReceivingQueue<Command>
-{
+public class ServerReceivingQueue implements ReceivingQueue {
     
     private final int senderID;
     
-    ConcurrentSkipListMap<Integer, Serializable> commandBuffer;
+    ConcurrentSkipListMap<Integer, LockstepCommand> commandBuffer;
     Semaphore executionSemaphore;
         
     AtomicInteger lastInOrderACK;

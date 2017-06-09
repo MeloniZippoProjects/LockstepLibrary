@@ -26,11 +26,11 @@ import org.apache.logging.log4j.LogManager;
  * @author Raff
  * @param <Command>
  */
-public class LockstepReceiver<Command extends Serializable> extends Thread
+public class LockstepReceiver implements Runnable
 {
     volatile DatagramSocket dgramSocket;
-    volatile Map<Integer, ReceivingQueue<Command>> receivingQueues;
-    volatile Map<Integer, TransmissionQueue<Command>> transmissionFrameQueues;
+    volatile Map<Integer, ReceivingQueue> receivingQueues;
+    volatile Map<Integer, TransmissionQueue> transmissionFrameQueues;
     volatile ACKQueue ackQueue;
     static final int maxPayloadLength = 300;
     
@@ -40,7 +40,7 @@ public class LockstepReceiver<Command extends Serializable> extends Thread
     
     private final int tickrate;
     
-    public LockstepReceiver(DatagramSocket socket, int tickrate, Map<Integer, ReceivingQueue<Command>> receivingQueues, Map<Integer, TransmissionQueue<Command>> transmissionFrameQueues, String name, ACKQueue ackQueue)
+    public LockstepReceiver(DatagramSocket socket, int tickrate, Map<Integer, ReceivingQueue> receivingQueues, Map<Integer, TransmissionQueue> transmissionFrameQueues, String name, ACKQueue ackQueue)
     {
         dgramSocket = socket;
         this.receivingQueues = receivingQueues;

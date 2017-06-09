@@ -7,6 +7,7 @@ package lockstep;
 
 import java.io.Serializable;
 import java.util.Objects;
+import lockstep.messages.simulation.LockstepCommand;
 
 /**
  *
@@ -14,12 +15,12 @@ import java.util.Objects;
  * @param <Command> user defined class. Must extend serializable. Represents an 
  * input command for the server.
  */
-public class FrameInput<Command extends Serializable> implements Serializable 
+public class FrameInput implements Serializable 
 {
     private final int frameNumber;
-    private final Command cmd;
+    private final LockstepCommand cmd;
     
-    public FrameInput(int frameNumber, Command cmd)
+    public FrameInput(int frameNumber, LockstepCommand cmd)
     {
         this.frameNumber = frameNumber;
         this.cmd = cmd;
@@ -29,7 +30,7 @@ public class FrameInput<Command extends Serializable> implements Serializable
         return frameNumber;
     }
 
-    public Command getCommand() {
+    public LockstepCommand getCommand() {
         return cmd;
     }    
 
@@ -55,7 +56,7 @@ public class FrameInput<Command extends Serializable> implements Serializable
         {
             return false;
         }
-        final FrameInput<?> other = (FrameInput<?>) obj;
+        final FrameInput other = (FrameInput) obj;
         if (this.frameNumber != other.frameNumber)
         {
             return false;

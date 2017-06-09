@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import lockstep.messages.simulation.FrameACK;
+import lockstep.messages.simulation.LockstepCommand;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -24,9 +25,9 @@ import org.apache.logging.log4j.LogManager;
  * It is thread safe.
  */
 
-public class TransmissionQueue<Command extends Serializable>
+public class TransmissionQueue
 {    
-    ConcurrentSkipListMap<Integer, Command> commandsBuffer;
+    ConcurrentSkipListMap<Integer, LockstepCommand> commandsBuffer;
     AtomicInteger lastFrame;
     AtomicInteger lastACKed;
         
@@ -53,7 +54,7 @@ public class TransmissionQueue<Command extends Serializable>
      * 
      * @param command input the FrameInput to insert
      */
-    public void push(FrameInput<Command> frameInput)
+    public void push(FrameInput frameInput)
     {
         commandsBuffer.putIfAbsent(frameInput.getFrameNumber(), frameInput.getCommand());
     }
@@ -63,9 +64,9 @@ public class TransmissionQueue<Command extends Serializable>
      * accepted. Otherwise it is discarded.
      * @param commands array of inputs to be transmitted
      */
-    public void push(FrameInput<Command>[] frameInputs)
+    public void push(FrameInput[] frameInputs)
     {
-        for(FrameInput<Command> frameInput : frameInputs)
+        for(FrameInput frameInput : frameInputs)
             push(frameInput);
     }
     
@@ -86,12 +87,12 @@ public class TransmissionQueue<Command extends Serializable>
      */
     public FrameInput[] pop()
     {
-        Set<Entry<Integer, Command>> commandEntries = commandsBuffer.entrySet();
-        ArrayList<FrameInput<Command>> toRet = new ArrayList<>();        
-        for (Entry<Integer, Command> commandEntry : commandEntries) {
+        Set<Entry<Integer, LockstepCommand>> commandEntries = commandsBuffer.entrySet();
+        ArrayList<FrameInput> toRet = new ArrayList<>();        
+        for (Entry<Integer, LockstepCommand> commandEntry : commandEntries) {
             int frameNumber = commandEntry.getKey();
-            Command command = commandEntry.getValue();
-            toRet.add(new FrameInput<>(frameNumber, command));
+            LockstepCommand command = commandEntry.getValue();
+            toRet.add(new FrameInput(frameNumber, command));
         }
         
         return toRet.toArray(new FrameInput[0]);
@@ -136,7 +137,7 @@ public class TransmissionQueue<Command extends Serializable>
         String string = new String();
         
         string += "TransmissionFrameQueue[" + senderID + "] = {";
-        for(Entry<Integer, Command> entry : this.commandsBuffer.entrySet())
+        for(Entry<Integer, LockstepCommand> entry : this.commandsBuffer.entrySet())
         {
             string += " " + entry.getKey();
         }
