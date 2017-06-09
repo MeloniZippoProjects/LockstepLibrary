@@ -11,5 +11,6 @@ package lockstep;
  */
 abstract public class LockstepCoreThread extends Thread
 {
-    abstract public void temporaryName();
+    abstract public void temporaryName(int nodeID);
+    abstract void secondTemporaryName(int nodeID);
 }

@@ -37,20 +37,20 @@ import org.apache.logging.log4j.LogManager;
  */
 public class LockstepServer<Command extends Serializable> extends LockstepCoreThread
 {
-    volatile ConcurrentSkipListSet<Integer> hostIDs;
+    ConcurrentSkipListSet<Integer> hostIDs;
     
     /**
      * Used without interframe times. As soon as all inputs for a frame are 
      * available, they're forwarded to all the clients
      */
-    volatile Map<Integer, ServerReceivingQueue<Command>> serverQueues;
+    ConcurrentHashMap<Integer, ServerReceivingQueue<Command>> serverQueues;
     
     /**
      * Buffers for frame input to send to clients. 
      * For each client partecipating in the session there's a queue for each of
      * the other clients.
      */
-    volatile Map<Integer, Map<Integer, TransmissionQueue<Command>>> transmissionFrameQueueTree;
+    ConcurrentHashMap<Integer, Map<Integer, TransmissionQueue<Command>>> transmissionFrameQueueTree;
     
     
     volatile Map<Integer, ACKQueue> ackQueues;
@@ -292,7 +292,8 @@ public class LockstepServer<Command extends Serializable> extends LockstepCoreTh
         for(Entry<Integer, FrameInput> frameEntry : nextFrameInputs.entrySet())
         {
             Integer senderID = frameEntry.getKey();
-
+            FrameInput input = frameEntry.getValue();
+            
             //For each client, take its tree of transmission queues
             for(Entry<Integer, Map<Integer, TransmissionQueue<Command>>> transmissionFrameQueueMapEntry : this.transmissionFrameQueueTree.entrySet())
             {
@@ -303,7 +304,10 @@ public class LockstepServer<Command extends Serializable> extends LockstepCoreTh
                 {
                     Map<Integer, TransmissionQueue<Command>> recipientTransmissionQueueMap = transmissionFrameQueueMapEntry.getValue();
                     TransmissionQueue<Command> transmissionFrameQueueFromSender = recipientTransmissionQueueMap.get(senderID);
-                    transmissionFrameQueueFromSender.push(frameEntry.getValue());
+                    transmissionFrameQueueFromSender.push(input);
+                
+                    if(input.getCommand() istanceof DisconnectionSignal)
+                        secondTemporaryName(senderID);
                 }
             }
         }
@@ -345,8 +349,14 @@ public class LockstepServer<Command extends Serializable> extends LockstepCoreTh
     }
 
     @Override
-    public void temporaryName()
+    public void temporaryName(int nodeID)
     {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        this.transmissionFrameQueueTree.remove(nodeID);
+    }
+    
+    @Override
+    void secondTemporaryName(int nodeID)
+    {
+        this.serverQueues.remove(nodeID);
     }
 }

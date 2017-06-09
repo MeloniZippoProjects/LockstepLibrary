@@ -36,16 +36,22 @@ public class LockstepReceiver<Command extends Serializable> extends Thread
     
     private static final Logger LOG = LogManager.getLogger(LockstepReceiver.class);
     
+    private final LockstepCoreThread coreThread;
+    
     private final String name;
+    
+    int ownID;
     
     private final int tickrate;
     
-    public LockstepReceiver(DatagramSocket socket, int tickrate, Map<Integer, ReceivingQueue<Command>> receivingQueues, Map<Integer, TransmissionQueue<Command>> transmissionFrameQueues, String name, ACKQueue ackQueue)
+    public LockstepReceiver(DatagramSocket socket, int tickrate, LockstepCoreThread coreThread , Map<Integer, ReceivingQueue<Command>> receivingQueues, Map<Integer, TransmissionQueue<Command>> transmissionFrameQueues, String name, int ownID, ACKQueue ackQueue)
     {
         dgramSocket = socket;
+        this.coreThread = coreThread;
         this.receivingQueues = receivingQueues;
         this.transmissionFrameQueues = transmissionFrameQueues;
         this.name = name;
+        this.ownID = ownID;
         this.tickrate = tickrate;
         this.ackQueue = ackQueue;
     }
@@ -73,9 +79,8 @@ public class LockstepReceiver<Command extends Serializable> extends Thread
             }
             catch(SocketTimeoutException | PortUnreachableException disconnectionException)
             {
-                //TODO: termination handling
-                
-                System.out.println("Disconnecteded socket (which one?)");
+                handleDisconnection(ownID);
+                return;
             }
             catch(Exception e)
             {
@@ -128,7 +133,9 @@ public class LockstepReceiver<Command extends Serializable> extends Thread
         FrameACK frameACK = receivingQueue.push(input.frame);
         frameACK.setSenderID(input.senderID);
         ackQueue.pushACKs(frameACK);
-        //sendACK(frameACK);
+
+        if(input.frame.getCommand() istanceof DisconnectionSignal)
+            handleDisconnection(input.senderID);
     }
 
     private void processInput(InputMessageArray inputs)
@@ -142,7 +149,8 @@ public class LockstepReceiver<Command extends Serializable> extends Thread
         frameACK.setSenderID(inputs.senderID);
         ackQueue.pushACKs(frameACK);
         
-        //sendACK(frameACK);
+        if(inputs.frames[inputs.frames.length - 1].getCommand() istanceof DisconnectionSignal)
+            handleDisconnection(inputs.senderID);
     }
     
     private void processACK(FrameACK ack)
@@ -151,5 +159,8 @@ public class LockstepReceiver<Command extends Serializable> extends Thread
         transmissionFrameQueue.processACK(ack);
     }
     
-    
+    private void handleDisconnection(int disconnectedNode)
+    {
+        coreThread.temporaryName(disconnectedNode);
+    }
 }
