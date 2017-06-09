@@ -34,7 +34,7 @@ import org.apache.logging.log4j.LogManager;
 public class LockstepTransmitter<Command extends Serializable> implements Runnable
 {
     DatagramSocket dgramSocket;
-    Map<Integer, TransmissionQueue<Command>> transmissionQueues;
+    Map<Integer, TransmissionQueue> transmissionQueues;
     ACKQueue ackQueue;
     
     long interTransmissionTimeout;
@@ -48,7 +48,7 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
     final int keepAliveTicksTimeout;
     int keepAliveTicksCounter;
     
-    public LockstepTransmitter(DatagramSocket socket, int tickrate, int keepAliveTimeout, Map<Integer, TransmissionQueue<Command>> transmissionFrameQueues, String name, ACKQueue ackQueue)
+    public LockstepTransmitter(DatagramSocket socket, int tickrate, int keepAliveTimeout, Map<Integer, TransmissionQueue> transmissionFrameQueues, String name, ACKQueue ackQueue)
     {
         this.dgramSocket = socket;
         this.tickrate = tickrate;
@@ -130,7 +130,7 @@ public class LockstepTransmitter<Command extends Serializable> implements Runnab
 
     private boolean processCommands() {
         boolean sentSomething = false;
-        for(Entry<Integer, TransmissionQueue<Command>> transmissionQueueEntry : transmissionQueues.entrySet())
+        for(Entry<Integer, TransmissionQueue> transmissionQueueEntry : transmissionQueues.entrySet())
         {
             if(transmissionQueueEntry.getValue().hasFramesToSend())
             {

@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import lockstep.messages.simulation.FrameACK;
+import lockstep.messages.simulation.LockstepCommand;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -26,12 +27,12 @@ import org.apache.logging.log4j.LogManager;
  * @param <Command> Application class containing the data to transmit
  */
 
-class ClientReceivingQueue<Command extends Serializable> implements ReceivingQueue
+class ClientReceivingQueue implements ReceivingQueue
 {
     private final int senderID;
     
     AtomicInteger nextFrame;
-    ConcurrentSkipListMap<Integer, Command> commandBuffer;
+    ConcurrentSkipListMap<Integer, LockstepCommand> commandBuffer;
     
     Semaphore executionSemaphore;
         
@@ -75,9 +76,9 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
      * @return the next in order frame input, or null if not present. 
      */
     @Override
-    public FrameInput<Command> pop()
+    public FrameInput pop()
     {
-        Command nextCommand = this.commandBuffer.get(nextFrame.get());
+        LockstepCommand nextCommand = this.commandBuffer.get(nextFrame.get());
         int frame = nextFrame.get();
         FrameInput frameInput = null;
         if( nextCommand != null )
@@ -106,7 +107,7 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
      * @return next in order frame input, or null if not present.
      */
     @Override
-    public FrameInput<Command> head()
+    public FrameInput head()
     {
         return new FrameInput(nextFrame.get(), commandBuffer.get(nextFrame.get()));
     }
@@ -148,7 +149,7 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
      * 
      * @param input the input to push into the queue
      */
-    private void _push(FrameInput<Command> input)
+    private void _push(FrameInput input)
     {
         if(input.getFrameNumber() > lastInOrderACK.get() && !selectiveACKsSet.contains(input.getFrameNumber())) 
         {
@@ -202,7 +203,7 @@ class ClientReceivingQueue<Command extends Serializable> implements ReceivingQue
         String string = new String();
         
         string += "ExecutionFrameQueue[" + senderID + "] = {";
-        for(Entry<Integer, Command> entry : this.commandBuffer.entrySet())
+        for(Entry<Integer, LockstepCommand> entry : this.commandBuffer.entrySet())
         {
             string += " " + entry.getKey();
         }

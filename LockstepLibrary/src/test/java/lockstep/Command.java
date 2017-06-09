@@ -6,12 +6,13 @@
 package lockstep;
 
 import java.io.Serializable;
+import lockstep.messages.simulation.LockstepCommand;
 
 /**
  *
  * @author enric
  */
-class Command implements Serializable
+class Command implements Serializable, LockstepCommand
 {
     int up_down;
     int right_left;
