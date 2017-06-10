@@ -26,13 +26,15 @@ import org.apache.logging.log4j.LogManager;
  * @author Raff
  * @param <Command>
  */
-public class LockstepReceiver implements Runnable
+public class LockstepReceiver extends Thread
 {
+    public static final int RECEIVER_FROM_SERVER_ID = 0;
+    
     volatile DatagramSocket dgramSocket;
     volatile Map<Integer, ReceivingQueue> receivingQueues;
     volatile Map<Integer, TransmissionQueue> transmissionFrameQueues;
     volatile ACKQueue ackQueue;
-    static final int maxPayloadLength = 300;
+    static final int MAX_PAYLOAD_LENGTH = 300;
     
     private static final Logger LOG = LogManager.getLogger(LockstepReceiver.class);
     
@@ -40,19 +42,16 @@ public class LockstepReceiver implements Runnable
     
     private final String name;
     
-    int ownID;
-    
-    private final int tickrate;
-    
-    public LockstepReceiver(DatagramSocket socket, int tickrate, LockstepCoreThread coreThread , Map<Integer, ReceivingQueue> receivingQueues, Map<Integer, TransmissionQueue> transmissionFrameQueues, String name, int ownID, ACKQueue ackQueue)
+    int receiverID;
+        
+    public LockstepReceiver(DatagramSocket socket, LockstepCoreThread coreThread , Map<Integer, ReceivingQueue> receivingQueues, Map<Integer, TransmissionQueue> transmissionFrameQueues, String name, int ownID, ACKQueue ackQueue)
     {
         dgramSocket = socket;
         this.coreThread = coreThread;
         this.receivingQueues = receivingQueues;
         this.transmissionFrameQueues = transmissionFrameQueues;
         this.name = name;
-        this.ownID = ownID;
-        this.tickrate = tickrate;
+        this.receiverID = ownID;
         this.ackQueue = ackQueue;
     }
     
@@ -65,7 +64,7 @@ public class LockstepReceiver implements Runnable
         {
             try
             {
-                DatagramPacket p = new DatagramPacket(new byte[maxPayloadLength], maxPayloadLength);
+                DatagramPacket p = new DatagramPacket(new byte[MAX_PAYLOAD_LENGTH], MAX_PAYLOAD_LENGTH);
                 this.dgramSocket.receive(p);
                 try(
                     ByteArrayInputStream bain = new ByteArrayInputStream(p.getData());
@@ -80,23 +79,13 @@ public class LockstepReceiver implements Runnable
             catch(SocketTimeoutException | PortUnreachableException disconnectionException)
             {
                 signalDisconnection();
-                handleDisconnection(ownID);
+                handleDisconnection(receiverID);
                 return;
             }
             catch(Exception e)
             {
                 e.printStackTrace();
             }
-            
-            /*
-            try {
-                Thread.sleep(1000/tickrate);
-                
-                //Study shutdown case
-            } catch (InterruptedException ex) {
-                java.util.logging.Logger.getLogger(LockstepReceiver.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            */
         }
     }
     
@@ -167,8 +156,18 @@ public class LockstepReceiver implements Runnable
 
     private void signalDisconnection()
     {
-        ReceivingQueue rcvQ = receivingQueues.get(ownID);
-        if(rcvQ != null)
-            rcvQ.push(new FrameInput(rcvQ.getACK().cumulativeACK + 1, new DisconnectionSignal()));
+        if(receiverID == RECEIVER_FROM_SERVER_ID)
+        {
+            for(ReceivingQueue receveingQueue : receivingQueues.values())
+            {
+                receveingQueue.push(new FrameInput(receveingQueue.getACK().cumulativeACK + 1, new DisconnectionSignal()));
+            }
+        }
+        else   
+        {
+            ReceivingQueue receveingQueue = receivingQueues.get(receiverID);
+            if(receveingQueue != null)
+                receveingQueue.push(new FrameInput(receveingQueue.getACK().cumulativeACK + 1, new DisconnectionSignal()));
+        }
     }
 }

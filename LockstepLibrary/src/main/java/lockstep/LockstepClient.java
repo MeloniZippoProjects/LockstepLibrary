@@ -9,18 +9,14 @@ import java.io.IOException;
 import lockstep.messages.handshake.*;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import lockstep.messages.simulation.DisconnectionSignal;
 import lockstep.messages.simulation.LockstepCommand;
@@ -47,18 +43,15 @@ public class LockstepClient extends LockstepCoreThread
     InetSocketAddress serverTCPAddress;
     
     LockstepReceiver receiver;
-    Thread receiverThread;
     LockstepTransmitter transmitter;
-    Thread transmitterThread;
     
-    private int UDPPort = 10240;
+    private DatagramSocket udpSocket;
     
     private static final Logger LOG = LogManager.getLogger(LockstepClient.class);
         
     /**
      * Used for synchronization between server and executionFrameQueues
      */
-    //CyclicCountDownLatch cyclicExecutionLatch;
     Semaphore executionSemaphore;
     private int clientsNumber;
     private final int tickrate;
@@ -90,7 +83,8 @@ public class LockstepClient extends LockstepCoreThread
             }
             catch(InterruptedException e)
             {
-                e.printStackTrace();
+                networkShutdown();
+                return;
             }           
         }
     }
@@ -101,7 +95,6 @@ public class LockstepClient extends LockstepCoreThread
         try(
             Socket tcpSocket = new Socket(serverTCPAddress.getAddress(), serverTCPAddress.getPort());
             ObjectOutputStream oout = new ObjectOutputStream(tcpSocket.getOutputStream());                        
-            //ObjectInputStream oin = new ObjectInputStream(tcpSocket.getInputStream());
         )
         {
             oout.flush();
@@ -109,7 +102,7 @@ public class LockstepClient extends LockstepCoreThread
             try(ObjectInputStream oin = new ObjectInputStream(tcpSocket.getInputStream()))
             {
                 //Bind own UDP socket
-                DatagramSocket udpSocket = new DatagramSocket();
+                udpSocket = new DatagramSocket();
                 LOG.info("Opened connection on " + udpSocket.getLocalAddress().getHostAddress() + ":" + udpSocket.getLocalPort());
 
                 //Send hello to server, with the bound UDP port
@@ -146,15 +139,12 @@ public class LockstepClient extends LockstepCoreThread
                 transmissionQueueWrapper.put(hostID, transmissionFrameQueue);
 
                 ACKQueue ackQueue = new ACKQueue();
-                receiver = new LockstepReceiver(udpSocket, tickrate, this, receivingExecutionQueues, transmissionQueueWrapper, "Receiver-to-"+hostID, 0, ackQueue);
+                receiver = new LockstepReceiver(udpSocket, this, receivingExecutionQueues, transmissionQueueWrapper, "Receiver-to-"+hostID, LockstepReceiver.RECEIVER_FROM_SERVER_ID, ackQueue);
                 transmitter = new LockstepTransmitter(udpSocket, tickrate, 1000, transmissionQueueWrapper, "Transmitter-from-"+hostID, ackQueue);
-                
-                transmitterThread = new Thread(transmitter);
-                receiverThread = new Thread(receiver);
-                
+                                
                 insertBootstrapCommands(application.bootstrapCommands());
                 
-                transmitterThread.start();
+                transmitter.start();
 
                 //Receive and process second server reply
                 LOG.info("Waiting for list of clients from server");
@@ -170,7 +160,7 @@ public class LockstepClient extends LockstepCoreThread
                     }
                 }
                 
-                receiverThread.start();
+                receiver.start();
                 
                 //Wait for simulation start signal to proceed executing
                 LOG.info("Waiting for simulation start signal");
@@ -181,15 +171,14 @@ public class LockstepClient extends LockstepCoreThread
         catch(ClassNotFoundException e)
         {
             LOG.fatal("The received Object class cannot be found");
-            e.printStackTrace();
-            System.exit(1);
+            LOG.fatal(e);
+            //Signal application of the failure, terminate the thread
         }
         catch(IOException e)
         {
             LOG.fatal("IO error");
             LOG.fatal(e);
-            e.printStackTrace();
-            System.exit(1);
+            //Signal application of the failure, terminate the thread
         }
     }
     
@@ -201,12 +190,12 @@ public class LockstepClient extends LockstepCoreThread
     
     private void insertFillCommands(LockstepCommand[] fillCommands)
     {
-        for (int i = 0; i < fillCommands.length; i++)
+        for (LockstepCommand cmd : fillCommands)
         {
-            LockstepCommand cmd = fillCommands[i];
             FrameInput newFrame = new FrameInput(currentUserFrame++, cmd);
             executionFrameQueues.get(this.hostID).push(newFrame);
-            transmissionFrameQueue.push(newFrame);
+            if(transmissionFrameQueue != null)
+                transmissionFrameQueue.push(newFrame);
         }
     }
     
@@ -215,7 +204,8 @@ public class LockstepClient extends LockstepCoreThread
         LockstepCommand cmd = application.readInput();
         FrameInput newFrame = new FrameInput(currentUserFrame++, cmd);
         executionFrameQueues.get(this.hostID).push(newFrame);
-        transmissionFrameQueue.push(newFrame);
+        if(transmissionFrameQueue != null)
+            transmissionFrameQueue.push(newFrame);
     }
     
     private void executeInputs() throws InterruptedException
@@ -229,7 +219,6 @@ public class LockstepClient extends LockstepCoreThread
         if(!executionSemaphore.tryAcquire(clientsNumber))
         {
             application.suspendSimulation();
-            //Thread.sleep(10000);
             executionSemaphore.acquire(clientsNumber);
             application.resumeSimulation();
         }
@@ -285,8 +274,8 @@ public class LockstepClient extends LockstepCoreThread
     @Override
     public void disconnectTransmittingQueues(int nodeID)
     {
-        //Nothing to do here: only one transmission queue
-        //Should check for server though
+        if(nodeID == LockstepReceiver.RECEIVER_FROM_SERVER_ID)
+            transmissionFrameQueue = null;
     }
 
     @Override
@@ -295,5 +284,13 @@ public class LockstepClient extends LockstepCoreThread
         this.executionFrameQueues.remove(nodeID);
         this.clientsNumber--;
         LOG.info("Disconnected receiving queue for " + nodeID);
+        
+        //Ask application what to do then: either continue or abort (interrupt)
+    }
+    
+    void networkShutdown()
+    {
+        receiver.interrupt();
+        transmitter.interrupt();
     }
 }

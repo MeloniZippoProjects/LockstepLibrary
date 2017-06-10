@@ -240,7 +240,7 @@ public class LockstepServer extends LockstepCoreThread
         this.serverQueues.put(clientID, receivingQueue);
         HashMap<Integer,ReceivingQueue> receivingQueueWrapper = new HashMap<>();
         receivingQueueWrapper.put(clientID, receivingQueue);
-        LockstepReceiver receiver = new LockstepReceiver(clientUDPSocket, tickrate, this, receivingQueueWrapper, transmissionFrameQueues, "Receiver-from-"+clientID, clientID,ackQueues.get(clientID));
+        LockstepReceiver receiver = new LockstepReceiver(clientUDPSocket, this, receivingQueueWrapper, transmissionFrameQueues, "Receiver-from-"+clientID, clientID,ackQueues.get(clientID));
         Thread receiverThread = new Thread(receiver);
         receivers.put(clientID, receiverThread);
         receiverThread.start();

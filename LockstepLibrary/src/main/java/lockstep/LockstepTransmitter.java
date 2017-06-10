@@ -31,7 +31,7 @@ import org.apache.logging.log4j.LogManager;
  * @author Raff
  * @param <Command>
  */
-public class LockstepTransmitter<Command extends Serializable> extends Thread
+public class LockstepTransmitter extends Thread
 {
     DatagramSocket dgramSocket;
     Map<Integer, TransmissionQueue> transmissionQueues;
