@@ -77,8 +77,13 @@ public class LockstepClient extends LockstepCoreThread
         
         while(true)
         {
+            //check if thread was interrupted
+            
             try
             {
+                if(Thread.interrupted())
+                    throw new InterruptedException();
+                
                 readUserInput();
                 executeInputs();
                 currentExecutionFrame++;
@@ -279,6 +284,21 @@ public class LockstepClient extends LockstepCoreThread
     {
         receiver.interrupt();
         transmitter.interrupt();
+        
+        try
+        {
+            receiver.join();
+            transmitter.join();
+        }
+        catch(InterruptedException intEx)
+        {
+           //you should not get interrupted here:
+           //what to do? retry joining or just ignore?
+           LOG.fatal("Interrupted during termination!!");
+           LOG.fatal(intEx);
+        }
+        
+        udpSocket.close();
     }
     
     @Override

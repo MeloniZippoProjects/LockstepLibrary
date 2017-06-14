@@ -8,6 +8,7 @@ package lockstep;
 import lockstep.messages.simulation.InputMessageArray;
 import lockstep.messages.simulation.InputMessage;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -57,8 +58,13 @@ public class LockstepReceiver extends Thread
         
         while(true)
         {
+            
+            
             try
             {
+                if(Thread.interrupted())
+                    throw new InterruptedException();
+                
                 DatagramPacket p = new DatagramPacket(new byte[MAX_PAYLOAD_LENGTH], MAX_PAYLOAD_LENGTH);
                 this.dgramSocket.receive(p);
                 try(
@@ -77,9 +83,14 @@ public class LockstepReceiver extends Thread
                 handleDisconnection(receiverID);
                 return;
             }
-            catch(Exception e)
+            catch(InterruptedException intEx)
             {
-                e.printStackTrace();
+                LOG.info("Receiver disconnected");
+                return;
+            }
+            catch(Exception ex)
+            {
+                ex.printStackTrace();
             }
         }
     }

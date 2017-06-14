@@ -69,6 +69,9 @@ public class LockstepTransmitter extends Thread
         {
             try
             {
+                if(Thread.interrupted())
+                    throw new InterruptedException();
+                
                 for(TransmissionQueue txQ : transmissionQueues.values())
                 {   
                     LOG.debug(txQ);
@@ -86,8 +89,7 @@ public class LockstepTransmitter extends Thread
             }
             catch(InterruptedException e)
             {
-                e.printStackTrace();
-                //Shutdown signal... may be changed
+                LOG.info("Transmitter disconnected");
                 return;
             }
         }

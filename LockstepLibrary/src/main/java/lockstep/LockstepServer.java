@@ -5,6 +5,7 @@
  */
 package lockstep;
 
+import com.sun.org.apache.bcel.internal.generic.L2D;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -12,12 +13,13 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.TreeMap;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
@@ -38,7 +40,7 @@ public class LockstepServer extends LockstepCoreThread
      * Used without interframe times. As soon as all inputs for a frame are 
      * available, they're forwarded to all the clients
      */
-    ConcurrentHashMap<Integer, ServerReceivingQueue> serverQueues;
+    ConcurrentHashMap<Integer, ServerReceivingQueue> receivingQueues;
     
     /**
      * Buffers for frame input to send to clients. 
@@ -76,6 +78,8 @@ public class LockstepServer extends LockstepCoreThread
     private static final Logger LOG = LogManager.getLogger(LockstepServer.class);
     private final int tickrate;
     
+    private List<DatagramSocket> openSockets;
+    
     public LockstepServer(int tcpPort, int clientsNumber, int tickrate)
     {
         this.tcpPort = tcpPort;
@@ -87,10 +91,11 @@ public class LockstepServer extends LockstepCoreThread
         
         //cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
         executionSemaphore = new Semaphore(0);
-        serverQueues = new ConcurrentHashMap<>();
+        receivingQueues = new ConcurrentHashMap<>();
         transmissionFrameQueueTree = new ConcurrentHashMap<>();
         ackQueues = new ConcurrentHashMap<>();
         hostIDs = new ConcurrentSkipListSet<>();
+        openSockets = new ArrayList<DatagramSocket>();
     }
 
     /**
@@ -117,9 +122,10 @@ public class LockstepServer extends LockstepCoreThread
 
             while(true)
             {
-//                for(ReceivingQueue exQ : serverQueues.values())
-//                    LOG.debug(exQ);
-
+                //check if thread was interrupted
+                if(Thread.interrupted())
+                    throw new InterruptedException();
+                
                 //Wait that everyone has received current frame
                 LOG.debug("Waiting the receivingQueues to forward");
                 executionSemaphore.acquire();
@@ -132,8 +138,54 @@ public class LockstepServer extends LockstepCoreThread
         }
         catch( InterruptedException intEx)
         {
+            closeResources();
             return;
         }
+    }
+    
+    private void closeResources()
+    {
+        
+        LOG.info("!!!CLOSING RESOURCES!!!");
+        
+        //interrupt all receivers and transmitters
+        for(Thread receiver : receivers.values())
+        {
+            receiver.interrupt();
+        }
+        
+        for(Thread transmitter : transmitters.values())
+        {
+            transmitter.interrupt();
+        }
+        
+        //then i wait for all of them to stop
+        try
+        {
+            for(Thread receiver : receivers.values())
+            {
+                receiver.join();
+            }
+
+            for(Thread transmitter : transmitters.values())
+            {
+                transmitter.join();
+            }
+        }
+        catch(InterruptedException intEx)
+        {
+            //shouldn't be interrupted
+            LOG.fatal("Interrupted during termination!!");
+            LOG.fatal(intEx);
+        }
+        
+        //then close all sockets
+        for(DatagramSocket udpSocket : openSockets)
+        {
+            udpSocket.close();
+        }
+        
+        LOG.info("RESOURCES CLOSED");
     }
     
     private void handshake() throws IOException, InterruptedException
@@ -171,6 +223,7 @@ public class LockstepServer extends LockstepCoreThread
                 ClientHello hello = (ClientHello) oin.readObject();
                 LOG.info("Received an hello from " + tcpSocket.getInetAddress().getHostAddress());
                 DatagramSocket udpSocket = new DatagramSocket();
+                openSockets.add(udpSocket);
                 InetSocketAddress clientUDPAddress = new InetSocketAddress(tcpSocket.getInetAddress().getHostAddress(), hello.clientUDPPort);
                 udpSocket.connect(clientUDPAddress);
                 //TO DO: review timeout settings
@@ -224,13 +277,12 @@ public class LockstepServer extends LockstepCoreThread
     private void clientReceiveSetup(int clientID, DatagramSocket clientUDPSocket, int initialFrameNumber, Map<Integer, TransmissionQueue> transmissionFrameQueues)
     {
         ServerReceivingQueue receivingQueue = new ServerReceivingQueue(initialFrameNumber, clientID, executionSemaphore);
-        this.serverQueues.put(clientID, receivingQueue);
+        this.receivingQueues.put(clientID, receivingQueue);
         HashMap<Integer,ReceivingQueue> receivingQueueWrapper = new HashMap<>();
         receivingQueueWrapper.put(clientID, receivingQueue);
         LockstepReceiver receiver = new LockstepReceiver(clientUDPSocket, this, receivingQueueWrapper, transmissionFrameQueues, "Receiver-from-"+clientID, clientID,ackQueues.get(clientID));
-        Thread receiverThread = new Thread(receiver);
-        receivers.put(clientID, receiverThread);
-        receiverThread.start();
+        receivers.put(clientID, receiver);
+        receiver.start();
     }
     
     private void clientTransmissionSetup(int clientID, int firstFrameNumber, DatagramSocket udpSocket, Map<Integer, TransmissionQueue> clientTransmissionFrameQueues)
@@ -245,9 +297,8 @@ public class LockstepServer extends LockstepCoreThread
             }
         }
         LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, tickrate, 0, clientTransmissionFrameQueues, "Transmitter-to-"+clientID, ackQueues.get(clientID));
-        Thread transmitterThread = new Thread(transmitter);
-        transmitters.put(clientID, transmitterThread);
-        transmitterThread.start();
+        transmitters.put(clientID, transmitter);
+        transmitter.start();
         
     }
     
@@ -255,7 +306,7 @@ public class LockstepServer extends LockstepCoreThread
     {        
         Map<Integer, FrameInput> nextCommands = new TreeMap<>();
         boolean foundFirstFrame = false;
-        for(Entry<Integer, ServerReceivingQueue> serverQueueEntry : this.serverQueues.entrySet())
+        for(Entry<Integer, ServerReceivingQueue> serverQueueEntry : this.receivingQueues.entrySet())
         {
             Integer senderID = serverQueueEntry.getKey();
             FrameInput frame = serverQueueEntry.getValue().pop();
@@ -296,7 +347,11 @@ public class LockstepServer extends LockstepCoreThread
                     transmissionFrameQueueFromSender.push(input);
                 
                     if(input.getCommand() instanceof DisconnectionSignal)
-                        disconnectReceivingQueues(senderID);
+                    {
+                        if(receivingQueues.containsKey(senderID))
+                            disconnectReceivingQueues(senderID);
+                    }
+                        
                 }
             }
         }
@@ -320,7 +375,7 @@ public class LockstepServer extends LockstepCoreThread
     {
         
         //System.out.println("EXECUTION QUEUES");
-        for(Entry<Integer, ServerReceivingQueue> exeFrameQueues : serverQueues.entrySet())
+        for(Entry<Integer, ServerReceivingQueue> exeFrameQueues : receivingQueues.entrySet())
         {
             //System.out.println(exeFrameQueues);
         }
@@ -347,8 +402,14 @@ public class LockstepServer extends LockstepCoreThread
     @Override
     void disconnectReceivingQueues(int nodeID)
     {
-        this.serverQueues.remove(nodeID);
+        this.receivingQueues.remove(nodeID);
         LOG.info("Disconnected receiving queue for " + nodeID);
+        
+        clientsNumber--;
+        
+        LOG.info(""+clientsNumber+"remaining");
+        if(clientsNumber == 1)
+            this.interrupt();
     }
 
     @Override
