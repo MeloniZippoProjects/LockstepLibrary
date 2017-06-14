@@ -12,6 +12,8 @@ import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import lockstep.LockstepApplication;
+import lockstep.LockstepClient;
+import lockstep.LockstepCoreThread;
 import lockstep.messages.simulation.LockstepCommand;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
@@ -38,6 +40,7 @@ public class MosaicLockstepClient implements LockstepApplication {
     double throughput;
     double throughputMeasureInterval = 20;
     double alpha = 0.125;
+    private LockstepClient clientThread;
     
     public MosaicLockstepClient(InetSocketAddress serverTCPAddress, int framerate, int tickrate, int fillTimeout, int fillSize, Rectangle[][] mosaic, int rows, int columns, Color clientColor, Label currentFrameLabel, Label currentFPSLabel) {
         //super(serverTCPAddress, framerate, tickrate, fillTimeout);
@@ -140,6 +143,10 @@ public class MosaicLockstepClient implements LockstepApplication {
     @Override
     public void signalDisconnection(int remainingClients)
     {
-        //Do nothing
+        //clientThread.abort();
+    }
+
+    void setClientThread(LockstepClient lockstepClient) {
+        clientThread = lockstepClient;
     }
 }

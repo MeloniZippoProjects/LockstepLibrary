@@ -9,6 +9,8 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.Random;
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -17,6 +19,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import lockstep.LockstepClient;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -91,10 +94,35 @@ public class MosaicSimulation extends Application
         
         LockstepClient lockstepClient = new LockstepClient(serverTCPAddress, framerate, tickrate, fillTimeout, mosaicLockstepClient);
         
-        Thread clientThread = new Thread(lockstepClient);
-        clientThread.setName("main-client-thread");
-        clientThread.start();
-        LOG.debug("thread started");
+        mosaicLockstepClient.setClientThread(lockstepClient);
+        
+        lockstepClient.setName("main-client-thread");
+        lockstepClient.start();
+        
+        Thread closeThread; 
+        closeThread = new Thread( () -> { 
+            try
+            {
+                lockstepClient.join();
+                LOG.info("Lockstep client closed");
+                System.exit(1);
+            }
+            catch(Exception e)
+            {
+                //nothing
+            }
+        });
+        
+        stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+            @Override
+            public void handle(WindowEvent t) {
+                lockstepClient.abort();
+            }
+        });
+        
+        closeThread.start();
+        
+        LOG.info("Client started");        
     }
 
     /**
