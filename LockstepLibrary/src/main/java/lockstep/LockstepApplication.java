@@ -58,8 +58,8 @@ public interface LockstepApplication {
     abstract void signalHandshakeFailure();
     
     /**
-     * Signals to the rest of the application the disconnection of one client,
-     * and the number of clients remained, including the local client.
+     * Signals to the application the disconnection of one client.
+     * Has the number of clients remaining, including the local client, as a par.
      * The LockstepClient thread will continue the execution afterwards.
      * 
      * @param remainingClients the number of clients remained, 
