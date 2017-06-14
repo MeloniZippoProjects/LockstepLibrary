@@ -8,7 +8,7 @@
 <?import javafx.scene.shape.Rectangle?>
 
 
-<VBox id="AnchorPane" prefHeight="350" prefWidth="300" xmlns:fx="http://javafx.com/fxml/1" fx:controller="mosaicsimulation.FXMLMainPageController">
+<VBox id="AnchorPane" prefHeight="350" prefWidth="300" xmlns:fx="http://javafx.com/fxml/1">
     <children>
         <GridPane id="mosaic"></GridPane>
         <HBox id="infoBar" alignment="center">

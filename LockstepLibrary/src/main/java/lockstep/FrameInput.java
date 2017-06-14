@@ -6,15 +6,8 @@
 package lockstep;
 
 import java.io.Serializable;
-import java.util.Objects;
 import lockstep.messages.simulation.LockstepCommand;
 
-/**
- *
- * @author Raff
- * @param <Command> user defined class. Must extend serializable. Represents an 
- * input command for the server.
- */
 public class FrameInput implements Serializable 
 {
     private final int frameNumber;
@@ -56,12 +49,9 @@ public class FrameInput implements Serializable
         {
             return false;
         }
+        
         final FrameInput other = (FrameInput) obj;
-        if (this.frameNumber != other.frameNumber)
-        {
-            return false;
-        }
-        return true;
+        return this.frameNumber == other.frameNumber;
     }   
     
     @Override

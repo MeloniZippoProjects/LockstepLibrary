@@ -8,7 +8,6 @@ package lockstep;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -23,8 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import lockstep.messages.simulation.DisconnectionSignal;
 
@@ -33,10 +30,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
-/**
- *
- * @author Raff
- */
 public class LockstepServer extends LockstepCoreThread
 {
     ConcurrentSkipListSet<Integer> hostIDs;
@@ -110,66 +103,60 @@ public class LockstepServer extends LockstepCoreThread
     @Override
     public void run()
     {
-        atServerStarted();
-        handshake();
-        atHandshakeEnded();
-        
-        while(true)
-        {
-            try
+        try{
+            try{
+                atServerStarted();
+                handshake();
+                atHandshakeEnded();
+            } catch(IOException ioEx)
             {
-                
-                //debugSimulation();
-                
-                for(ReceivingQueue exQ : serverQueues.values())
-                    LOG.debug(exQ);
-                
+                LOG.fatal("Network exception during handshake");
+                LOG.fatal(ioEx);
+                return;
+            }
+
+            while(true)
+            {
+//                for(ReceivingQueue exQ : serverQueues.values())
+//                    LOG.debug(exQ);
+
                 //Wait that everyone has received current frame
                 LOG.debug("Waiting the receivingQueues to forward");
                 executionSemaphore.acquire();
                 LOG.debug("ReceivingQueues ready for forwarding");
-                
+
                 Map<Integer, FrameInput> commands = collectCommands();
                 distributeCommands(commands);
                 LOG.debug("Message batch forwarded");
-            } catch (InterruptedException ex)
-            {
-                LOG.fatal("Server interrupted while waiting for frames");
-                ex.printStackTrace();
-                System.exit(1);
             }
+        }
+        catch( InterruptedException intEx)
+        {
+            return;
         }
     }
     
-    private void handshake()
+    private void handshake() throws IOException, InterruptedException
     {
-        try(
-            ServerSocket tcpServerSocket = new ServerSocket(tcpPort);
-        )
+        ServerSocket tcpServerSocket = new ServerSocket(tcpPort);
+        
+        CyclicBarrier barrier = new CyclicBarrier(this.clientsNumber);
+        CountDownLatch latch = new CountDownLatch(this.clientsNumber);
+
+        int firstFrameNumber = (new Random()).nextInt(1000) + 100;
+
+        for(int i = 0; i < clientsNumber; i++)
         {
-            CyclicBarrier barrier = new CyclicBarrier(this.clientsNumber);
-            CountDownLatch latch = new CountDownLatch(this.clientsNumber);
-            
-            int firstFrameNumber = (new Random()).nextInt(1000) + 100;
-            
-            for(int i = 0; i < clientsNumber; i++)
-            {
-                Socket tcpConnectionSocket = tcpServerSocket.accept();
-                LOG.info("Connection " + i + " accepted from " +  tcpConnectionSocket.getInetAddress().getHostAddress());
-                Thread handshake = new Thread(() -> clientHandshake(tcpConnectionSocket, firstFrameNumber, barrier, latch));
-                handshake.start();
-            }
-            latch.await();
-            LOG.info("All handshakes completed");
-        } catch (IOException | InterruptedException ex)
-        {
-            LOG.fatal("Error in handshake " + ex.getMessage());
-            ex.printStackTrace();
-            System.exit(1);
+            Socket tcpConnectionSocket = tcpServerSocket.accept();
+            LOG.info("Connection " + i + " accepted from " +  tcpConnectionSocket.getInetAddress().getHostAddress());
+            Thread handshake = new Thread(() -> clientHandshake(tcpConnectionSocket, firstFrameNumber, barrier, latch, this));
+            handshake.start();                
         }
+        latch.await();
+        LOG.info("All handshakes completed");
     }
     
-    private void clientHandshake(Socket tcpSocket, int firstFrameNumber, CyclicBarrier barrier, CountDownLatch latch)
+    private void clientHandshake(Socket tcpSocket, int firstFrameNumber, CyclicBarrier barrier, CountDownLatch latch, LockstepServer server)
     {
         LOG.debug("ClientHandshake started");
         try(ObjectOutputStream oout = new ObjectOutputStream(tcpSocket.getOutputStream());)
@@ -226,11 +213,11 @@ public class LockstepServer extends LockstepCoreThread
                 //Continue with execution
                 latch.countDown();
             }
-        } catch (IOException | ClassNotFoundException | InterruptedException | BrokenBarrierException ex)
+        } catch (Exception ex)
         {
-            LOG.fatal("Exception at clientHandshake " + ex.getMessage());
-            ex.printStackTrace();
-            System.exit(1);
+            LOG.fatal("Exception at clientHandshake");
+            LOG.fatal(ex);
+            server.interrupt();
         }            
     }
     
@@ -362,5 +349,11 @@ public class LockstepServer extends LockstepCoreThread
     {
         this.serverQueues.remove(nodeID);
         LOG.info("Disconnected receiving queue for " + nodeID);
+    }
+
+    @Override
+    public void abort()
+    {
+        this.interrupt();
     }
 }

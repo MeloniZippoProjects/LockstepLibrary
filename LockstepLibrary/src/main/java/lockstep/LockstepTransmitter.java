@@ -8,29 +8,19 @@ package lockstep;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.zip.GZIPOutputStream;
 import lockstep.messages.simulation.FrameACK;
 import lockstep.messages.simulation.InputMessage;
 import lockstep.messages.simulation.InputMessageArray;
 import lockstep.messages.simulation.KeepAlive;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
-/**
- * 
- * @author Raff
- * @param <Command>
- */
 public class LockstepTransmitter extends Thread
 {
     DatagramSocket dgramSocket;

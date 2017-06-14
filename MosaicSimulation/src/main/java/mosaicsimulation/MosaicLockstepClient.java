@@ -12,7 +12,6 @@ import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import lockstep.LockstepApplication;
-import lockstep.LockstepClient;
 import lockstep.messages.simulation.LockstepCommand;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
@@ -131,4 +130,16 @@ public class MosaicLockstepClient implements LockstepApplication {
         
         return fillers;
     }    
+
+    @Override
+    public void signalHandshakeFailure()
+    {
+        System.exit(1);
+    }
+
+    @Override
+    public void signalDisconnection(int remainingClients)
+    {
+        //Do nothing
+    }
 }

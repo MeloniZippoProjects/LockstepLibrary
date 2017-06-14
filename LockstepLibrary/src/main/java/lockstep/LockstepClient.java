@@ -23,11 +23,6 @@ import lockstep.messages.simulation.LockstepCommand;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
-/**
- *
- * @author Raff
- * @param <Command>
- */
 public class LockstepClient extends LockstepCoreThread
 {
     int framerate;
@@ -55,22 +50,30 @@ public class LockstepClient extends LockstepCoreThread
     Semaphore executionSemaphore;
     private int clientsNumber;
     private final int tickrate;
-    private final LockstepApplication application;
+    private final LockstepApplication lockstepApplication;
     
-    public LockstepClient(InetSocketAddress serverTCPAddress, int framerate, int tickrate, int fillTimeout, LockstepApplication application)
+    public LockstepClient(InetSocketAddress serverTCPAddress, int framerate, int tickrate, int fillTimeout, LockstepApplication lockstepApplication)
     {
         this.serverTCPAddress = serverTCPAddress;
         this.framerate = framerate;
         this.tickrate = tickrate;
         this.fillTimeout = fillTimeout;
-        this.application = application;
+        this.lockstepApplication = lockstepApplication;
     }
 
         
     @Override
     public void run()
     {
-        handshake();
+        try{
+            handshake();
+        } catch( ClassNotFoundException | IOException ex)
+        {
+            LOG.fatal("Handshake failed");
+            LOG.fatal(ex);
+            lockstepApplication.signalHandshakeFailure();
+            return;
+        }
         
         while(true)
         {
@@ -89,97 +92,81 @@ public class LockstepClient extends LockstepCoreThread
         }
     }
 
-    private void handshake()
+    private void handshake() throws ClassNotFoundException, IOException
     {
         LOG.debug("Start of handshake");
-        try(
-            Socket tcpSocket = new Socket(serverTCPAddress.getAddress(), serverTCPAddress.getPort());
-            ObjectOutputStream oout = new ObjectOutputStream(tcpSocket.getOutputStream());                        
-        )
+
+        Socket tcpSocket = new Socket(serverTCPAddress.getAddress(), serverTCPAddress.getPort());
+        ObjectOutputStream oout = new ObjectOutputStream(tcpSocket.getOutputStream());                        
+        
+        oout.flush();
+        LOG.debug("oout flushed");
+        ObjectInputStream oin = new ObjectInputStream(tcpSocket.getInputStream());
+            
+        //Bind own UDP socket
+        udpSocket = new DatagramSocket();
+        LOG.info("Opened connection on " + udpSocket.getLocalAddress().getHostAddress() + ":" + udpSocket.getLocalPort());
+
+        //Send hello to server, with the bound UDP port
+        LOG.info("Sending ClientHello message");
+        ClientHello clientHello = new ClientHello();
+        clientHello.clientUDPPort = udpSocket.getLocalPort();
+        oout.writeObject(clientHello);
+
+        //Receive and process first server reply
+        LOG.info("Waiting for helloReply from server");
+        ServerHelloReply helloReply = (ServerHelloReply) oin.readObject();
+        hostID = helloReply.assignedHostID;
+        LOG.info("ID assigned = " + hostID);
+        currentExecutionFrame = helloReply.firstFrameNumber;
+        currentUserFrame = helloReply.firstFrameNumber;
+
+        clientsNumber = helloReply.clientsNumber;
+        executionSemaphore = new Semaphore(0);
+        executionFrameQueues = new ConcurrentSkipListMap<>();
+        executionFrameQueues.put(hostID, new ClientReceivingQueue(helloReply.firstFrameNumber, hostID, executionSemaphore));
+
+        //Network setup
+        LOG.info("Setting up network threads and stub frames");
+
+        InetSocketAddress serverUDPAddress = new InetSocketAddress(serverTCPAddress.getAddress(), helloReply.serverUDPPort);
+        udpSocket.connect(serverUDPAddress);
+
+        udpSocket.setSoTimeout(5000);
+
+        Map<Integer, ReceivingQueue> receivingExecutionQueues = new ConcurrentHashMap<>();
+        transmissionFrameQueue = new TransmissionQueue(helloReply.firstFrameNumber, hostID);
+        HashMap<Integer,TransmissionQueue> transmissionQueueWrapper = new HashMap<>();
+        transmissionQueueWrapper.put(hostID, transmissionFrameQueue);
+
+        ACKQueue ackQueue = new ACKQueue();
+        receiver = new LockstepReceiver(udpSocket, this, receivingExecutionQueues, transmissionQueueWrapper, "Receiver-to-"+hostID, LockstepReceiver.RECEIVER_FROM_SERVER_ID, ackQueue);
+        transmitter = new LockstepTransmitter(udpSocket, tickrate, 1000, transmissionQueueWrapper, "Transmitter-from-"+hostID, ackQueue);
+
+        insertBootstrapCommands(lockstepApplication.bootstrapCommands());
+
+        transmitter.start();
+
+        //Receive and process second server reply
+        LOG.info("Waiting for list of clients from server");
+        ClientsAnnouncement clientsAnnouncement = (ClientsAnnouncement) oin.readObject();
+
+        for(int clientID : clientsAnnouncement.hostIDs)
         {
-            oout.flush();
-            LOG.debug("oout flushed");
-            try(ObjectInputStream oin = new ObjectInputStream(tcpSocket.getInputStream()))
+            if(clientID != hostID)
             {
-                //Bind own UDP socket
-                udpSocket = new DatagramSocket();
-                LOG.info("Opened connection on " + udpSocket.getLocalAddress().getHostAddress() + ":" + udpSocket.getLocalPort());
-
-                //Send hello to server, with the bound UDP port
-                LOG.info("Sending ClientHello message");
-                ClientHello clientHello = new ClientHello();
-                clientHello.clientUDPPort = udpSocket.getLocalPort();
-                oout.writeObject(clientHello);
-
-                //Receive and process first server reply
-                LOG.info("Waiting for helloReply from server");
-                ServerHelloReply helloReply = (ServerHelloReply) oin.readObject();
-                this.hostID = helloReply.assignedHostID;
-                LOG.info("ID assigned = " + hostID);
-                this.currentExecutionFrame = helloReply.firstFrameNumber;
-                this.currentUserFrame = helloReply.firstFrameNumber;
-
-                clientsNumber = helloReply.clientsNumber;
-                //cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
-                executionSemaphore = new Semaphore(0);
-                this.executionFrameQueues = new ConcurrentSkipListMap<>();
-                this.executionFrameQueues.put(hostID, new ClientReceivingQueue(helloReply.firstFrameNumber, hostID, executionSemaphore));
-
-                //Network setup
-                LOG.info("Setting up network threads and stub frames");
-
-                InetSocketAddress serverUDPAddress = new InetSocketAddress(serverTCPAddress.getAddress(), helloReply.serverUDPPort);
-                udpSocket.connect(serverUDPAddress);
-                
-                udpSocket.setSoTimeout(5000);
-
-                Map<Integer, ReceivingQueue> receivingExecutionQueues = new ConcurrentHashMap<>();
-                transmissionFrameQueue = new TransmissionQueue(helloReply.firstFrameNumber, hostID);
-                HashMap<Integer,TransmissionQueue> transmissionQueueWrapper = new HashMap<>();
-                transmissionQueueWrapper.put(hostID, transmissionFrameQueue);
-
-                ACKQueue ackQueue = new ACKQueue();
-                receiver = new LockstepReceiver(udpSocket, this, receivingExecutionQueues, transmissionQueueWrapper, "Receiver-to-"+hostID, LockstepReceiver.RECEIVER_FROM_SERVER_ID, ackQueue);
-                transmitter = new LockstepTransmitter(udpSocket, tickrate, 1000, transmissionQueueWrapper, "Transmitter-from-"+hostID, ackQueue);
-                                
-                insertBootstrapCommands(application.bootstrapCommands());
-                
-                transmitter.start();
-
-                //Receive and process second server reply
-                LOG.info("Waiting for list of clients from server");
-                ClientsAnnouncement clientsAnnouncement = (ClientsAnnouncement) oin.readObject();
-
-                for(int clientID : clientsAnnouncement.hostIDs)
-                {
-                    if(clientID != hostID)
-                    {
-                        ClientReceivingQueue executionFrameQueue = new ClientReceivingQueue(helloReply.firstFrameNumber, clientID, executionSemaphore);
-                        executionFrameQueues.put(clientID, executionFrameQueue);
-                        receivingExecutionQueues.put(clientID, executionFrameQueue);
-                    }
-                }
-                
-                receiver.start();
-                
-                //Wait for simulation start signal to proceed executing
-                LOG.info("Waiting for simulation start signal");
-                SimulationStart start = (SimulationStart) oin.readObject();
-                LOG.info("Simulation started");
+                ClientReceivingQueue executionFrameQueue = new ClientReceivingQueue(helloReply.firstFrameNumber, clientID, executionSemaphore);
+                executionFrameQueues.put(clientID, executionFrameQueue);
+                receivingExecutionQueues.put(clientID, executionFrameQueue);
             }
         }
-        catch(ClassNotFoundException e)
-        {
-            LOG.fatal("The received Object class cannot be found");
-            LOG.fatal(e);
-            //Signal application of the failure, terminate the thread
-        }
-        catch(IOException e)
-        {
-            LOG.fatal("IO error");
-            LOG.fatal(e);
-            //Signal application of the failure, terminate the thread
-        }
+
+        receiver.start();
+
+        //Wait for simulation start signal to proceed executing
+        LOG.info("Waiting for simulation start signal");
+        SimulationStart start = (SimulationStart) oin.readObject();
+        LOG.info("Simulation started");
     }
     
     private void insertBootstrapCommands(LockstepCommand[] bootstrapCommands)
@@ -201,7 +188,7 @@ public class LockstepClient extends LockstepCoreThread
     
     private void readUserInput()
     {
-        LockstepCommand cmd = application.readInput();
+        LockstepCommand cmd = lockstepApplication.readInput();
         FrameInput newFrame = new FrameInput(currentUserFrame++, cmd);
         executionFrameQueues.get(this.hostID).push(newFrame);
         if(transmissionFrameQueue != null)
@@ -218,9 +205,9 @@ public class LockstepClient extends LockstepCoreThread
         
         if(!executionSemaphore.tryAcquire(clientsNumber))
         {
-            application.suspendSimulation();
+            lockstepApplication.suspendSimulation();
             executionSemaphore.acquire(clientsNumber);
-            application.resumeSimulation();
+            lockstepApplication.resumeSimulation();
         }
         
         HashMap<Integer, LockstepCommand> commands = collectCommands();
@@ -232,7 +219,7 @@ public class LockstepClient extends LockstepCoreThread
             if(command instanceof DisconnectionSignal)
                 disconnectReceivingQueues(senderID);
             else
-                application.executeCommand(command);
+                lockstepApplication.executeCommand(command);
         }
     }
 
@@ -281,16 +268,22 @@ public class LockstepClient extends LockstepCoreThread
     @Override
     void disconnectReceivingQueues(int nodeID)
     {
-        this.executionFrameQueues.remove(nodeID);
-        this.clientsNumber--;
+        executionFrameQueues.remove(nodeID);
+        clientsNumber--;
         LOG.info("Disconnected receiving queue for " + nodeID);
         
-        //Ask application what to do then: either continue or abort (interrupt)
+        lockstepApplication.signalDisconnection(clientsNumber);
     }
     
     void networkShutdown()
     {
         receiver.interrupt();
         transmitter.interrupt();
+    }
+    
+    @Override
+    public void abort()
+    {
+        this.interrupt();
     }
 }

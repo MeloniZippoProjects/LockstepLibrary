@@ -21,11 +21,6 @@ import lockstep.messages.simulation.KeepAlive;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
-/**
- *
- * @author Raff
- * @param <Command>
- */
 public class LockstepReceiver extends Thread
 {
     public static final int RECEIVER_FROM_SERVER_ID = 0;

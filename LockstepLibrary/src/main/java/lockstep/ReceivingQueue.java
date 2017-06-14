@@ -5,8 +5,6 @@
  */
 package lockstep;
 
-import java.io.Serializable;
-import lockstep.messages.simulation.DisconnectionSignal;
 import lockstep.messages.simulation.FrameACK;
 
 /**
@@ -15,8 +13,6 @@ import lockstep.messages.simulation.FrameACK;
  * 
  * Implementations specialize the behavior based on the needs of clients and
  * servers at extraction time.
- * 
- * @param <Command> Application class containing the data to transmit
  */
 public interface ReceivingQueue {
 

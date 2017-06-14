@@ -5,10 +5,6 @@
  */
 package lockstep.messages.simulation;
 
-/**
- *
- * @author Raff
- */
 public class DisconnectionSignal implements LockstepCommand
 {
 }

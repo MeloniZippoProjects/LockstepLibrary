@@ -5,13 +5,11 @@
  */
 package lockstep;
 
-import java.io.Serializable;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
-import lockstep.messages.simulation.DisconnectionSignal;
 import lockstep.messages.simulation.FrameACK;
 import lockstep.messages.simulation.LockstepCommand;
 import org.apache.commons.lang3.ArrayUtils;
@@ -25,9 +23,7 @@ import org.apache.logging.log4j.LogManager;
  * input is available.
  * 
  * It is thread safe.
- * @param <Command> Application class containing the data to transmit
  */
-
 class ClientReceivingQueue implements ReceivingQueue
 {
     private final int senderID;

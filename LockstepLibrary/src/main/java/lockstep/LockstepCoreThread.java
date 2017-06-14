@@ -5,12 +5,9 @@
  */
 package lockstep;
 
-/**
- *
- * @author Raff
- */
 abstract public class LockstepCoreThread extends Thread
 {
     abstract public void disconnectTransmittingQueues(int nodeID);
     abstract void disconnectReceivingQueues(int nodeID);
+    abstract public void abort();
 }

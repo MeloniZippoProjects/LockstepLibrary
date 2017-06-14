@@ -5,13 +5,8 @@
  */
 package lockstep;
 
-import java.io.Serializable;
 import lockstep.messages.simulation.LockstepCommand;
 
-/**
- *
- * @author enric
- */
 public interface LockstepApplication {
     /**
      * Must read input from user, and return a Command object to be executed.
@@ -55,5 +50,20 @@ public interface LockstepApplication {
      * @return 
      */
     abstract LockstepCommand[] bootstrapCommands();
+
+    /**
+     * Signals that the rest of the application that the handshake has failed.
+     * After this call, the LockstepClient thread terminates.
+     */
+    abstract void signalHandshakeFailure();
     
+    /**
+     * Signals to the rest of the application the disconnection of one client,
+     * and the number of clients remained, including the local client.
+     * The LockstepClient thread will continue the execution afterwards.
+     * 
+     * @param remainingClients the number of clients remained, 
+     * including the local client
+     */
+    abstract void signalDisconnection(int remainingClients);
 }
