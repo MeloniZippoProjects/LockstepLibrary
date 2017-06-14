@@ -40,12 +40,12 @@ public class MosaicLockstepServer {
         int nClients = Integer.parseInt(commandLine.getOptionValue("nClients"));
         int tickrate = Integer.parseInt(commandLine.getOptionValue("tickrate"));
         
-        Thread thread = new Thread(new LockstepServer(serverPort, nClients, tickrate));
-        thread.setName("Main-server-thread");
-        thread.start();
+        Thread serverThread = new LockstepServer(serverPort, nClients, tickrate);
+        serverThread.setName("Main-server-thread");
+        serverThread.start();
         
         try {     
-            thread.join();
+            serverThread.join();
         } catch (InterruptedException ex) {
             LOG.error("Server interrupted while joining");
         }
