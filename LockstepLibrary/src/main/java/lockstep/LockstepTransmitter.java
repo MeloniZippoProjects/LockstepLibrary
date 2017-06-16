@@ -18,6 +18,7 @@ import lockstep.messages.simulation.FrameACK;
 import lockstep.messages.simulation.InputMessage;
 import lockstep.messages.simulation.InputMessageArray;
 import lockstep.messages.simulation.KeepAlive;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -116,7 +117,7 @@ public class LockstepTransmitter extends Thread
             LOG.fatal(e.getStackTrace());
             System.exit(1);
         }
-        System.out.println("SENT KEEP ALIVE");
+        LOG.info("SENT KEEP ALIVE");
     }
     
 
@@ -132,10 +133,10 @@ public class LockstepTransmitter extends Thread
                 LOG.debug("Entry " + senderID);
                 FrameInput[] frames = transmissionQueueEntry.getValue().pop();
                 
-                //System.out.println("txq " + senderID + "has to send: ");
+                LOG.debug("txq " + senderID + "has to send: ");
                 for(int i = 0; i < frames.length; ++i)
                 {
-                    //System.out.println("Frame " + i + ": " + frames[i].getFrameNumber());
+                    LOG.debug("Frame " + i + ": " + frames[i].getFrameNumber());
                 }
                 
                 
@@ -190,7 +191,7 @@ public class LockstepTransmitter extends Thread
             byte[] data = baout.toByteArray();
             this.dgramSocket.send(new DatagramPacket(data, data.length));
             LOG.debug("Single ACK sent, payload size:" + data.length);
-            //System.out.println("["+frameACK.senderID+"] I just ACKed ("+data.length+"): up to " + frameACK.cumulativeACK + " and " + ArrayUtils.toString(frameACK.selectiveACKs));
+            LOG.debug("["+frameACK.senderID+"] I just ACKed ("+data.length+"): up to " + frameACK.cumulativeACK + " and " + ArrayUtils.toString(frameACK.selectiveACKs));
         }
         catch(Exception e)
         {
@@ -228,7 +229,7 @@ public class LockstepTransmitter extends Thread
             }
         }
         
-        //System.out.println("["+frameACK.senderID+"] I just Acked ("+payload.length+"): up to " + frameACK.cumulativeACK + "and " + ArrayUtils.toString(frameACK.selectiveACKs));
+        LOG.debug("["+frameACK.senderID+"] I just Acked ("+payload.length+"): up to " + frameACK.cumulativeACK + "and " + ArrayUtils.toString(frameACK.selectiveACKs));
 
         try
         {
@@ -269,7 +270,7 @@ public class LockstepTransmitter extends Thread
             byte[] data = baout.toByteArray();
             this.dgramSocket.send(new DatagramPacket(data, data.length));
             LOG.debug("Payload size " + data.length);
-            //System.out.println("["+msg.senderID+"] I just sent ("+data.length+"): " + msg);
+            LOG.debug("["+msg.senderID+"] I just sent ("+data.length+"): " + msg);
         }
         catch(Exception e)
         {
@@ -309,7 +310,7 @@ public class LockstepTransmitter extends Thread
             }
         }
         
-        //System.out.println("["+senderID+"] I just sent: ("+payload.length+")" + inputMessageArray);
+        LOG.debug("["+senderID+"] I just sent: ("+payload.length+")" + inputMessageArray);
         
         try
         {

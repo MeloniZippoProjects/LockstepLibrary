@@ -8,11 +8,11 @@ package lockstep;
 import lockstep.messages.simulation.InputMessageArray;
 import lockstep.messages.simulation.InputMessage;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.PortUnreachableException;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
@@ -77,7 +77,7 @@ public class LockstepReceiver extends Thread
                     messageSwitch(obj);
                 }
             }
-            catch(SocketTimeoutException | PortUnreachableException disconnectionException)
+            catch(SocketTimeoutException | SocketException  disconnectionException)
             {
                 signalDisconnection();
                 handleDisconnection(receiverID);
