@@ -37,14 +37,66 @@ public class LockstepTransmitter extends Thread
     
     final boolean sendKeepAliveSwitch;
     final int keepAliveTicksTimeout;
-    int keepAliveTicksCounter;
+
+    public static class Builder {
+
+        private DatagramSocket dgramSocket;
+        private Map<Integer,TransmissionQueue> transmissionQueues;
+        private ACKQueue ackQueue;
+        private String name;
+        private int tickrate;
+        private int keepAliveTimeout;
+
+        private Builder() {
+        }
+
+        public Builder dgramSocket(final DatagramSocket value) {
+            this.dgramSocket = value;
+            return this;
+        }
+
+        public Builder transmissionQueues(final Map<Integer,TransmissionQueue> value) {
+            this.transmissionQueues = value;
+            return this;
+        }
+
+        public Builder ackQueue(final ACKQueue value) {
+            this.ackQueue = value;
+            return this;
+        }
+        public Builder name(final String value) {
+            this.name = value;
+            return this;
+        }
+
+        public Builder tickrate(final int value) {
+            this.tickrate = value;
+            return this;
+        }
+
+        public Builder keepAliveTimeout(final int keepAliveTimeout)
+        {
+            this.keepAliveTimeout = keepAliveTimeout;
+            return this;
+        }
+
+        public LockstepTransmitter build() {
+            return new LockstepTransmitter(dgramSocket, tickrate,
+                    keepAliveTimeout, transmissionQueues,
+                    name, ackQueue);
+        }
+    }
+
+    public static LockstepTransmitter.Builder builder() {
+        return new LockstepTransmitter.Builder();
+    }
     
-    public LockstepTransmitter(DatagramSocket socket, int tickrate, int keepAliveTimeout, Map<Integer, TransmissionQueue> transmissionFrameQueues, String name, ACKQueue ackQueue)
+    public LockstepTransmitter(DatagramSocket socket, int tickrate, int keepAliveTimeout, Map<Integer, TransmissionQueue> transmissionQueues, String name, ACKQueue ackQueue)
     {
         this.dgramSocket = socket;
         this.tickrate = tickrate;
         this.interTransmissionTimeout = 3*(1000/tickrate);
-        this.transmissionQueues = transmissionFrameQueues;
+        this.transmissionQueues = transmissionQueues;
         this.name = name;
         this.ackQueue = ackQueue;
         

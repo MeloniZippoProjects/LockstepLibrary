@@ -61,6 +61,136 @@ public class LockstepClient extends LockstepCoreThread
         this.lockstepApplication = lockstepApplication;
     }
 
+    public static class Builder {
+
+        private int framerate;
+        private int fillTimeout;
+        private int currentExecutionFrame;
+        private int currentUserFrame;
+        private int frameExecutionDistance;
+        private int hostID;
+        private ConcurrentSkipListMap<Integer,ClientReceivingQueue> executionFrameQueues;
+        private TransmissionQueue transmissionFrameQueue;
+        private InetSocketAddress serverTCPAddress;
+        private LockstepReceiver receiver;
+        private LockstepTransmitter transmitter;
+        private DatagramSocket udpSocket;
+        private Semaphore executionSemaphore;
+        private int clientsNumber;
+        private int tickrate;
+        private LockstepApplication lockstepApplication;
+
+        private Builder() {
+        }
+
+        public Builder framerate(final int value) {
+            this.framerate = value;
+            return this;
+        }
+
+        public Builder fillTimeout(final int value) {
+            this.fillTimeout = value;
+            return this;
+        }
+
+        public Builder currentExecutionFrame(final int value) {
+            this.currentExecutionFrame = value;
+            return this;
+        }
+
+        public Builder currentUserFrame(final int value) {
+            this.currentUserFrame = value;
+            return this;
+        }
+
+        public Builder frameExecutionDistance(final int value) {
+            this.frameExecutionDistance = value;
+            return this;
+        }
+
+        public Builder hostID(final int value) {
+            this.hostID = value;
+            return this;
+        }
+
+        public Builder executionFrameQueues(final ConcurrentSkipListMap<Integer,ClientReceivingQueue> value) {
+            this.executionFrameQueues = value;
+            return this;
+        }
+
+        public Builder transmissionFrameQueue(final TransmissionQueue value) {
+            this.transmissionFrameQueue = value;
+            return this;
+        }
+
+        public Builder serverTCPAddress(final InetSocketAddress value) {
+            this.serverTCPAddress = value;
+            return this;
+        }
+
+        public Builder receiver(final LockstepReceiver value) {
+            this.receiver = value;
+            return this;
+        }
+
+        public Builder transmitter(final LockstepTransmitter value) {
+            this.transmitter = value;
+            return this;
+        }
+
+        public Builder udpSocket(final DatagramSocket value) {
+            this.udpSocket = value;
+            return this;
+        }
+
+        public Builder executionSemaphore(final Semaphore value) {
+            this.executionSemaphore = value;
+            return this;
+        }
+
+        public Builder clientsNumber(final int value) {
+            this.clientsNumber = value;
+            return this;
+        }
+
+        public Builder tickrate(final int value) {
+            this.tickrate = value;
+            return this;
+        }
+
+        public Builder lockstepApplication(final LockstepApplication value) {
+            this.lockstepApplication = value;
+            return this;
+        }
+
+        public LockstepClient build() {
+            return new lockstep.LockstepClient(framerate, fillTimeout, currentExecutionFrame, currentUserFrame, frameExecutionDistance, hostID, executionFrameQueues, transmissionFrameQueue, serverTCPAddress, receiver, transmitter, udpSocket, executionSemaphore, clientsNumber, tickrate, lockstepApplication);
+        }
+    }
+
+    public static LockstepClient.Builder builder() {
+        return new LockstepClient.Builder();
+    }
+
+    private LockstepClient(final int framerate, final int fillTimeout, final int currentExecutionFrame, final int currentUserFrame, final int frameExecutionDistance, final int hostID, final ConcurrentSkipListMap<Integer, ClientReceivingQueue> executionFrameQueues, final TransmissionQueue transmissionFrameQueue, final InetSocketAddress serverTCPAddress, final LockstepReceiver receiver, final LockstepTransmitter transmitter, final DatagramSocket udpSocket, final Semaphore executionSemaphore, final int clientsNumber, final int tickrate, final LockstepApplication lockstepApplication) {
+        this.framerate = framerate;
+        this.fillTimeout = fillTimeout;
+        this.currentExecutionFrame = currentExecutionFrame;
+        this.currentUserFrame = currentUserFrame;
+        this.frameExecutionDistance = frameExecutionDistance;
+        this.hostID = hostID;
+        this.executionFrameQueues = executionFrameQueues;
+        this.transmissionFrameQueue = transmissionFrameQueue;
+        this.serverTCPAddress = serverTCPAddress;
+        this.receiver = receiver;
+        this.transmitter = transmitter;
+        this.udpSocket = udpSocket;
+        this.executionSemaphore = executionSemaphore;
+        this.clientsNumber = clientsNumber;
+        this.tickrate = tickrate;
+        this.lockstepApplication = lockstepApplication;
+    }
+
         
     @Override
     public void run()
@@ -145,9 +275,28 @@ public class LockstepClient extends LockstepCoreThread
         transmissionQueueWrapper.put(hostID, transmissionFrameQueue);
 
         ACKQueue ackQueue = new ACKQueue();
-        receiver = new LockstepReceiver(udpSocket, this, receivingExecutionQueues, transmissionQueueWrapper, "Receiver-to-"+hostID, LockstepReceiver.RECEIVER_FROM_SERVER_ID, ackQueue);
-        transmitter = new LockstepTransmitter(udpSocket, tickrate, 1000, transmissionQueueWrapper, "Transmitter-from-"+hostID, ackQueue);
+        
+        receiver = LockstepReceiver.builder()
+                .dgramSocket(udpSocket)
+                .coreThread(this)
+                .receivingQueues(receivingExecutionQueues)
+                .transmissionQueues(transmissionQueueWrapper)
+                .name("Receiver-to-"+hostID)
+                .receiverID(LockstepReceiver.RECEIVER_FROM_SERVER_ID)
+                .ackQueue(ackQueue)
+                .build();
+        
 
+        transmitter = LockstepTransmitter.builder()
+                .dgramSocket(udpSocket)
+                .tickrate(tickrate)
+                .keepAliveTimeout(1000)
+                .transmissionQueues(transmissionQueueWrapper)
+                .name("Transmitter-from-"+hostID)
+                .ackQueue(ackQueue)
+                .build();
+        
+        
         insertBootstrapCommands(lockstepApplication.bootstrapCommands());
 
         transmitter.start();

@@ -28,7 +28,7 @@ public class LockstepReceiver extends Thread
     
     volatile DatagramSocket dgramSocket;
     volatile Map<Integer, ReceivingQueue> receivingQueues;
-    volatile Map<Integer, TransmissionQueue> transmissionFrameQueues;
+    volatile Map<Integer, TransmissionQueue> transmissionQueues;
     volatile ACKQueue ackQueue;
     static final int MAX_PAYLOAD_LENGTH = 300;
     
@@ -40,15 +40,87 @@ public class LockstepReceiver extends Thread
     
     int receiverID;
         
-    public LockstepReceiver(DatagramSocket socket, LockstepCoreThread coreThread , Map<Integer, ReceivingQueue> receivingQueues, Map<Integer, TransmissionQueue> transmissionFrameQueues, String name, int ownID, ACKQueue ackQueue)
+    public LockstepReceiver(DatagramSocket socket, LockstepCoreThread coreThread, 
+            Map<Integer, ReceivingQueue> receivingQueues, 
+            Map<Integer, TransmissionQueue> transmissionQueues, 
+            String name, int ownID, ACKQueue ackQueue)
     {
         dgramSocket = socket;
         this.coreThread = coreThread;
         this.receivingQueues = receivingQueues;
-        this.transmissionFrameQueues = transmissionFrameQueues;
+        this.transmissionQueues = transmissionQueues;
         this.name = name;
         this.receiverID = ownID;
         this.ackQueue = ackQueue;
+    }
+
+    public static class Builder {
+
+        private DatagramSocket dgramSocket;
+        private Map<Integer,ReceivingQueue> receivingQueues;
+        private Map<Integer,TransmissionQueue> transmissionFrameQueues;
+        private ACKQueue ackQueue;
+        private LockstepCoreThread coreThread;
+        private String name;
+        private int receiverID;
+
+        private Builder() {
+        }
+
+        public Builder dgramSocket(final DatagramSocket value) {
+            this.dgramSocket = value;
+            return this;
+        }
+
+        public Builder receivingQueues(final Map<Integer,ReceivingQueue> value) {
+            this.receivingQueues = value;
+            return this;
+        }
+
+        public Builder transmissionQueues(final Map<Integer,TransmissionQueue> value) {
+            this.transmissionFrameQueues = value;
+            return this;
+        }
+
+        public Builder ackQueue(final ACKQueue value) {
+            this.ackQueue = value;
+            return this;
+        }
+
+        public Builder coreThread(final LockstepCoreThread value) {
+            this.coreThread = value;
+            return this;
+        }
+
+        public Builder name(final String value) {
+            this.name = value;
+            return this;
+        }
+
+        public Builder receiverID(final int value) {
+            this.receiverID = value;
+            return this;
+        }
+
+        public LockstepReceiver build() {
+            return new lockstep.LockstepReceiver(dgramSocket, receivingQueues, 
+                    transmissionFrameQueues, ackQueue, 
+                    coreThread, name, receiverID);
+        }
+    }
+
+    public static LockstepReceiver.Builder builder() {
+        return new LockstepReceiver.Builder();
+    }
+
+    private LockstepReceiver(final DatagramSocket dgramSocket, final Map<Integer, ReceivingQueue> receivingQueues, final Map<Integer, TransmissionQueue> transmissionFrameQueues, final ACKQueue ackQueue, final LockstepCoreThread coreThread, final String name, final int receiverID) {
+        this.dgramSocket = dgramSocket;
+        this.receivingQueues = receivingQueues;
+        this.transmissionQueues = transmissionFrameQueues;
+        this.ackQueue = ackQueue;
+        this.coreThread = coreThread;
+        this.name = name;
+        this.receiverID = receiverID;
     }
     
     @Override
@@ -57,9 +129,7 @@ public class LockstepReceiver extends Thread
         Thread.currentThread().setName(name);
         
         while(true)
-        {
-            
-            
+        {            
             try
             {
                 if(Thread.interrupted())
@@ -151,7 +221,7 @@ public class LockstepReceiver extends Thread
     
     private void processACK(FrameACK ack)
     {
-        TransmissionQueue transmissionFrameQueue = this.transmissionFrameQueues.get(ack.senderID);
+        TransmissionQueue transmissionFrameQueue = this.transmissionQueues.get(ack.senderID);
         transmissionFrameQueue.processACK(ack);
     }
     
