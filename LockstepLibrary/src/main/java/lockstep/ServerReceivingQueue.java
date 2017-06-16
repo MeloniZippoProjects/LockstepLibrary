@@ -64,7 +64,7 @@ public class ServerReceivingQueue implements ReceivingQueue {
         //this.lastInOrderProcessed = new AtomicInteger(initialFrameNumber - 1);
         //this.selectiveProcessedSet = new ConcurrentSkipListSet<>();
         
-        System.out.println("BufferHead["+senderID+"] initialized at " + initialFrameNumber);
+        LOG.debug("BufferHead["+senderID+"] initialized at " + initialFrameNumber);
     }
     
     /**

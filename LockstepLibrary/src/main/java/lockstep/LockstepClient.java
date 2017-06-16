@@ -247,25 +247,26 @@ public class LockstepClient extends LockstepCoreThread
 
     private void debugSimulation()
     {
-        System.out.println("---------------------------------------------");
-        System.out.println("SIMULAZIONE SOSPESA, STAMPA STATO SIMULAZIONE");
+        LOG.debug("---------------------------------------------");
+        LOG.debug("SIMULAZIONE SOSPESA, STAMPA STATO SIMULAZIONE");
         
-        System.out.println("Stato execution frame queues");
+        LOG.debug("Stato execution frame queues");
         for(ClientReceivingQueue exeFrameQueue : this.executionFrameQueues.values())
-            System.out.println(exeFrameQueue);
+            LOG.debug(exeFrameQueue);
         
-        System.out.println("Stato transmission frame queue");
-        System.out.println(transmissionFrameQueue);
+        LOG.debug("Stato transmission frame queue");
+        LOG.debug(transmissionFrameQueue);
         
-        System.out.println("Stato numero frame");
-        System.out.println("Current User Frame: " + currentUserFrame);
-        System.out.println("Current Execution Frame: " + currentExecutionFrame);
-        System.out.println("FrameExecutionDistance: " + frameExecutionDistance);
+        LOG.debug("Stato numero frame");
+        LOG.debug("Current User Frame: " + currentUserFrame);
+        LOG.debug("Current Execution Frame: " + currentExecutionFrame);
+        LOG.debug("FrameExecutionDistance: " + frameExecutionDistance);
     }
 
     @Override
     public void disconnectTransmittingQueues(int nodeID)
     {
+        LOG.info(nodeID);
         if(nodeID == LockstepReceiver.RECEIVER_FROM_SERVER_ID)
             transmissionFrameQueue = null;
     }

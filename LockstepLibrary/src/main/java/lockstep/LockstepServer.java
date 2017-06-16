@@ -287,7 +287,6 @@ public class LockstepServer extends LockstepCoreThread
     
     private void clientTransmissionSetup(int clientID, int firstFrameNumber, DatagramSocket udpSocket, Map<Integer, TransmissionQueue> clientTransmissionFrameQueues)
     {
-        //System.out.println("Setting up transmission to client " + clientID);
         for(int hostID : hostIDs)
         {
             if(hostID != clientID)
@@ -374,20 +373,20 @@ public class LockstepServer extends LockstepCoreThread
     public void debugSimulation()
     {
         
-        //System.out.println("EXECUTION QUEUES");
+        LOG.debug("EXECUTION QUEUES");
         for(Entry<Integer, ServerReceivingQueue> exeFrameQueues : receivingQueues.entrySet())
         {
-            //System.out.println(exeFrameQueues);
+            LOG.debug(exeFrameQueues);
         }
         
-        //System.out.println("TRANSMISSION QUEUES");
+        LOG.debug("TRANSMISSION QUEUES");
         for(Entry<Integer, Map<Integer, TransmissionQueue>> transmissionMap : transmissionFrameQueueTree.entrySet())
         {
-            //System.out.println("Transmission Queues to " + transmissionMap.getKey());
+            LOG.debug("Transmission Queues to " + transmissionMap.getKey());
             
             for(Entry<Integer, TransmissionQueue> txQ : transmissionMap.getValue().entrySet())
             {
-                //System.out.println(txQ);
+                LOG.debug(txQ);
             }
         }
     }
