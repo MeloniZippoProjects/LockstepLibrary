@@ -41,8 +41,9 @@ public class MosaicLockstepClient implements LockstepApplication {
     double throughputMeasureInterval = 20;
     double alpha = 0.125;
     private LockstepClient clientThread;
+    private boolean abortOnDisconnect;
     
-    public MosaicLockstepClient(InetSocketAddress serverTCPAddress, int framerate, int tickrate, int fillTimeout, int fillSize, Rectangle[][] mosaic, int rows, int columns, Color clientColor, Label currentFrameLabel, Label currentFPSLabel) {
+    public MosaicLockstepClient(InetSocketAddress serverTCPAddress, int framerate, int tickrate, int fillTimeout, int fillSize, Rectangle[][] mosaic, int rows, int columns, Color clientColor, Label currentFrameLabel, Label currentFPSLabel, boolean abortOnDisconnect) {
         //super(serverTCPAddress, framerate, tickrate, fillTimeout);
         this.fillSize = fillSize;
         
@@ -53,8 +54,7 @@ public class MosaicLockstepClient implements LockstepApplication {
         this.currentFrameLabel = currentFrameLabel;
         this.currentFPSLabel = currentFPSLabel;
         this.rand = new Random();
-        
-        
+        this.abortOnDisconnect = abortOnDisconnect;
         
         logSim.log(Level.getLevel("SIMULATION"), "Prova simulazione");
     }
@@ -143,7 +143,8 @@ public class MosaicLockstepClient implements LockstepApplication {
     @Override
     public void signalDisconnection(int remainingClients)
     {
-        //clientThread.abort();
+        if(abortOnDisconnect)
+            clientThread.abort();
     }
 
     void setClientThread(LockstepClient lockstepClient) {

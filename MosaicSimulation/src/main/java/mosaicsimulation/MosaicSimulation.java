@@ -83,6 +83,11 @@ public class MosaicSimulation extends Application
         int tickrate = Integer.parseInt(namedParameters.get("tickrate"));
         int fillTimeout = Integer.parseInt(namedParameters.get("fillTimeout"));
         int fillSize = Integer.parseInt(namedParameters.get("fillSize"));
+        String disconnectionPolicy = namedParameters.get("abortOnDisconnect");
+        
+        boolean abortOnDisconnect = ("true".equals(disconnectionPolicy));
+        
+        
         InetSocketAddress serverTCPAddress = new InetSocketAddress(serverIPAddress, serverTCPPort);
 
         Label currentFrameLabel = (Label) scene.lookup("#currentFrameLabel");
@@ -90,7 +95,7 @@ public class MosaicSimulation extends Application
         Label currentFPSLabel = (Label) scene.lookup("#frameRate");
         
         LOG.debug("Creation of lockstep client");
-        MosaicLockstepClient mosaicLockstepClient = new MosaicLockstepClient(serverTCPAddress, framerate, tickrate, fillTimeout, fillSize, mosaic, rows, columns, clientColor, currentFrameLabel, currentFPSLabel);
+        MosaicLockstepClient mosaicLockstepClient = new MosaicLockstepClient(serverTCPAddress, framerate, tickrate, fillTimeout, fillSize, mosaic, rows, columns, clientColor, currentFrameLabel, currentFPSLabel, abortOnDisconnect);
         
         LockstepClient lockstepClient = new LockstepClient(serverTCPAddress, framerate, tickrate, fillTimeout, mosaicLockstepClient);
         
