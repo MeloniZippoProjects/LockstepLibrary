@@ -5,9 +5,11 @@
  */
 package xeviousvs.client;
 
+import xeviousvs.client.gioco.ModelloGioco;
 import java.net.InetSocketAddress;
 import javafx.application.Platform;
 import lockstep.*;
+import lockstep.messages.simulation.LockstepCommand;
 import org.apache.log4j.Logger;
 import xeviousvs.Comando;
 import xeviousvs.Comando.EnumComando;
@@ -16,7 +18,7 @@ import xeviousvs.Comando.EnumComando;
  *
  * @author enric
  */
-public class XeviousLockstepClient extends LockstepClient<Comando>
+public class XeviousVSLockstepApplication implements LockstepApplication
 {
 
     public final Comando comandoCorrente;
@@ -29,13 +31,11 @@ public class XeviousLockstepClient extends LockstepClient<Comando>
     private int framesFromLastFire;
     private final int fillSize;
 
-    private static final Logger LOG = Logger.getLogger(XeviousLockstepClient.class.getName());
+    private static final Logger LOG = Logger.getLogger(XeviousVSLockstepApplication.class.getName());
     private final XeviousVS_Client interfacciaClient;
 
-    public XeviousLockstepClient(InetSocketAddress serverAddress, int framerate, int tickrate, int timeout, int protocolDelay,
-            String username, XeviousVS_Client interfaccia, ModelloGioco modello, Comando riferimentoComando)
+    public XeviousVSLockstepApplication(int framerate, int protocolDelay, String username, XeviousVS_Client interfaccia, ModelloGioco modello, Comando riferimentoComando)
     {
-        super(serverAddress, framerate, tickrate, timeout);
         usernameProprio = username;
         comandoCorrente = riferimentoComando;
         interfacciaClient = interfaccia;
@@ -46,7 +46,7 @@ public class XeviousLockstepClient extends LockstepClient<Comando>
     }
 
     @Override
-    protected Comando readInput()
+    public Comando readInput()
     {
         Comando toRet;
         synchronized (comandoCorrente)
@@ -82,20 +82,24 @@ public class XeviousLockstepClient extends LockstepClient<Comando>
     }
 
     @Override
-    protected void suspendSimulation()
+    public void suspendSimulation()
     {
         Platform.runLater(() -> modelloGioco.vistaGioco.sospendiAnimazioni());
     }
 
     @Override
-    protected void resumeSimulation()
+    public void resumeSimulation()
     {
         Platform.runLater(() -> modelloGioco.vistaGioco.eseguiAnimazioni());
     }
 
     @Override
-    protected void executeCommand(Comando c)
+    public void executeCommand(LockstepCommand lc)
     {
+        if(!(lc instanceof Comando))
+            return;
+        
+        Comando c = (Comando) lc;
         LOG.debug("Comando da eseguire di tipo " + c.comando.toString());
         if (c.comando == EnumComando.Presentazione && !c.username.equals(usernameProprio))
         {
@@ -125,7 +129,7 @@ public class XeviousLockstepClient extends LockstepClient<Comando>
     }
 
     @Override
-    protected Comando[] fillCommands()
+    public Comando[] fillCommands()
     {
         Comando[] fillers = new Comando[0];
 
@@ -138,7 +142,7 @@ public class XeviousLockstepClient extends LockstepClient<Comando>
     }
 
     @Override
-    protected Comando[] bootstrapCommands()
+    public Comando[] bootstrapCommands()
     {
         Comando[] fillers = new Comando[1];
         fillers[0] = new Comando(EnumComando.Presentazione, usernameProprio);
@@ -148,5 +152,17 @@ public class XeviousLockstepClient extends LockstepClient<Comando>
         }
 
         return fillers;
+    }
+
+    @Override
+    public void signalHandshakeFailure()
+    {
+        interfacciaClient.impostaHanshakeFallito();
+    }
+
+    @Override
+    public void signalDisconnection(int remainingClients)
+    {
+        interfacciaClient.impostaDisconnessionePartita();
     }
 }

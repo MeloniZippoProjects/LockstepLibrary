@@ -5,7 +5,6 @@
  */
 package lockstep;
 
-import com.sun.org.apache.bcel.internal.generic.L2D;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -20,6 +19,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
@@ -93,19 +93,19 @@ public class LockstepServer extends LockstepCoreThread
     ConcurrentHashMap<Integer, Map<Integer, TransmissionQueue>> transmissionFrameQueueTree;
     
     
-    volatile Map<Integer, ACKQueue> ackQueues;
+    HashMap<Integer, ACKQueue> ackQueues;
     
     /**
      * Threads used for receiving frames. 
      * The key is the ID of the host from which the thread receives frames
      */
-    Map<Integer, Thread> receivers;
+    HashMap<Integer, Thread> receivers;
     
     /**
      * Threads used for transmitting frames.
      * The key is the ID of the host to which the frames are transmitted
      */
-    Map<Integer, Thread> transmitters;
+    HashMap<Integer, Thread> transmitters;
 
     /**
      * Used for synchronization between server and executionFrameQueues
@@ -121,7 +121,7 @@ public class LockstepServer extends LockstepCoreThread
     private static final Logger LOG = LogManager.getLogger(LockstepServer.class);
     private final int tickrate;
     
-    private List<DatagramSocket> openSockets;
+    private final List<DatagramSocket> openSockets;
     
     public LockstepServer(int tcpPort, int clientsNumber, int tickrate)
     {
@@ -141,13 +141,12 @@ public class LockstepServer extends LockstepCoreThread
         receivers = new HashMap<>();
         transmitters = new HashMap<>();
         
-        //cyclicExecutionLatch = new CyclicCountDownLatch(clientsNumber);
         executionSemaphore = new Semaphore(0);
         receivingQueues = new ConcurrentHashMap<>();
         transmissionFrameQueueTree = new ConcurrentHashMap<>();
-        ackQueues = new ConcurrentHashMap<>();
+        ackQueues = new HashMap<>();
         hostIDs = new ConcurrentSkipListSet<>();
-        openSockets = new ArrayList<DatagramSocket>();
+        openSockets = new ArrayList<>();
     }
 
     /**
@@ -163,7 +162,7 @@ public class LockstepServer extends LockstepCoreThread
         try{
             try{
                 atServerStarted();
-                handshake();
+                handshakePhase();
                 atHandshakeEnded();
             } catch(IOException ioEx)
             {
@@ -174,44 +173,32 @@ public class LockstepServer extends LockstepCoreThread
 
             while(true)
             {
-                //check if thread was interrupted
+                //check if thread was interrupted, causing termination
                 if(Thread.interrupted())
                     throw new InterruptedException();
                 
-                //Wait that everyone has received current frame
-                LOG.debug("Waiting the receivingQueues to forward");
+                //Wait for any receveingQueue to have some frame to forward
                 executionSemaphore.acquire();
-                LOG.debug("ReceivingQueues ready for forwarding");
 
-                Map<Integer, FrameInput> commands = collectCommands();
-                distributeCommands(commands);
-                LOG.debug("Message batch forwarded");
+                //Collect all the frames available and forward them
+                Map<Integer, FrameInput> frameInputs = collectFrameInputs();
+                forwardFrameInputs(frameInputs);
             }
         }
-        catch( InterruptedException intEx)
+        catch(InterruptedException intEx)
         {
-            closeResources();
-            return;
+            otherCloseResources();
         }
     }
     
-    private void closeResources()
+    /**
+     * 
+     */
+    private void otherCloseResources()
     {
-        
-        LOG.info("!!!CLOSING RESOURCES!!!");
-        
-        //interrupt all receivers and transmitters
-        for(Thread receiver : receivers.values())
-        {
-            receiver.interrupt();
-        }
-        
         for(Thread transmitter : transmitters.values())
-        {
             transmitter.interrupt();
-        }
         
-        //then i wait for all of them to stop
         try
         {
             for(Thread receiver : receivers.values())
@@ -230,37 +217,115 @@ public class LockstepServer extends LockstepCoreThread
             LOG.fatal("Interrupted during termination!!");
             LOG.fatal(intEx);
         }
-        
-        //then close all sockets
-        for(DatagramSocket udpSocket : openSockets)
-        {
-            udpSocket.close();
-        }
-        
-        LOG.info("RESOURCES CLOSED");
     }
     
-    private void handshake() throws IOException, InterruptedException
+    /**
+     * Frees all resources tied to the server, that is networking threads and
+     * sockets.
+     */
+    private void closeResources()
+    {
+        //Interrupts all network thread, causing their termination        
+        for(Thread receiver : receivers.values())
+        {
+            receiver.interrupt();
+        }
+        
+        for(Thread transmitter : transmitters.values())
+        {
+            transmitter.interrupt();
+        }
+        
+        //Then waits for their effective termination
+        try
+        {
+            for(Thread receiver : receivers.values())
+            {
+                receiver.join();
+            }
+
+            for(Thread transmitter : transmitters.values())
+            {
+                transmitter.join();
+            }
+        }
+        catch(InterruptedException intEx)
+        {
+            //shouldn't be interrupted
+            LOG.fatal("Interrupted during termination!!");
+            LOG.fatal(intEx);
+        }
+        finally
+        {
+            //Eventually, close all sockets freeing their ports
+            for(DatagramSocket udpSocket : openSockets)
+            {
+                udpSocket.close();
+            }
+        }
+    }
+    
+    /**
+     * This method puts the server in waiting for client connections. It returns
+     * when the expected number of clients have successfully completed the 
+     * handshake.
+     * Parallel threads are started to handle the handshakes.
+     * In case of failure, all threads are interrupted and then the exception is
+     * propagated.
+     * 
+     * @throws IOException In case of failure on opening the ServerSocket and 
+     * accepting connections through it 
+     * @throws InterruptedException In case of failure during the handshake 
+     * sessions
+     */
+    private void handshakePhase() throws IOException, InterruptedException
     {
         ServerSocket tcpServerSocket = new ServerSocket(tcpPort);
         
         CyclicBarrier barrier = new CyclicBarrier(this.clientsNumber);
         CountDownLatch latch = new CountDownLatch(this.clientsNumber);
 
+        //Each session of the protocol starts with a different random frame number
         int firstFrameNumber = (new Random()).nextInt(1000) + 100;
 
+        Thread[] handshakeSessions = new Thread[clientsNumber];
+        
         for(int i = 0; i < clientsNumber; i++)
         {
             Socket tcpConnectionSocket = tcpServerSocket.accept();
             LOG.info("Connection " + i + " accepted from " +  tcpConnectionSocket.getInetAddress().getHostAddress());
-            Thread handshake = new Thread(() -> clientHandshake(tcpConnectionSocket, firstFrameNumber, barrier, latch, this));
-            handshake.start();                
+            handshakeSessions[i] = new Thread(() -> serverHandshakeProtocol(tcpConnectionSocket, firstFrameNumber, barrier, latch, this));
+            handshakeSessions[i].start();                
         }
-        latch.await();
+        try{        
+            latch.await();
+        } catch(InterruptedException inEx) {
+            for( Thread handshakeSession : handshakeSessions)
+                handshakeSession.interrupt();
+            
+            for( Thread handshakeSession : handshakeSessions)
+                handshakeSession.join();
+            
+            throw new InterruptedException();
+        }        
         LOG.info("All handshakes completed");
     }
     
-    private void clientHandshake(Socket tcpSocket, int firstFrameNumber, CyclicBarrier barrier, CountDownLatch latch, LockstepServer server)
+    /**
+     * Implements the handshake protocol server side, setting up the UDP 
+     * connection, queues and threads for a specific client.
+     * To be run in parallel threads, one for each client, as they need
+     * to synchronize to correctly setup the lockstep protocol.
+     * It signals success through a latch or failure through interruption to the
+     * server thread.
+     * 
+     * @param tcpSocket Connection with the client, to be used in handshake only
+     * @param firstFrameNumber Frame number to initialize the lockstep protocol
+     * @param barrier Used for synchronization with concurrent handshake sessions
+     * @param latch Used to signal the successful completion of the handshake session.
+     * @param server Used to signal failure of the handshake sessions, via interruption.
+     */
+    private void serverHandshakeProtocol(Socket tcpSocket, int firstFrameNumber, CyclicBarrier barrier, CountDownLatch latch, LockstepServer server)
     {
         LOG.debug("ClientHandshake started");
         try(ObjectOutputStream oout = new ObjectOutputStream(tcpSocket.getOutputStream());)
@@ -269,7 +334,7 @@ public class LockstepServer extends LockstepCoreThread
             LOG.debug("oout flushed");
             try(ObjectInputStream oin = new ObjectInputStream(tcpSocket.getInputStream());)
             {
-                //Receive hello message from client and replyess());
+                //Receive hello message from client and reply
                 LOG.info("Waiting an hello from " + tcpSocket.getInetAddress().getHostAddress());
                 oout.flush();
                 ClientHello hello = (ClientHello) oin.readObject();
@@ -318,11 +383,16 @@ public class LockstepServer extends LockstepCoreThread
                 //Continue with execution
                 latch.countDown();
             }
-        } catch (Exception ex)
+        } 
+        catch (IOException | ClassNotFoundException ioEx)
         {
             LOG.fatal("Exception at clientHandshake");
-            LOG.fatal(ex);
+            LOG.fatal(ioEx);
             server.interrupt();
+        }
+        catch (InterruptedException | BrokenBarrierException inEx)
+        {
+            //Interruptions come from failure in parallel handshake sessions, and signal termination
         }            
     }
     
@@ -378,7 +448,7 @@ public class LockstepServer extends LockstepCoreThread
         
     }
     
-    private Map<Integer, FrameInput> collectCommands()
+    private Map<Integer, FrameInput> collectFrameInputs()
     {        
         Map<Integer, FrameInput> nextCommands = new TreeMap<>();
         boolean foundFirstFrame = false;
@@ -402,7 +472,7 @@ public class LockstepServer extends LockstepCoreThread
         return nextCommands;
     }
     
-    private void distributeCommands(Map<Integer, FrameInput> nextFrameInputs)
+    private void forwardFrameInputs(Map<Integer, FrameInput> nextFrameInputs)
     {
         //For each command
         for(Entry<Integer, FrameInput> frameEntry : nextFrameInputs.entrySet())
@@ -447,6 +517,9 @@ public class LockstepServer extends LockstepCoreThread
     {
     }
     
+    /**
+     * TO REMOVE
+     */
     public void debugSimulation()
     {
         
@@ -468,17 +541,28 @@ public class LockstepServer extends LockstepCoreThread
         }
     }
 
+    /**
+     * First step of a client disconnection.
+     * The transmitting queues are removed as no other frame needs to be sent
+     * to the disconnected client.
+     * @param nodeID ID of the disconnected client
+     */
     @Override
     public void disconnectTransmittingQueues(int nodeID)
     {
-        this.transmissionFrameQueueTree.remove(nodeID);
+        transmissionFrameQueueTree.remove(nodeID);
         LOG.info("Disconnected transmission queues for " + nodeID);
     }
     
+    /**
+     * Second step of a client disconnection.
+     * After the last frame has been forwarded, the receiving queue is cleaned.
+     * @param nodeID ID of the disconnected client
+     */    
     @Override
     void disconnectReceivingQueues(int nodeID)
-    {
-        this.receivingQueues.remove(nodeID);
+    { 
+       receivingQueues.remove(nodeID);
         LOG.info("Disconnected receiving queue for " + nodeID);
         
         clientsNumber--;
@@ -488,6 +572,9 @@ public class LockstepServer extends LockstepCoreThread
             this.interrupt();
     }
 
+    /**
+     * Forces the server to free its resources and stop.
+     */
     @Override
     public void abort()
     {

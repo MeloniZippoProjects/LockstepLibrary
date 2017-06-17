@@ -8,13 +8,12 @@ package xeviousvs.server;
 import java.util.Random;
 import lockstep.LockstepServer;
 import org.apache.log4j.Logger;
-import xeviousvs.Comando;
 
 /**
  *
  * @author Raff
  */
-public class XeviousVSLockstepServer extends LockstepServer<Comando>
+public class XeviousVSLockstepServer extends LockstepServer
 {
     private int serverID;
     private String serverAddress;

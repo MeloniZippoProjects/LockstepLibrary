@@ -34,3 +34,135 @@
   <descrizioneEvento>Applicazione chiusa</descrizioneEvento>
 </xeviousvs.client.LogEventoXml>
 
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:40:22.65</timestampEvento>
+  <descrizioneEvento>ApplicazioneAvviata</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:40:27.098</timestampEvento>
+  <descrizioneEvento>ApplicazioneAvviata</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:40:38.585</timestampEvento>
+  <descrizioneEvento>Username inserito</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:40:41.612</timestampEvento>
+  <descrizioneEvento>Username inserito</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:40:44.238</timestampEvento>
+  <descrizioneEvento>Pulsante Gioca! premuto</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:40:46.481</timestampEvento>
+  <descrizioneEvento>Pulsante Gioca! premuto</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:40:51.853</timestampEvento>
+  <descrizioneEvento>Partita interrotta per disconnessione</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:40:51.853</timestampEvento>
+  <descrizioneEvento>Partita interrotta per disconnessione</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:41:06.055</timestampEvento>
+  <descrizioneEvento>Applicazione chiusa</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:41:07.452</timestampEvento>
+  <descrizioneEvento>Applicazione chiusa</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:44:24.536</timestampEvento>
+  <descrizioneEvento>ApplicazioneAvviata</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:44:39.398</timestampEvento>
+  <descrizioneEvento>ApplicazioneAvviata</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:44:54.543</timestampEvento>
+  <descrizioneEvento>Username inserito</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:44:57.803</timestampEvento>
+  <descrizioneEvento>Username inserito</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:45:01.655</timestampEvento>
+  <descrizioneEvento>Pulsante Gioca! premuto</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:45:05.641</timestampEvento>
+  <descrizioneEvento>Pulsante Gioca! premuto</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:45:06.017</timestampEvento>
+  <descrizioneEvento>Partita avviata</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:45:06.022</timestampEvento>
+  <descrizioneEvento>Partita avviata</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:46:02.877</timestampEvento>
+  <descrizioneEvento>Partita terminata</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:46:02.919</timestampEvento>
+  <descrizioneEvento>Partita interrotta per disconnessione</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:46:57.06</timestampEvento>
+  <descrizioneEvento>Applicazione chiusa</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+
+<xeviousvs.LogEventoXml>
+  <indirizzoIP>192.168.137.1</indirizzoIP>
+  <timestampEvento>2017-06-17 12:46:58.366</timestampEvento>
+  <descrizioneEvento>Applicazione chiusa</descrizioneEvento>
+</xeviousvs.LogEventoXml>
+

@@ -1,4 +1,4 @@
-package xeviousvs.client;
+package xeviousvs.client.gioco;
 
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;

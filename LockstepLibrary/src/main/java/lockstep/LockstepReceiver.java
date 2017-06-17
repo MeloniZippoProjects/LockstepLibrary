@@ -8,12 +8,10 @@ package lockstep;
 import lockstep.messages.simulation.InputMessageArray;
 import lockstep.messages.simulation.InputMessage;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.PortUnreachableException;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 import lockstep.messages.simulation.DisconnectionSignal;
@@ -175,25 +173,32 @@ public class LockstepReceiver extends Thread
                     messageSwitch(obj);
                 }
             }
-            catch(SocketTimeoutException | SocketException  disconnectionException)
+            catch(IOException  disconnectionException)
             {
+                LOG.info("Receiver entering termination phase: disconnection detected");
+                dgramSocket.close();
                 signalDisconnection();
                 handleDisconnection(receiverID);
+                LOG.info("Receiver terminated");
+                return;
+            }
+            catch(ClassNotFoundException invalidMessageEx)
+            {
+                LOG.info("Receiver entering termination phase: invalid message received");
+                signalDisconnection();
+                handleDisconnection(receiverID);
+                LOG.info("Receiver terminated");
                 return;
             }
             catch(InterruptedException intEx)
             {
-                LOG.info("Receiver disconnected");
+                LOG.info("Receiver disconnected: interruption received");
                 return;
-            }
-            catch(Exception ex)
-            {
-                ex.printStackTrace();
             }
         }
     }
     
-    private void messageSwitch(Object obj) throws Exception
+    private void messageSwitch(Object obj) throws ClassNotFoundException
     {
         if(obj instanceof InputMessage)
         {
@@ -216,7 +221,7 @@ public class LockstepReceiver extends Thread
         }
         else 
         {
-            throw(new Exception("Unrecognized message received"));
+            throw new ClassNotFoundException("Unrecognized message received");
         }
     }
     

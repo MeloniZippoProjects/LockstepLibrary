@@ -1,4 +1,4 @@
-package xeviousvs.client;
+package xeviousvs.client.gioco;
 
 public enum StatoPartita {
 

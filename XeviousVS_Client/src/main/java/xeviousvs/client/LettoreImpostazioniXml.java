@@ -67,16 +67,12 @@ public class LettoreImpostazioniXml {
     private static ImpostazioniXml deserializzaImpostazioniXml(String impostazioniXmlSerializzate) {
         XStream xs = new XStream();
         xs.setMode(XStream.NO_REFERENCES);
-        xs.useAttributeFor(PortaAscoltoClient.class, "portaMinima");
-        xs.useAttributeFor(PortaAscoltoClient.class, "portaMassima");
         return (ImpostazioniXml) xs.fromXML(impostazioniXmlSerializzate);
     }
 
     private static void scriviImpostazioniDefault() {
         XStream xs = new XStream();
         xs.setMode(XStream.NO_REFERENCES);
-        xs.useAttributeFor(PortaAscoltoClient.class, "portaMinima");
-        xs.useAttributeFor(PortaAscoltoClient.class, "portaMassima");
         String x = xs.toXML(impostazioniDefault);
 
         try {

@@ -1,4 +1,4 @@
-package xeviousvs.client;
+package xeviousvs.client.gioco;
 
 import java.util.*;
 import javafx.geometry.Insets;

@@ -1,7 +1,9 @@
-package xeviousvs.client;
+package xeviousvs.client.gioco;
 
 import xeviousvs.Comando;
 import xeviousvs.Comando.EnumComando;
+import xeviousvs.client.LoggerEventoXml;
+import xeviousvs.client.XeviousVS_Client;
 
 public class ModelloGioco implements java.io.Serializable {
 
@@ -10,7 +12,7 @@ public class ModelloGioco implements java.io.Serializable {
     private String usernameAvversario;
 
     private StatoPartita statoPartita;
-    protected VistaGioco vistaGioco;
+    public VistaGioco vistaGioco;
     private final XeviousVS_Client interfaccia;
     public final static int massimoVite = 5;
 
@@ -42,22 +44,22 @@ public class ModelloGioco implements java.io.Serializable {
             case InAttesaUtenti:
                 if (inputCmd.comando == EnumComando.Fuoco) {
                     this.statoPartita = StatoPartita.InAttesaAvversario;
-                    this.interfaccia.impostaMessaggio(XeviousVS_Client.messaggioAttesaAvversario.replace(XeviousVS_Client.segnapostoSostituizioniMessaggi, usernameAvversario));
+                    this.interfaccia.impostaMessaggio(XeviousVS_Client.MSG_ATTESA_AVVERSARIO.replace(XeviousVS_Client.MSG_PLACEHOLDER, usernameAvversario));
                 }
                 break;
             case InAttesaGiocatore:
                 if (inputCmd.comando == EnumComando.Fuoco) {
                     this.statoPartita = StatoPartita.Attiva;
-                    this.interfaccia.impostaMessaggio(XeviousVS_Client.messaggioPartitaInCorso);
+                    this.interfaccia.impostaMessaggio(XeviousVS_Client.MSG_PARTITA_IN_CORSO);
                     this.vistaGioco.eseguiAnimazioni();
                 }
                 break;
             case InPausaDaGiocatore:
                 if (inputCmd.comando == EnumComando.Fuoco) {
                     this.statoPartita = StatoPartita.Attiva;
-                    this.interfaccia.impostaMessaggio(XeviousVS_Client.messaggioPartitaInCorso);
+                    this.interfaccia.impostaMessaggio(XeviousVS_Client.MSG_PARTITA_IN_CORSO);
                     this.vistaGioco.eseguiAnimazioni();
-                    LoggerEventoXml.registraEvento(LoggerEventoXml.descrizioneEventoRipresaPartita);
+                    LoggerEventoXml.registraEvento(LoggerEventoXml.LOG_PARTITA_RIPRESA);
                 }
                 break;
             case Attiva:
@@ -75,14 +77,14 @@ public class ModelloGioco implements java.io.Serializable {
             case InAttesaAvversario:
                 if (inputCmd.comando == EnumComando.Fuoco) {
                     this.statoPartita = StatoPartita.Attiva;
-                    this.interfaccia.impostaMessaggio(XeviousVS_Client.messaggioPartitaInCorso);
+                    this.interfaccia.impostaMessaggio(XeviousVS_Client.MSG_PARTITA_IN_CORSO);
                     this.vistaGioco.eseguiAnimazioni();
                 }
                 break;
             case InPausaDaAvversario:
                 if (inputCmd.comando == EnumComando.Fuoco) {
                     this.statoPartita = StatoPartita.Attiva;
-                    this.interfaccia.impostaMessaggio(XeviousVS_Client.messaggioPartitaInCorso);
+                    this.interfaccia.impostaMessaggio(XeviousVS_Client.MSG_PARTITA_IN_CORSO);
                     this.vistaGioco.eseguiAnimazioni();
                 }
                 break;
@@ -112,12 +114,12 @@ public class ModelloGioco implements java.io.Serializable {
             case Pausa:
                 if (fazione == Fazione.Giocatore) {
                     this.statoPartita = StatoPartita.InPausaDaGiocatore;
-                    this.interfaccia.impostaMessaggio(XeviousVS_Client.messaggioPartitaInPausaGiocatore);
+                    this.interfaccia.impostaMessaggio(XeviousVS_Client.MSG_PARTITA_IN_PAUSA_GIOCATORE);
                     this.vistaGioco.sospendiAnimazioni();
-                    LoggerEventoXml.registraEvento(LoggerEventoXml.descrizioneEventoPausaPartita);
+                    LoggerEventoXml.registraEvento(LoggerEventoXml.LOG_PARTITA_PAUSA);
                 } else {
                     this.statoPartita = StatoPartita.InPausaDaAvversario;
-                    this.interfaccia.impostaMessaggio(XeviousVS_Client.messaggioPartitaInPausaAvversario.replace(XeviousVS_Client.segnapostoSostituizioniMessaggi, usernameAvversario));
+                    this.interfaccia.impostaMessaggio(XeviousVS_Client.MSG_PARTITA_IN_PAUSA_AVVERSARIO.replace(XeviousVS_Client.MSG_PLACEHOLDER, usernameAvversario));
                     this.vistaGioco.sospendiAnimazioni();
                 }
         }
@@ -165,24 +167,21 @@ public class ModelloGioco implements java.io.Serializable {
 
     public synchronized void avviaPartita() {
         this.statoPartita = StatoPartita.InAttesaUtenti;
-        this.interfaccia.impostaMessaggio(XeviousVS_Client.messaggioPartitaPronta.replace(XeviousVS_Client.segnapostoSostituizioniMessaggi, usernameAvversario));
-        LoggerEventoXml.registraEvento(LoggerEventoXml.descrizioneEventoAvvioPartita);
+        this.interfaccia.impostaMessaggio(XeviousVS_Client.MSG_PARTITA_PRONTA.replace(XeviousVS_Client.MSG_PLACEHOLDER, usernameAvversario));
+        LoggerEventoXml.registraEvento(LoggerEventoXml.LOG_PARTITA_AVVIATA);
     }
 
     public synchronized void interrompiPartita() {
         this.vistaGioco.sospendiAnimazioni();
-        //this.statoPartita = StatoPartita.InAttesaRecuperoConnessione;
-        LoggerEventoXml.registraEvento(LoggerEventoXml.descrizioneEventoInterruzionePartita);
-        //this.interfaccia.impostaRecuperoPartita();
     }
 
     private synchronized void terminaPartita(boolean vittoria) {
         this.vistaGioco.sospendiAnimazioni();
         this.statoPartita = StatoPartita.Inattiva;
         if (vittoria) {
-            this.interfaccia.impostaMessaggio(XeviousVS_Client.messaggioVittoria.replace(XeviousVS_Client.segnapostoSostituizioniMessaggi, usernameAvversario));
+            this.interfaccia.impostaMessaggio(XeviousVS_Client.MSG_VITTORIA.replace(XeviousVS_Client.MSG_PLACEHOLDER, usernameAvversario));
         } else {
-            this.interfaccia.impostaMessaggio(XeviousVS_Client.messaggioSconfitta.replace(XeviousVS_Client.segnapostoSostituizioniMessaggi, usernameAvversario));
+            this.interfaccia.impostaMessaggio(XeviousVS_Client.MSG_SCONFITTA.replace(XeviousVS_Client.MSG_PLACEHOLDER, usernameAvversario));
         }
         this.interfaccia.impostaTerminazionePartita(vittoria);
     }

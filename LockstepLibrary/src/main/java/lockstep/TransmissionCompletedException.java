@@ -3,11 +3,15 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package lockstep.messages.simulation;
+package lockstep;
 
-import java.io.Externalizable;
+import java.io.IOException;
 
-public interface LockstepCommand extends Externalizable
+/**
+ *
+ * @author Raff
+ */
+public class TransmissionCompletedException extends IOException
 {
     
 }

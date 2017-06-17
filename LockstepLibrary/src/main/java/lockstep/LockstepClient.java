@@ -32,6 +32,7 @@ public class LockstepClient extends LockstepCoreThread
     int currentUserFrame;
     int frameExecutionDistance;
     int hostID;
+    
     ConcurrentSkipListMap<Integer, ClientReceivingQueue> executionFrameQueues; 
     TransmissionQueue transmissionFrameQueue;
     
@@ -143,8 +144,6 @@ public class LockstepClient extends LockstepCoreThread
         
         while(true)
         {
-            //check if thread was interrupted
-            
             try
             {
                 if(Thread.interrupted())
@@ -155,9 +154,9 @@ public class LockstepClient extends LockstepCoreThread
                 currentExecutionFrame++;
                 Thread.sleep(1000/framerate);
             }
-            catch(InterruptedException e)
+            catch(InterruptedException intEx)
             {
-                networkShutdown();
+                otherNetworkShutdown();
                 return;
             }           
         }
@@ -364,6 +363,24 @@ public class LockstepClient extends LockstepCoreThread
         LOG.info("Disconnected receiving queue for " + nodeID);
         
         lockstepApplication.signalDisconnection(clientsNumber);
+    }
+    
+    void otherNetworkShutdown()
+    {
+        transmitter.interrupt();
+        
+        try
+        {
+            receiver.join();
+            transmitter.join();
+        }
+        catch(InterruptedException intEx)
+        {
+           //you should not get interrupted here:
+           //what to do? retry joining or just ignore?
+           LOG.fatal("Interrupted during termination!!");
+           LOG.fatal(intEx);
+        }
     }
     
     void networkShutdown()
