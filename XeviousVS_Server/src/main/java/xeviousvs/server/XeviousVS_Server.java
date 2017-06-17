@@ -46,12 +46,12 @@ public class XeviousVS_Server
         
         LOG.debug("Server started, command line parsed");
         
-        Thread thread = new Thread(new XeviousVSLockstepServer(serverAddress, serverPort, tickrate));
-        thread.setName("Main-server-thread");
-        thread.start();
+        XeviousVSLockstepServer lockstepServer =new XeviousVSLockstepServer(serverAddress, serverPort, tickrate);
+        lockstepServer.setName("Main-server-thread");
+        lockstepServer.start();
         
         try {     
-            thread.join();
+            lockstepServer.join();
         } catch (InterruptedException ex) {
             LOG.error("Server interrupted while joining");
         }

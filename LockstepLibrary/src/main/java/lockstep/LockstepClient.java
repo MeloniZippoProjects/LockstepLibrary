@@ -32,6 +32,8 @@ public class LockstepClient extends LockstepCoreThread
     int currentUserFrame;
     int frameExecutionDistance;
     int hostID;
+    boolean terminationPhase = false;
+    
     ConcurrentSkipListMap<Integer, ClientReceivingQueue> executionFrameQueues; 
     TransmissionQueue transmissionFrameQueue;
     
