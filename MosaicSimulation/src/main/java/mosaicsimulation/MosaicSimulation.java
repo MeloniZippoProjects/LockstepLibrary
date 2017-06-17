@@ -103,7 +103,7 @@ public class MosaicSimulation extends Application
                 .columns(columns)
                 .clientColor(clientColor)
                 .currentFPSLabel(currentFPSLabel)
-                .currentFrameLabel(currentFPSLabel)
+                .currentFrameLabel(currentFrameLabel)
                 .abortOnDisconnect(abortOnDisconnect)
                 .fillSize(fillSize)
                 .build();

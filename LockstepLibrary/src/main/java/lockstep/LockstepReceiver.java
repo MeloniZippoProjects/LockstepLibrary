@@ -45,13 +45,41 @@ public class LockstepReceiver extends Thread
             Map<Integer, TransmissionQueue> transmissionQueues, 
             String name, int ownID, ACKQueue ackQueue)
     {
-        dgramSocket = socket;
-        this.coreThread = coreThread;
-        this.receivingQueues = receivingQueues;
-        this.transmissionQueues = transmissionQueues;
-        this.name = name;
-        this.receiverID = ownID;
-        this.ackQueue = ackQueue;
+        
+        if(socket.isClosed())
+            throw new IllegalArgumentException("Socket is closed");
+        else
+            this.dgramSocket = socket;
+        
+        if(coreThread == null)
+            throw new IllegalArgumentException("Core Thread cannot be null");
+        else
+            this.coreThread = coreThread;
+        
+        if(receivingQueues == null)
+            throw new IllegalArgumentException("Receiving Queues Map cannot be null");
+        else
+            this.receivingQueues = receivingQueues;
+        
+        if(transmissionQueues == null)
+            throw new IllegalArgumentException("Transmission Queues Map cannot be null");
+        else
+            this.transmissionQueues = transmissionQueues;
+        
+        if(ownID < 0)
+            throw new IllegalArgumentException("Receiver id cannot be negative");
+        else
+            this.receiverID = ownID;
+        
+        if(name != null)
+            this.name = name;
+        else
+            this.name = "Receiver-"+ownID;
+        
+        if(ackQueue == null)
+            throw new IllegalArgumentException("Ack Queue cannot be null");
+        else
+            this.ackQueue = ackQueue;
     }
 
     public static class Builder {

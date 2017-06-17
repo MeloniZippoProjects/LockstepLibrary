@@ -125,9 +125,18 @@ public class LockstepServer extends LockstepCoreThread
     
     public LockstepServer(int tcpPort, int clientsNumber, int tickrate)
     {
+        //late fail left to Socket class
         this.tcpPort = tcpPort;
-        this.clientsNumber = clientsNumber;
-        this.tickrate = tickrate;
+        
+        if(clientsNumber <= 1)
+            throw new IllegalArgumentException("clientsNumber must be at least 2");
+        else
+            this.clientsNumber = clientsNumber;
+        
+        if(tickrate <= 0)
+            throw new IllegalArgumentException("Tickrate must be an integer greater than 0");
+        else
+            this.tickrate = tickrate;
         
         receivers = new HashMap<>();
         transmitters = new HashMap<>();
@@ -323,7 +332,20 @@ public class LockstepServer extends LockstepCoreThread
         this.receivingQueues.put(clientID, receivingQueue);
         HashMap<Integer,ReceivingQueue> receivingQueueWrapper = new HashMap<>();
         receivingQueueWrapper.put(clientID, receivingQueue);
-        LockstepReceiver receiver = new LockstepReceiver(clientUDPSocket, this, receivingQueueWrapper, transmissionFrameQueues, "Receiver-from-"+clientID, clientID,ackQueues.get(clientID));
+        //LockstepReceiver receiver = new LockstepReceiver(clientUDPSocket, this, receivingQueueWrapper, transmissionFrameQueues, "Receiver-from-"+clientID, clientID,ackQueues.get(clientID));
+        
+        LOG.info("Receiver AckQueue("+clientID+"): " + ackQueues.get(clientID));
+        
+        LockstepReceiver receiver = LockstepReceiver.builder()
+                .dgramSocket(clientUDPSocket)
+                .coreThread(this)
+                .receiverID(clientID)
+                .receivingQueues(receivingQueueWrapper)
+                .transmissionQueues(transmissionFrameQueues)
+                .name("Receiver-from-"+clientID)
+                .ackQueue(ackQueues.get(clientID))
+                .build();
+        
         receivers.put(clientID, receiver);
         receiver.start();
     }
@@ -338,7 +360,19 @@ public class LockstepServer extends LockstepCoreThread
                 clientTransmissionFrameQueues.put(hostID, transmissionFrameQueue);
             }
         }
-        LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, tickrate, 0, clientTransmissionFrameQueues, "Transmitter-to-"+clientID, ackQueues.get(clientID));
+        //LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, tickrate, 0, clientTransmissionFrameQueues, "Transmitter-to-"+clientID, ackQueues.get(clientID));
+
+        LOG.info("Transmitter AckQueue("+clientID+"): " + ackQueues.get(clientID));
+        
+        LockstepTransmitter transmitter = LockstepTransmitter.builder()
+                .dgramSocket(udpSocket)
+                .tickrate(tickrate)
+                .keepAliveTimeout(0)
+                .transmissionQueues(clientTransmissionFrameQueues)
+                .name("Transmitter-to-"+clientID)
+                .ackQueue(ackQueues.get(clientID))
+                .build();
+        
         transmitters.put(clientID, transmitter);
         transmitter.start();
         

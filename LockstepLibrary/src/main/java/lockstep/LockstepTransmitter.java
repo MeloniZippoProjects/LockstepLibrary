@@ -93,12 +93,34 @@ public class LockstepTransmitter extends Thread
     
     public LockstepTransmitter(DatagramSocket socket, int tickrate, int keepAliveTimeout, Map<Integer, TransmissionQueue> transmissionQueues, String name, ACKQueue ackQueue)
     {
-        this.dgramSocket = socket;
-        this.tickrate = tickrate;
+        if(socket.isClosed())
+            throw new IllegalArgumentException("Socket is closed");
+        else
+            this.dgramSocket = socket;
+        
+        if(tickrate <= 0)
+            throw new IllegalArgumentException("Tickrate must be an integer greater than 0");
+        else
+            this.tickrate = tickrate;
+        
+        
+        if(transmissionQueues == null)
+            throw new IllegalArgumentException("Transmission Queues Map cannot be null");
+        else
+            this.transmissionQueues = transmissionQueues;
+        
+        if(name != null)
+            this.name = name;
+        else
+            this.name = "Transmitter";
+        
+        if(ackQueue == null)
+            throw new IllegalArgumentException("Ack Queue cannot be null");
+        else
+            this.ackQueue = ackQueue;
+        
+        
         this.interTransmissionTimeout = 3*(1000/tickrate);
-        this.transmissionQueues = transmissionQueues;
-        this.name = name;
-        this.ackQueue = ackQueue;
         
         if(keepAliveTimeout <= 0)
         {
