@@ -40,7 +40,12 @@ public class MosaicLockstepServer {
         int nClients = Integer.parseInt(commandLine.getOptionValue("nClients"));
         int tickrate = Integer.parseInt(commandLine.getOptionValue("tickrate"));
         
-        Thread serverThread = new LockstepServer(serverPort, nClients, tickrate);
+        Thread serverThread = LockstepServer.builder()
+                .clientsNumber(nClients)
+                .tcpPort(serverPort)
+                .tickrate(tickrate)
+                .build();
+        
         serverThread.setName("Main-server-thread");
         serverThread.start();
         

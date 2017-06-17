@@ -95,11 +95,22 @@ public class MosaicSimulation extends Application
         Label currentFPSLabel = (Label) scene.lookup("#frameRate");
         
         LOG.debug("Creation of lockstep client");
-        MosaicLockstepClient mosaicLockstepClient = new MosaicLockstepClient(serverTCPAddress, framerate, tickrate, fillTimeout, fillSize, mosaic, rows, columns, clientColor, currentFrameLabel, currentFPSLabel, abortOnDisconnect);
+        //MosaicLockstepApplication mosaicLockstepClient = new MosaicLockstepApplication(mosaic, rows, columns, clientColor, currentFrameLabel, currentFPSLabel, abortOnDisconnect, fillSize);
         
-        LockstepClient lockstepClient = new LockstepClient(serverTCPAddress, framerate, tickrate, fillTimeout, mosaicLockstepClient);
+        MosaicLockstepApplication mosaicLockstepApplication = MosaicLockstepApplication.builder()
+                .mosaic(mosaic)
+                .rows(rows)
+                .columns(columns)
+                .clientColor(clientColor)
+                .currentFPSLabel(currentFPSLabel)
+                .currentFrameLabel(currentFPSLabel)
+                .abortOnDisconnect(abortOnDisconnect)
+                .fillSize(fillSize)
+                .build();
         
-        mosaicLockstepClient.setClientThread(lockstepClient);
+        LockstepClient lockstepClient = new LockstepClient(serverTCPAddress, framerate, tickrate, fillTimeout, mosaicLockstepApplication);
+        
+        mosaicLockstepApplication.setClientThread(lockstepClient);
         
         lockstepClient.setName("main-client-thread");
         lockstepClient.start();

@@ -23,17 +23,17 @@ import org.apache.logging.log4j.LogManager;
  *
  * @author enric
  */
-public class MosaicLockstepClient implements LockstepApplication {
+public class MosaicLockstepApplication implements LockstepApplication {
     private final Rectangle[][] mosaic;
     private final Color clientColor;
     private final int rows;
     private final int columns;
     private final Random rand;
     
-    private static final Logger LOG = LogManager.getLogger(MosaicLockstepClient.class);
-    private static final Logger logSim = LogManager.getLogger("Simulation");
-    private final Label currentFrameLabel;
     private final int fillSize;
+    
+    private static final Logger LOG = LogManager.getLogger(MosaicLockstepApplication.class);
+    private final Label currentFrameLabel;
     private final Label currentFPSLabel;
     long throughputTimer = System.currentTimeMillis(); 
     int throughputFramesProcessed = 0;
@@ -41,13 +41,11 @@ public class MosaicLockstepClient implements LockstepApplication {
     double throughputMeasureInterval = 20;
     double alpha = 0.125;
     private LockstepClient clientThread;
-    private boolean abortOnDisconnect;
+    private final boolean abortOnDisconnect;
     
-    public MosaicLockstepClient(InetSocketAddress serverTCPAddress, int framerate, int tickrate, int fillTimeout, int fillSize, Rectangle[][] mosaic, int rows, int columns, Color clientColor, Label currentFrameLabel, Label currentFPSLabel, boolean abortOnDisconnect) {
+    public MosaicLockstepApplication(Rectangle[][] mosaic, int rows, int columns, Color clientColor, Label currentFrameLabel, Label currentFPSLabel, boolean abortOnDisconnect, int fillsize) {
         //super(serverTCPAddress, framerate, tickrate, fillTimeout);
-        this.fillSize = fillSize;
-        
-        this.mosaic = mosaic;
+         this.mosaic = mosaic;
         this.clientColor = clientColor;
         this.rows = rows;
         this.columns = columns;
@@ -55,10 +53,94 @@ public class MosaicLockstepClient implements LockstepApplication {
         this.currentFPSLabel = currentFPSLabel;
         this.rand = new Random();
         this.abortOnDisconnect = abortOnDisconnect;
-        
-        logSim.log(Level.getLevel("SIMULATION"), "Prova simulazione");
+        this.fillSize = fillsize;
     }
 
+    public static class Builder {
+
+        private Rectangle[][] mosaic;
+        private Color clientColor;
+        private int rows;
+        private int columns;
+        private Random rand;
+        private int fillSize;
+        private Label currentFrameLabel;
+        private Label currentFPSLabel;
+        private long throughputTimer;
+        private int throughputFramesProcessed;
+        private double throughput;
+        private double throughputMeasureInterval;
+        private double alpha;
+        private LockstepClient clientThread;
+        private boolean abortOnDisconnect;
+
+        private Builder() {
+        }
+
+        public Builder mosaic(final Rectangle[][] value) {
+            this.mosaic = value;
+            return this;
+        }
+
+        public Builder clientColor(final Color value) {
+            this.clientColor = value;
+            return this;
+        }
+
+        public Builder rows(final int value) {
+            this.rows = value;
+            return this;
+        }
+
+        public Builder columns(final int value) {
+            this.columns = value;
+            return this;
+        }
+
+        public Builder rand(final Random value) {
+            this.rand = value;
+            return this;
+        }
+
+        public Builder fillSize(final int value) {
+            this.fillSize = value;
+            return this;
+        }
+
+        public Builder currentFrameLabel(final Label value) {
+            this.currentFrameLabel = value;
+            return this;
+        }
+
+        public Builder currentFPSLabel(final Label value) {
+            this.currentFPSLabel = value;
+            return this;
+        }
+
+        public Builder clientThread(final LockstepClient value) {
+            this.clientThread = value;
+            return this;
+        }
+
+        public Builder abortOnDisconnect(final boolean value) {
+            this.abortOnDisconnect = value;
+            return this;
+        }
+
+        public MosaicLockstepApplication build() {
+            //return new mosaicsimulation.MosaicLockstepApplication(mosaic, clientColor, rows, columns, rand, fillSize, currentFrameLabel, currentFPSLabel, throughputTimer, throughputFramesProcessed, throughput, throughputMeasureInterval, alpha, clientThread, abortOnDisconnect);
+            return new mosaicsimulation.MosaicLockstepApplication(mosaic, rows, 
+                    columns, clientColor, 
+                    currentFrameLabel, currentFPSLabel, 
+                    abortOnDisconnect, fillSize);
+        }
+    }
+
+    public static MosaicLockstepApplication.Builder builder() {
+        return new MosaicLockstepApplication.Builder();
+    }
+    
+    
     @Override
     public MosaicCommand readInput() {
         int row = rand.nextInt(rows);

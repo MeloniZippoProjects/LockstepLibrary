@@ -41,6 +41,49 @@ public class LockstepServer extends LockstepCoreThread
      * available, they're forwarded to all the clients
      */
     ConcurrentHashMap<Integer, ServerReceivingQueue> receivingQueues;
+
+    public static class Builder {
+
+        private ConcurrentSkipListSet<Integer> hostIDs;
+        private ConcurrentHashMap<Integer,ServerReceivingQueue> receivingQueues;
+        private ConcurrentHashMap<Integer,Map<Integer,TransmissionQueue>> transmissionFrameQueueTree;
+        private Map<Integer,ACKQueue> ackQueues;
+        private Map<Integer,Thread> receivers;
+        private Map<Integer,Thread> transmitters;
+        private Map<Integer,Boolean> executionQueuesHeadsAvailability;
+        private Semaphore executionSemaphore;
+        private int tcpPort;
+        private int clientsNumber;
+        private int tickrate;
+        private List<DatagramSocket> openSockets;
+
+        private Builder() {
+        }
+        
+        public Builder tcpPort(final int value) {
+            this.tcpPort = value;
+            return this;
+        }
+
+        public Builder clientsNumber(final int value) {
+            this.clientsNumber = value;
+            return this;
+        }
+
+        public Builder tickrate(final int value) {
+            this.tickrate = value;
+            return this;
+        }
+
+        public LockstepServer build() {
+            return new lockstep.LockstepServer(tcpPort, clientsNumber, tickrate);
+        }
+    }
+
+    public static LockstepServer.Builder builder() {
+        return new LockstepServer.Builder();
+    }
+    
     
     /**
      * Buffers for frame input to send to clients. 
