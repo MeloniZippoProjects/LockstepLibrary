@@ -1,4 +1,4 @@
-package xeviousvs.client;
+package xeviousvs.client.gioco;
 
 import javafx.geometry.Pos;
 import javafx.scene.image.*;

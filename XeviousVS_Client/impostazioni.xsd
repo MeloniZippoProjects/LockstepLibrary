@@ -16,16 +16,6 @@
 					</xs:complexType>
 				</xs:element>			
 				
-				<xs:element name="portaAscoltoClient">
-					<xs:complexType>
-						<xs:sequence>
-							<xs:element name="porta" type="xs:short"/>
-						</xs:sequence>
-						<xs:attribute name="portaMinima" type="xs:short"/>
-						<xs:attribute name="portaMassima" type="xs:short"/>
-					</xs:complexType>
-				</xs:element>
-
 				<xs:element name="indirizzoDatabase" type="IndirizzoServer"/>
 				<xs:element name="indirizzoServerLog" type="IndirizzoServer"/>
 				

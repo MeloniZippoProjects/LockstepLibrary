@@ -16,25 +16,24 @@ public class LoggerEventoXml {
 
     private static java.net.InetSocketAddress indirizzoServerLog;
 
-    private static final String percorsoFileXsd = "entrataLog.xsd";
+    private static final String XSD_PATH = "entrataLog.xsd";
 
-    public static final String descrizioneEventoAvvio = "ApplicazioneAvviata";
-    public static final String descrizioneEventoChiusura = "Applicazione chiusa";
+    public static final String LOG_AVVIO = "ApplicazioneAvviata";
+    public static final String LOG_CHIUSURA = "Applicazione chiusa";
 
-    public static final String descrizioneEventoUsername = "Username inserito";
-    public static final String descrizioneEventoBottone = "Pulsante - premuto";
+    public static final String LOG_USERNAME_INSERITO = "Username inserito";
+    public static final String LOG_BOTTONE = "Pulsante - premuto";
 
-    public static final String descrizioneEventoAvvioPartita = "Partita avviata";
-    public static final String descrizioneEventoTerminazionePartita = "Partita terminata";
+    public static final String LOG_SERVER_NON_VALIDO = "Handshake col server fallito";
+    public static final String LOG_PARTITA_AVVIATA = "Partita avviata";
+    public static final String LOG_PARTITA_CONCLUSA = "Partita terminata";
+    public static final String LOG_PARTITA_DISCONNESSA = "Partita interrotta per disconnessione";    
+    
+    public static final String LOG_PARTITA_PAUSA = "Partita messa in pausa";
+    public static final String LOG_PARTITA_RIPRESA = "Partita ripresa";
 
-    public static final String descrizioneEventoPausaPartita = "Partita messa in pausa";
-    public static final String descrizioneEventoRipresaPartita = "Partita ripresa";
-
-    public static final String descrizioneEventoInterruzionePartita = "Partita interrotta";
-    public static final String descrizioneEventoRecuperoPartita = "Partita recuperata";
-
-    public static final String descrizioneEventoAssociazioniTasti = "Caricate associazioni tasti personalizzate. Destra: - Sinistra: - Fuoco: - Pausa: -";
-    public static final String segnapostoDescrizione = "-";
+    public static final String LOG_ASSOCIAZIONI_TASTI = "Caricate associazioni tasti personalizzate. Destra: - Sinistra: - Fuoco: - Pausa: -";
+    public static final String LOG_PLACEHOLDER = "-";
 
     public static void impostaIndirizzoServerLog(String indirizzo, int porta)
     {
@@ -60,7 +59,7 @@ public class LoggerEventoXml {
             SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
 
             Document d = db.parse(new InputSource(new ByteArrayInputStream(logEventoSerializzato.getBytes("utf-8"))));
-            Schema s = sf.newSchema(new StreamSource( XeviousVS_Client.class.getClassLoader().getResource(percorsoFileXsd).openStream()));
+            Schema s = sf.newSchema(new StreamSource( XeviousVS_Client.class.getClassLoader().getResource(XSD_PATH).openStream()));
             s.newValidator().validate(new DOMSource(d));
         } catch (ParserConfigurationException | SAXException | IOException e) {
             if (e instanceof SAXException) {

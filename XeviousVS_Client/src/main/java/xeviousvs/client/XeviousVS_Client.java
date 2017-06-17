@@ -1,9 +1,9 @@
 package xeviousvs.client;
 
+import xeviousvs.client.gioco.ModelloGioco;
+import xeviousvs.client.gioco.VistaGioco;
 import java.net.InetSocketAddress;
 import java.text.DecimalFormat;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.application.*;
 import javafx.event.ActionEvent;
 import javafx.geometry.*;
@@ -13,6 +13,7 @@ import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+import lockstep.LockstepClient;
 import xeviousvs.Comando;
 import xeviousvs.Comando.EnumComando;
 
@@ -30,41 +31,44 @@ public class XeviousVS_Client extends Application
 
     private Comando comandoCorrente;
 
-    private XeviousLockstepClient lockstepClient;
-    private Thread lockstepClientThread;
+    private XeviousVSLockstepApplication lockstepApplication;
+    private LockstepClient lockstepClient;
 
-    private static final int paddingInterfaccia = 15;
-    private static final int altezzaContenitoreGioco = 500;
-    private static final int larghezzaContenitoreGioco = 800;
-    private static final int altezzaPulsante = 80;
-    private static final int larghezzaPulsante = 100;
-    private static final int paddingPulsante = 10;
+    private static final int PADDING_INTERFACCIA = 15;
+    private static final int ALTEZZA_CONTENITORE_GIOCO = 500;
+    private static final int LARGHEZZA_CONTENITORE_GIOCO = 800;
+    private static final int ALTEZZA_PULSANTE = 80;
+    private static final int LARGHEZZA_PULSANTE = 100;
+    private static final int PADDING_PULSANTE = 10;
 
     private int framerate;
     private int tickrate;
     private int delay;
     private int timeout;
 
-    private static final String testoTitolo = "XeviousVS";
-    private static final String testoEtichettaUsername = "Username";
-    private static final String testoVistaStatistiche = "Vittorie: -\nSconfitte: -\nPercentuale vittorie= - %";
-    private static final String testoBottoneGioca = "Gioca!";
-    private static final String testoBottoneAnnulla = "Annulla attesa";
+    private static final String TITOLO = "XeviousVS";
+    private static final String USERNAME_LABEL = "Username";
+    private static final String STAT_TESTO = "Vittorie: -\nSconfitte: -\nPercentuale vittorie= - %";
+    private static final String GIOCA_TESTO = "Gioca!";
+    private static final String ANNULLA_TESTO = "Annulla attesa";
 
-    private static final String segnapostoSostituizioniStatistiche = "-";
-    public static final String segnapostoSostituizioniMessaggi = "-?-";
+    private static final String STAT_PLACEHOLDER = "-";
+    public static final String MSG_PLACEHOLDER = "-?-";
 
-    public static final String messaggioRicercaPartita = "Ricerca nuova partita in corso...";
-    public static final String messaggioServerNonTrovato = "Nessun server disponibile trovato";
-    public static final String messaggioServerTrovato = "Server trovato, in attesa inizio partita...";
-    public static final String messaggioPartitaPronta = "Partita con -?- pronta, premi FUOCO per cominciare";
-    public static final String messaggioAttesaAvversario = "-?- non e' ancora pronto";
-    public static final String messaggioPartitaInCorso = "Partita in corso";
-    public static final String messaggioPartitaInPausaGiocatore = "Partita in pausa. Premi FUOCO per riprendere";
-    public static final String messaggioPartitaInPausaAvversario = "-?- ha messo in pausa la partita";
-    public static final String messaggioVittoria = "Hai vinto contro -?-! Premi Gioca! per cercare un altro avversario";
-    public static final String messaggioSconfitta = "-?- ha vinto... Premi Gioca! per cercare un altro avversario";
+    public static final String MSG_RICERCA_PARTITA = "Ricerca nuova partita in corso...";
+    public static final String MSG_SERVER_NON_TROVATO = "Nessun server disponibile trovato";
+    public static final String MSG_SERVER_TROVATO = "Server trovato, in attesa inizio partita...";
+    public static final String MSG_HANDSHAKE_FALLITO = "Errore di comunicazione col server, partita annullata";
+    public static final String MSG_PARTITA_PRONTA = "Partita con -?- pronta, premi FUOCO per cominciare";
+    public static final String MSG_ATTESA_AVVERSARIO = "-?- non e' ancora pronto";
+    public static final String MSG_PARTITA_IN_CORSO = "Partita in corso";
+    public static final String MSG_PARTITA_IN_PAUSA_GIOCATORE = "Partita in pausa. Premi FUOCO per riprendere";
+    public static final String MSG_PARTITA_IN_PAUSA_AVVERSARIO = "-?- ha messo in pausa la partita";
+    public static final String MSG_DISCONNESIONE_PARTITA = "Connessione persa, partita annullata";
+    public static final String MSG_VITTORIA = "Hai vinto contro -?-! Premi Gioca! per cercare un altro avversario";
+    public static final String MSG_SCONFITTA = "-?- ha vinto... Premi Gioca! per cercare un altro avversario";
 
+    @Override
     public void start(Stage primaryStage)
     {
         VBox root = costruisciInterfaccia();
@@ -80,7 +84,7 @@ public class XeviousVS_Client extends Application
         this.campoInputUsername.setOnAction((ActionEvent ev) ->
         {
             this.registraUtente(this.campoInputUsername.getText());
-            LoggerEventoXml.registraEvento(LoggerEventoXml.descrizioneEventoUsername);
+            LoggerEventoXml.registraEvento(LoggerEventoXml.LOG_USERNAME_INSERITO);
         });
 
         Scene scene = new Scene(root);
@@ -93,10 +97,10 @@ public class XeviousVS_Client extends Application
         {
             if (lockstepClient != null)
             {
-                lockstepClientThread.interrupt();
+                lockstepClient.abort();
                 try
                 {
-                    lockstepClientThread.join(1500);
+                    lockstepClient.join(1500);
                 }
                 catch (InterruptedException ex)
                 {
@@ -104,11 +108,11 @@ public class XeviousVS_Client extends Application
                 }
             }
 
-            LoggerEventoXml.registraEvento(LoggerEventoXml.descrizioneEventoChiusura);
+            LoggerEventoXml.registraEvento(LoggerEventoXml.LOG_CHIUSURA);
             Platform.exit();
         });
 
-        primaryStage.setTitle(XeviousVS_Client.testoTitolo);
+        primaryStage.setTitle(XeviousVS_Client.TITOLO);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -117,7 +121,6 @@ public class XeviousVS_Client extends Application
     {
         ImpostazioniXml impostazioniXml = LettoreImpostazioniXml.leggiImpostazioni();
         this.associazioneTasti = impostazioniXml.associazioniTasti;
-        //this.ricercatorePartita = new RicercatoreAvversario(impostazioniXml.portaAscoltoClient.porta, this, this.modelloGioco);
         LoggerEventoXml.impostaIndirizzoServerLog(impostazioniXml.indirizzoServerLog.indirizzoIP, impostazioniXml.indirizzoServerLog.porta);
         OperazioniDatabaseClient.impostaIndirizzoDatabase(impostazioniXml.indirizzoDatabase.indirizzoIP, impostazioniXml.indirizzoDatabase.porta);
 
@@ -125,14 +128,14 @@ public class XeviousVS_Client extends Application
         delay = impostazioniXml.delay;
         framerate = impostazioniXml.framerate;
 
-        LoggerEventoXml.registraEvento(LoggerEventoXml.descrizioneEventoAvvio);
+        LoggerEventoXml.registraEvento(LoggerEventoXml.LOG_AVVIO);
 
         if (!impostazioniXml.associazioniTasti.equals(LettoreImpostazioniXml.impostazioniDefault.associazioniTasti))
         {
-            String descrizioneEvento = LoggerEventoXml.descrizioneEventoAssociazioniTasti.replaceFirst(LoggerEventoXml.segnapostoDescrizione, impostazioniXml.associazioniTasti.tastoDestra.getName());
-            descrizioneEvento = descrizioneEvento.replaceFirst(LoggerEventoXml.segnapostoDescrizione, impostazioniXml.associazioniTasti.tastoSinistra.getName());
-            descrizioneEvento = descrizioneEvento.replaceFirst(LoggerEventoXml.segnapostoDescrizione, impostazioniXml.associazioniTasti.tastoFuoco.getName());
-            descrizioneEvento = descrizioneEvento.replaceFirst(LoggerEventoXml.segnapostoDescrizione, impostazioniXml.associazioniTasti.tastoPausa.getName());
+            String descrizioneEvento = LoggerEventoXml.LOG_ASSOCIAZIONI_TASTI.replaceFirst(LoggerEventoXml.LOG_PLACEHOLDER, impostazioniXml.associazioniTasti.tastoDestra.getName());
+            descrizioneEvento = descrizioneEvento.replaceFirst(LoggerEventoXml.LOG_PLACEHOLDER, impostazioniXml.associazioniTasti.tastoSinistra.getName());
+            descrizioneEvento = descrizioneEvento.replaceFirst(LoggerEventoXml.LOG_PLACEHOLDER, impostazioniXml.associazioniTasti.tastoFuoco.getName());
+            descrizioneEvento = descrizioneEvento.replaceFirst(LoggerEventoXml.LOG_PLACEHOLDER, impostazioniXml.associazioniTasti.tastoPausa.getName());
             LoggerEventoXml.registraEvento(descrizioneEvento);
         }
     }
@@ -140,24 +143,24 @@ public class XeviousVS_Client extends Application
     private VBox costruisciInterfaccia()
     {
         VBox root = new VBox();
-        root.setPadding(new Insets(paddingInterfaccia));
+        root.setPadding(new Insets(PADDING_INTERFACCIA));
 
-        Label etichettaUsername = new Label(XeviousVS_Client.testoEtichettaUsername);
+        Label etichettaUsername = new Label(XeviousVS_Client.USERNAME_LABEL);
         this.campoInputUsername = new TextField();
         HBox usernameLayout = new HBox(etichettaUsername, this.campoInputUsername);
         usernameLayout.setAlignment(Pos.CENTER);
 
-        this.vistaStatisticheUtente = new Label(XeviousVS_Client.testoVistaStatistiche);
+        this.vistaStatisticheUtente = new Label(XeviousVS_Client.STAT_TESTO);
 
         this.bottoneGiocaAnnulla = new Button();
-        this.bottoneGiocaAnnulla.setPrefSize(XeviousVS_Client.larghezzaPulsante, XeviousVS_Client.altezzaPulsante);
+        this.bottoneGiocaAnnulla.setPrefSize(XeviousVS_Client.LARGHEZZA_PULSANTE, XeviousVS_Client.ALTEZZA_PULSANTE);
         this.bottoneGiocaAnnulla.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        this.bottoneGiocaAnnulla.setPadding(new Insets(XeviousVS_Client.paddingPulsante));
+        this.bottoneGiocaAnnulla.setPadding(new Insets(XeviousVS_Client.PADDING_PULSANTE));
 
         this.vistaMessaggio = new Label();
 
         VBox contenitoreGioco = new VBox();
-        contenitoreGioco.setPrefSize(XeviousVS_Client.larghezzaContenitoreGioco, XeviousVS_Client.altezzaContenitoreGioco);
+        contenitoreGioco.setPrefSize(XeviousVS_Client.LARGHEZZA_CONTENITORE_GIOCO, XeviousVS_Client.ALTEZZA_CONTENITORE_GIOCO);
         this.vistaGioco = new VistaGioco(contenitoreGioco);
 
         root.getChildren().addAll(usernameLayout, this.vistaStatisticheUtente, this.bottoneGiocaAnnulla, this.vistaMessaggio, contenitoreGioco);
@@ -183,11 +186,11 @@ public class XeviousVS_Client extends Application
 
     private void aggiornaVistaStatistiche(StatisticheUtente statisticheUtente)
     {
-        String messaggioStatistiche = XeviousVS_Client.testoVistaStatistiche.replaceFirst(XeviousVS_Client.segnapostoSostituizioniStatistiche, Integer.toString(statisticheUtente.numeroVittorie));
-        messaggioStatistiche = messaggioStatistiche.replaceFirst(XeviousVS_Client.segnapostoSostituizioniStatistiche, Integer.toString(statisticheUtente.numeroSconfitte));
+        String messaggioStatistiche = XeviousVS_Client.STAT_TESTO.replaceFirst(XeviousVS_Client.STAT_PLACEHOLDER, Integer.toString(statisticheUtente.numeroVittorie));
+        messaggioStatistiche = messaggioStatistiche.replaceFirst(XeviousVS_Client.STAT_PLACEHOLDER, Integer.toString(statisticheUtente.numeroSconfitte));
 
         DecimalFormat df = new DecimalFormat("#0.00");
-        messaggioStatistiche = messaggioStatistiche.replaceFirst(XeviousVS_Client.segnapostoSostituizioniStatistiche, df.format(statisticheUtente.percentualeVittorie));
+        messaggioStatistiche = messaggioStatistiche.replaceFirst(XeviousVS_Client.STAT_PLACEHOLDER, df.format(statisticheUtente.percentualeVittorie));
         this.vistaStatisticheUtente.setText(messaggioStatistiche);
     }
 
@@ -246,44 +249,43 @@ public class XeviousVS_Client extends Application
 
     public void impostaBottoneGioca(boolean abilitato)
     {
-        this.bottoneGiocaAnnulla.setText(XeviousVS_Client.testoBottoneGioca);
+        this.bottoneGiocaAnnulla.setText(XeviousVS_Client.GIOCA_TESTO);
         this.bottoneGiocaAnnulla.setDisable(!abilitato);
         this.bottoneGiocaAnnulla.setOnAction((ActionEvent ev) ->
         {
-            LoggerEventoXml.registraEvento(LoggerEventoXml.descrizioneEventoBottone.replace(LoggerEventoXml.segnapostoDescrizione, XeviousVS_Client.testoBottoneGioca));
+            LoggerEventoXml.registraEvento(LoggerEventoXml.LOG_BOTTONE.replace(LoggerEventoXml.LOG_PLACEHOLDER, XeviousVS_Client.GIOCA_TESTO));
             this.bottoneGiocaAnnulla.setDisable(true);
             this.campoInputUsername.setDisable(true);
             this.vistaGioco.ottieniVistaAreaGioco().requestFocus();
-            this.impostaMessaggio(XeviousVS_Client.messaggioRicercaPartita);
+            this.impostaMessaggio(XeviousVS_Client.MSG_RICERCA_PARTITA);
 
             ServerDisponibile server = OperazioniDatabaseClient.ottieniServerDisponibile();
             if (server == null)
             {
-                this.impostaMessaggio(messaggioServerNonTrovato);
+                this.impostaMessaggio(MSG_SERVER_NON_TROVATO);
                 this.impostaBottoneGioca(true);            
             }
             else
             {
                 modelloGioco.resetPartita();
-                this.impostaMessaggio(messaggioServerTrovato);
+                this.impostaMessaggio(MSG_SERVER_TROVATO);
                 InetSocketAddress serverAddress = new InetSocketAddress(server.indirizzoAscolto, server.portaAscolto);
-                lockstepClient = new XeviousLockstepClient(serverAddress, framerate, tickrate, timeout, delay, usernameGiocatore, this, modelloGioco, comandoCorrente);
-                lockstepClientThread = new Thread(lockstepClient);
-                lockstepClientThread.start();
+                lockstepApplication = new XeviousVSLockstepApplication(framerate, delay, usernameGiocatore, this, modelloGioco, comandoCorrente);
+                lockstepClient = new LockstepClient(serverAddress, framerate, tickrate, timeout, lockstepApplication);
+                lockstepClient.start();
             }
         });
     }
 
     public void impostaBottoneAnnulla(boolean abilitato)
     {
-        this.bottoneGiocaAnnulla.setText(XeviousVS_Client.testoBottoneAnnulla);
+        this.bottoneGiocaAnnulla.setText(XeviousVS_Client.ANNULLA_TESTO);
         this.bottoneGiocaAnnulla.setDisable(!abilitato);
         this.bottoneGiocaAnnulla.setOnAction((ActionEvent ev) ->
         {
-            LoggerEventoXml.registraEvento(LoggerEventoXml.descrizioneEventoBottone.replace(LoggerEventoXml.segnapostoDescrizione, XeviousVS_Client.testoBottoneAnnulla));
+            LoggerEventoXml.registraEvento(LoggerEventoXml.LOG_BOTTONE.replace(LoggerEventoXml.LOG_PLACEHOLDER, XeviousVS_Client.ANNULLA_TESTO));
             this.campoInputUsername.setDisable(false);
             this.impostaBottoneGioca(true);
-            //this.ricercatorePartita.interrompiRicerca();
         });
     }
 
@@ -292,14 +294,33 @@ public class XeviousVS_Client extends Application
         this.vistaMessaggio.setText(messaggio);
     }
 
+    public void impostaDisconnessionePartita()
+    {
+        lockstepClient.abort();
+        impostaMessaggio(MSG_DISCONNESIONE_PARTITA);
+        this.impostaBottoneGioca(true);
+        this.campoInputUsername.setDisable(false);
+        LoggerEventoXml.registraEvento(LoggerEventoXml.LOG_PARTITA_DISCONNESSA);
+    }
+    
+    public void impostaHanshakeFallito()
+    {
+        impostaMessaggio(MSG_HANDSHAKE_FALLITO);
+        modelloGioco.interrompiPartita();
+        this.impostaBottoneGioca(true);
+        this.campoInputUsername.setDisable(false);
+        LoggerEventoXml.registraEvento(LoggerEventoXml.LOG_SERVER_NON_VALIDO);
+
+    }
+    
     public void impostaTerminazionePartita(boolean vittoria)
     {
-        //this.ricercatorePartita.chiudiConnessioneAvversario(true);
+        lockstepClient.abort();
         OperazioniDatabaseClient.aggiornaStatisticheUtente(usernameGiocatore, vittoria);
         this.aggiornaVistaStatistiche(OperazioniDatabaseClient.leggiStatisticheUtente(usernameGiocatore));
         this.impostaBottoneGioca(true);
         this.campoInputUsername.setDisable(false);
-        LoggerEventoXml.registraEvento(LoggerEventoXml.descrizioneEventoTerminazionePartita);
+        LoggerEventoXml.registraEvento(LoggerEventoXml.LOG_PARTITA_CONCLUSA);
     }
 
     public String ottieniUsernameGiocatore()
