@@ -78,7 +78,7 @@ public class LockstepServer extends LockstepCoreThread
     private static final Logger LOG = LogManager.getLogger(LockstepServer.class);
     private final int tickrate;
     
-    private List<DatagramSocket> openSockets;
+    private final List<DatagramSocket> openSockets;
     
     public LockstepServer(int tcpPort, int clientsNumber, int tickrate)
     {
@@ -133,9 +133,37 @@ public class LockstepServer extends LockstepCoreThread
                 forwardFrameInputs(frameInputs);
             }
         }
-        catch( InterruptedException intEx)
+        catch(InterruptedException intEx)
         {
-            closeResources();
+            otherCloseResources();
+        }
+    }
+    
+    /**
+     * 
+     */
+    private void otherCloseResources()
+    {
+        for(Thread transmitter : transmitters.values())
+            transmitter.interrupt();
+        
+        try
+        {
+            for(Thread receiver : receivers.values())
+            {
+                receiver.join();
+            }
+
+            for(Thread transmitter : transmitters.values())
+            {
+                transmitter.join();
+            }
+        }
+        catch(InterruptedException intEx)
+        {
+            //shouldn't be interrupted
+            LOG.fatal("Interrupted during termination!!");
+            LOG.fatal(intEx);
         }
     }
     

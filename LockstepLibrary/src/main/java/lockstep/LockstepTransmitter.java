@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.SocketException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -38,6 +39,7 @@ public class LockstepTransmitter extends Thread
     final boolean sendKeepAliveSwitch;
     final int keepAliveTicksTimeout;
     int keepAliveTicksCounter;
+    boolean terminationPhase = false;
     
     public LockstepTransmitter(DatagramSocket socket, int tickrate, int keepAliveTimeout, Map<Integer, TransmissionQueue> transmissionFrameQueues, String name, ACKQueue ackQueue)
     {
@@ -73,6 +75,9 @@ public class LockstepTransmitter extends Thread
                 if(Thread.interrupted())
                     throw new InterruptedException();
                 
+                if(dgramSocket.isClosed())
+                    throw new SocketException();
+                                    
                 for(TransmissionQueue txQ : transmissionQueues.values())
                 {   
                     LOG.debug(txQ);
@@ -88,15 +93,33 @@ public class LockstepTransmitter extends Thread
                 
                 Thread.sleep(1000/tickrate);
             }
-            catch(InterruptedException e)
+            catch(InterruptedException intEx)
+            {                
+                LOG.info("Transmitter entering termination phase: interruption received");
+                if(dgramSocket.isClosed())
+                {
+                    LOG.info("Transmitter terminating: connection already closed");
+                    return;
+                }
+                else
+                    terminationPhase = true;
+            }
+            catch(TransmissionCompletedException trEx)
             {
-                LOG.info("Transmitter disconnected");
+                LOG.info("Transmitter terminating: transimission completed. Proceding to close the socket");
+                dgramSocket.close();
                 return;
             }
+            catch(IOException ioEx)
+            {
+                LOG.info("Transmitter disconnected: socket failure");
+                dgramSocket.close(); //Forcing failure on receiver too
+                return;
+            }            
         }
     }
     
-    private void sendKeepAlive()
+    private void sendKeepAlive() throws IOException
     {
         try(
             ByteArrayOutputStream baout = new ByteArrayOutputStream();
@@ -110,18 +133,16 @@ public class LockstepTransmitter extends Thread
             byte[] payload = baout.toByteArray();
             dgramSocket.send(new DatagramPacket(payload, payload.length));
         }
-        catch(IOException e)
+        catch(IOException ioEx)
         {
-            e.printStackTrace();
-
-            LOG.fatal(e.getStackTrace());
-            System.exit(1);
+            throw ioEx;
         }
-        LOG.info("SENT KEEP ALIVE");
+        LOG.info("Transmitter sent a keep alive");
     }
     
 
-    private boolean processCommands() {
+    private boolean processCommands() throws IOException
+    {
         boolean sentSomething = false;
         for(Entry<Integer, TransmissionQueue> transmissionQueueEntry : transmissionQueues.entrySet())
         {
@@ -152,10 +173,14 @@ public class LockstepTransmitter extends Thread
                 }
             }
         }
+        
+        if(!sentSomething && terminationPhase)
+            throw new TransmissionCompletedException();
+        
         return sentSomething;
     }
     
-    private boolean processACKs()
+    private boolean processACKs() throws IOException
     {
         FrameACK[] acks = ackQueue.getACKs();
         boolean sentSomething = false;
@@ -169,7 +194,7 @@ public class LockstepTransmitter extends Thread
         return sentSomething;
     }
     
-    private void sendACK(FrameACK frameACK)
+    private void sendACK(FrameACK frameACK) throws IOException
     {
         if(frameACK.selectiveACKs == null || frameACK.selectiveACKs.length == 0) 
             sendSingleACK(frameACK);
@@ -177,14 +202,13 @@ public class LockstepTransmitter extends Thread
             sendSplitACKs(frameACK);
     }
 
-    private void sendSingleACK(FrameACK frameACK)
+    private void sendSingleACK(FrameACK frameACK) throws IOException
     {
         try(
             ByteArrayOutputStream baout = new ByteArrayOutputStream();
             GZIPOutputStream gzout = new GZIPOutputStream(baout);
             ObjectOutputStream oout = new ObjectOutputStream(gzout);
-        )
-        {
+        ){
             oout.writeObject(frameACK);
             oout.flush();
             gzout.finish();
@@ -192,14 +216,13 @@ public class LockstepTransmitter extends Thread
             this.dgramSocket.send(new DatagramPacket(data, data.length));
             LOG.debug("Single ACK sent, payload size:" + data.length);
             LOG.debug("["+frameACK.senderID+"] I just ACKed ("+data.length+"): up to " + frameACK.cumulativeACK + " and " + ArrayUtils.toString(frameACK.selectiveACKs));
-        }
-        catch(Exception e)
+        } catch (IOException ioEx)
         {
-            e.printStackTrace();
+            throw ioEx;
         }
     }
     
-    private void sendSplitACKs(FrameACK frameACK)
+    private void sendSplitACKs(FrameACK frameACK) throws IOException
     {
         int payloadLength = maxPayloadLength + 1;
         int[] selectiveACKs = frameACK.selectiveACKs;
@@ -221,42 +244,22 @@ public class LockstepTransmitter extends Thread
                 payload = baout.toByteArray();
                 payloadLength = payload.length;
             }
-            catch(IOException e)
+            catch(IOException ioEx)
             {
-                LOG.fatal(e.getStackTrace());
-                e.printStackTrace();
-                System.exit(1);
+                throw ioEx;
             }
         }
         
-        LOG.debug("["+frameACK.senderID+"] I just Acked ("+payload.length+"): up to " + frameACK.cumulativeACK + "and " + ArrayUtils.toString(frameACK.selectiveACKs));
+        this.dgramSocket.send(new DatagramPacket(payload, payload.length));
 
-        try
-        {
-            this.dgramSocket.send(new DatagramPacket(payload, payload.length));
-        }
-        catch(IOException e)
-        {
-            LOG.fatal("Can't send dgramsocket");
-            e.printStackTrace();
-            System.exit(1);
-        }
-        LOG.debug("" + selectiveACKsToInclude + " selectiveACKs sent");
-        LOG.debug("Payload size " + payloadLength);
-        
-        LOG.debug("SelectiveACKsToInclude = " + selectiveACKsToInclude);
-        LOG.debug("SelectiveACKs.length = .... " + selectiveACKs.length);
         if(selectiveACKsToInclude < selectiveACKs.length)
         {
-            LOG.debug("SPlitting acks");
             frameACK.selectiveACKs = Arrays.copyOfRange(selectiveACKs, selectiveACKsToInclude, selectiveACKs.length);
-            if(frameACK.selectiveACKs == null)
-                LOG.debug("selectiveacks è diventato null");
             sendSplitACKs(frameACK);
         }
     }
     
-    private void send(InputMessage msg)
+    private void send(InputMessage msg) throws IOException
     {
         try(
                 ByteArrayOutputStream baout = new ByteArrayOutputStream();
@@ -272,18 +275,18 @@ public class LockstepTransmitter extends Thread
             LOG.debug("Payload size " + data.length);
             LOG.debug("["+msg.senderID+"] I just sent ("+data.length+"): " + msg);
         }
-        catch(Exception e)
+        catch(IOException ioEx)
         {
-            e.printStackTrace();
+            throw ioEx;
         }
     }       
 
-    private void send(int senderID, FrameInput[] frames)
+    private void send(int senderID, FrameInput[] frames) throws IOException
     {
         int payloadLength = maxPayloadLength + 1;
         int framesToInclude = frames.length + 1;
         byte[] payload = null;
-        InputMessageArray inputMessageArray = null;
+        InputMessageArray inputMessageArray;
         while( payloadLength > maxPayloadLength && framesToInclude > 0)
         {
             try(
@@ -301,29 +304,13 @@ public class LockstepTransmitter extends Thread
                 payload = baout.toByteArray();
                 payloadLength = payload.length;
             }
-            catch(IOException e)
+            catch(IOException ioEx)
             {
-                            e.printStackTrace();
-
-                LOG.fatal(e.getStackTrace());
-                System.exit(1);
+                throw ioEx;
             }
         }
-        
-        LOG.debug("["+senderID+"] I just sent: ("+payload.length+")" + inputMessageArray);
-        
-        try
-        {
-            this.dgramSocket.send(new DatagramPacket(payload, payload.length));
-        } catch (IOException ex)
-        {
-                        ex.printStackTrace();
-
-            LOG.fatal("Can't send dgramsocket");
-            System.exit(1);
-        }
-        LOG.debug("" + framesToInclude + "sent for " + senderID);
-        LOG.debug("Payload size " + payloadLength);
+                
+        this.dgramSocket.send(new DatagramPacket(payload, payload.length));
         
         if(framesToInclude < frames.length)
         {
