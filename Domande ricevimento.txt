@@ -1,4 +1,6 @@
 
+
+
 Difetti di XeviousVS: sono importanti?
 	Il gioco non è propriamente deterministico: si basa sulle animazioni grafiche per determinare gli eventi.
 		È quindi facile sperimentare desincronizzazioni a causa di differenti timing nel processare le animazioni
