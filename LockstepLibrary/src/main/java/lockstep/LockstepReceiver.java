@@ -13,6 +13,7 @@ import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.zip.GZIPInputStream;
 import lockstep.messages.simulation.DisconnectionSignal;
 import lockstep.messages.simulation.FrameACK;
@@ -20,28 +21,36 @@ import lockstep.messages.simulation.KeepAlive;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
+/**
+ * Thread used both by client and server to listen to incoming messages.
+ * Received FrameInputs are pushed in the appropriate queues, while the respective
+ * FrameACKs are passed to the ACKSet for the Transmitter.
+ */
 public class LockstepReceiver extends Thread
 {
     public static final int RECEIVER_FROM_SERVER_ID = 0;
     
-    volatile DatagramSocket dgramSocket;
-    volatile Map<Integer, ReceivingQueue> receivingQueues;
-    volatile Map<Integer, TransmissionQueue> transmissionQueues;
-    volatile ACKQueue ackQueue;
+    int receiverID;
+        
+    DatagramSocket dgramSocket;
+    ConcurrentMap<Integer, ReceivingQueue> receivingQueues;
+    ConcurrentMap<Integer, TransmissionQueue> transmissionQueues;
+    volatile ACKSet ackSet;
     static final int MAX_PAYLOAD_LENGTH = 300;
     
-    private static final Logger LOG = LogManager.getLogger(LockstepReceiver.class);
+    
     
     private final LockstepCoreThread coreThread;
     
     private final String name;
     
-    int receiverID;
-        
+    
+    private static final Logger LOG = LogManager.getLogger(LockstepReceiver.class);
+    
     public LockstepReceiver(DatagramSocket socket, LockstepCoreThread coreThread, 
-            Map<Integer, ReceivingQueue> receivingQueues, 
-            Map<Integer, TransmissionQueue> transmissionQueues, 
-            String name, int ownID, ACKQueue ackQueue)
+            ConcurrentMap<Integer, ReceivingQueue> receivingQueues, 
+            ConcurrentMap<Integer, TransmissionQueue> transmissionQueues, 
+            String name, int ownID, ACKSet ackQueue)
     {
         
         if(socket.isClosed())
@@ -77,15 +86,15 @@ public class LockstepReceiver extends Thread
         if(ackQueue == null)
             throw new IllegalArgumentException("Ack Queue cannot be null");
         else
-            this.ackQueue = ackQueue;
+            this.ackSet = ackQueue;
     }
 
     public static class Builder {
 
         private DatagramSocket dgramSocket;
-        private Map<Integer,ReceivingQueue> receivingQueues;
-        private Map<Integer,TransmissionQueue> transmissionFrameQueues;
-        private ACKQueue ackQueue;
+        private ConcurrentMap<Integer,ReceivingQueue> receivingQueues;
+        private ConcurrentMap<Integer,TransmissionQueue> transmissionFrameQueues;
+        private ACKSet ackQueue;
         private LockstepCoreThread coreThread;
         private String name;
         private int receiverID;
@@ -98,17 +107,17 @@ public class LockstepReceiver extends Thread
             return this;
         }
 
-        public Builder receivingQueues(final Map<Integer,ReceivingQueue> value) {
+        public Builder receivingQueues(final ConcurrentMap<Integer,ReceivingQueue> value) {
             this.receivingQueues = value;
             return this;
         }
 
-        public Builder transmissionQueues(final Map<Integer,TransmissionQueue> value) {
+        public Builder transmissionQueues(final ConcurrentMap<Integer,TransmissionQueue> value) {
             this.transmissionFrameQueues = value;
             return this;
         }
 
-        public Builder ackQueue(final ACKQueue value) {
+        public Builder ackSet(final ACKSet value) {
             this.ackQueue = value;
             return this;
         }
@@ -139,11 +148,11 @@ public class LockstepReceiver extends Thread
         return new LockstepReceiver.Builder();
     }
 
-    private LockstepReceiver(final DatagramSocket dgramSocket, final Map<Integer, ReceivingQueue> receivingQueues, final Map<Integer, TransmissionQueue> transmissionFrameQueues, final ACKQueue ackQueue, final LockstepCoreThread coreThread, final String name, final int receiverID) {
+    private LockstepReceiver(final DatagramSocket dgramSocket, final ConcurrentMap<Integer, ReceivingQueue> receivingQueues, final ConcurrentMap<Integer, TransmissionQueue> transmissionFrameQueues, final ACKSet ackQueue, final LockstepCoreThread coreThread, final String name, final int receiverID) {
         this.dgramSocket = dgramSocket;
         this.receivingQueues = receivingQueues;
         this.transmissionQueues = transmissionFrameQueues;
-        this.ackQueue = ackQueue;
+        this.ackSet = ackQueue;
         this.coreThread = coreThread;
         this.name = name;
         this.receiverID = receiverID;
@@ -231,7 +240,7 @@ public class LockstepReceiver extends Thread
         ReceivingQueue receivingQueue = this.receivingQueues.get(input.senderID);
         FrameACK frameACK = receivingQueue.push(input.frame);
         frameACK.setSenderID(input.senderID);
-        ackQueue.pushACKs(frameACK);
+        ackSet.pushACK(frameACK);
 
         if(input.frame.getCommand() instanceof DisconnectionSignal)
             handleDisconnection(input.senderID);
@@ -246,7 +255,7 @@ public class LockstepReceiver extends Thread
         ReceivingQueue receivingQueue = this.receivingQueues.get(inputs.senderID);
         FrameACK frameACK = receivingQueue.push(inputs.frames);
         frameACK.setSenderID(inputs.senderID);
-        ackQueue.pushACKs(frameACK);
+        ackSet.pushACK(frameACK);
         
         if(inputs.frames[inputs.frames.length - 1].getCommand() instanceof DisconnectionSignal)
             handleDisconnection(inputs.senderID);

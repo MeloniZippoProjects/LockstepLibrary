@@ -7,10 +7,6 @@ package lockstep.messages.handshake;
 
 import java.io.Serializable;
 
-/**
- *
- * @author enric
- */
 public class ClientHello implements Serializable
 {
     public int clientUDPPort;

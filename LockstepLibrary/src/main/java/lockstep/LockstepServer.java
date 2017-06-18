@@ -21,6 +21,7 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -47,7 +48,7 @@ public class LockstepServer extends LockstepCoreThread
         private ConcurrentSkipListSet<Integer> hostIDs;
         private ConcurrentHashMap<Integer,ServerReceivingQueue> receivingQueues;
         private ConcurrentHashMap<Integer,Map<Integer,TransmissionQueue>> transmissionFrameQueueTree;
-        private Map<Integer,ACKQueue> ackQueues;
+        private Map<Integer,ACKSet> ackQueues;
         private Map<Integer,Thread> receivers;
         private Map<Integer,Thread> transmitters;
         private Map<Integer,Boolean> executionQueuesHeadsAvailability;
@@ -93,7 +94,7 @@ public class LockstepServer extends LockstepCoreThread
     ConcurrentHashMap<Integer, Map<Integer, TransmissionQueue>> transmissionFrameQueueTree;
     
     
-    HashMap<Integer, ACKQueue> ackQueues;
+    HashMap<Integer, ACKSet> ackQueues;
     
     /**
      * Threads used for receiving frames. 
@@ -356,10 +357,10 @@ public class LockstepServer extends LockstepCoreThread
                 ServerHelloReply helloReply = new ServerHelloReply(udpSocket.getLocalPort(), assignedHostID, clientsNumber, firstFrameNumber);
                 oout.writeObject(helloReply);
 
-                Map<Integer, TransmissionQueue> clientTransmissionFrameQueues = new HashMap<>();
+                ConcurrentHashMap<Integer, TransmissionQueue> clientTransmissionFrameQueues = new ConcurrentHashMap<>();
                 this.transmissionFrameQueueTree.put(assignedHostID, clientTransmissionFrameQueues);
                 
-                ACKQueue clientAckQueue = new ACKQueue();
+                ACKSet clientAckQueue = new ACKSet();
                 ackQueues.put(assignedHostID, clientAckQueue);
                 
                 clientReceiveSetup(assignedHostID, udpSocket, firstFrameNumber, clientTransmissionFrameQueues);
@@ -396,11 +397,11 @@ public class LockstepServer extends LockstepCoreThread
         }            
     }
     
-    private void clientReceiveSetup(int clientID, DatagramSocket clientUDPSocket, int initialFrameNumber, Map<Integer, TransmissionQueue> transmissionFrameQueues)
+    private void clientReceiveSetup(int clientID, DatagramSocket clientUDPSocket, int initialFrameNumber, ConcurrentMap<Integer, TransmissionQueue> transmissionFrameQueues)
     {
         ServerReceivingQueue receivingQueue = new ServerReceivingQueue(initialFrameNumber, clientID, executionSemaphore);
         this.receivingQueues.put(clientID, receivingQueue);
-        HashMap<Integer,ReceivingQueue> receivingQueueWrapper = new HashMap<>();
+        ConcurrentHashMap<Integer,ReceivingQueue> receivingQueueWrapper = new ConcurrentHashMap<>();
         receivingQueueWrapper.put(clientID, receivingQueue);
         //LockstepReceiver receiver = new LockstepReceiver(clientUDPSocket, this, receivingQueueWrapper, transmissionFrameQueues, "Receiver-from-"+clientID, clientID,ackQueues.get(clientID));
         
@@ -413,7 +414,7 @@ public class LockstepServer extends LockstepCoreThread
                 .receivingQueues(receivingQueueWrapper)
                 .transmissionQueues(transmissionFrameQueues)
                 .name("Receiver-from-"+clientID)
-                .ackQueue(ackQueues.get(clientID))
+                .ackSet(ackQueues.get(clientID))
                 .build();
         
         receivers.put(clientID, receiver);
@@ -440,7 +441,7 @@ public class LockstepServer extends LockstepCoreThread
                 .keepAliveTimeout(0)
                 .transmissionQueues(clientTransmissionFrameQueues)
                 .name("Transmitter-to-"+clientID)
-                .ackQueue(ackQueues.get(clientID))
+                .ackSet(ackQueues.get(clientID))
                 .build();
         
         transmitters.put(clientID, transmitter);

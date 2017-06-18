@@ -1,13 +1,14 @@
 
 package xeviousvs;
 
+import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import lockstep.messages.simulation.LockstepCommand;
 
 
-public class Comando implements LockstepCommand
+public class Comando implements LockstepCommand, Externalizable
 {
     public static enum EnumComando {
 

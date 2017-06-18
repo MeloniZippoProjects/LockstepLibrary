@@ -5,6 +5,7 @@
  */
 package lockstep.messages.simulation;
 
+import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -12,12 +13,10 @@ import java.io.ObjectOutput;
 /**
  * Data structure to contain an ACKnowledgement response.
  * It consists of a cumulativeACK, indicating the number of the latest in order 
- * frame received; and a selectiveACKs array indicating the frame received out
+ * frame received; and a selectiveACKs array indicating the frames received out
  * of order. The selectiveACKs array can be null
- * 
- * @author Raff
  */
-public class FrameACK implements java.io.Externalizable, Comparable<FrameACK>
+public class FrameACK implements Externalizable, Comparable<FrameACK>
 {
     public int senderID;
     public int cumulativeACK;
@@ -77,6 +76,4 @@ public class FrameACK implements java.io.Externalizable, Comparable<FrameACK>
         
         return firstCompare;
     }
-    
-    
 }

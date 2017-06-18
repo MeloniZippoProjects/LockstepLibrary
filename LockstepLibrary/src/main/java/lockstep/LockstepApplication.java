@@ -7,6 +7,10 @@ package lockstep;
 
 import lockstep.messages.simulation.LockstepCommand;
 
+/**
+ * Bridge between the application and the lockstep library.
+ * A LockstepClient will call this methods during its execution.
+ */
 public interface LockstepApplication {
     /**
      * Must read input from user, and return a Command object to be executed.
@@ -40,7 +44,7 @@ public interface LockstepApplication {
      * Their number should be dimensioned to take less time than the user to
      * react from the simulation being resumed
      * 
-     * @return array of commands to bootstart the simulation
+     * @return array of commands to help the simulation run smoothly
      */
     abstract LockstepCommand[] fillCommands();
         

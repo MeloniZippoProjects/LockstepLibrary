@@ -9,7 +9,6 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.Random;
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -38,6 +37,7 @@ public class MosaicSimulation extends Application
     Color clientColor;
     
     private static final Logger LOG = LogManager.getLogger(MosaicSimulation.class.getName());
+    private boolean waitOnClose;
     
     @Override
     public void start(Stage stage) throws Exception
@@ -84,9 +84,10 @@ public class MosaicSimulation extends Application
         int fillTimeout = Integer.parseInt(namedParameters.get("fillTimeout"));
         int fillSize = Integer.parseInt(namedParameters.get("fillSize"));
         String disconnectionPolicy = namedParameters.get("abortOnDisconnect");
+        String waitOnClosePar = namedParameters.get("waitOnClose");
         
         boolean abortOnDisconnect = ("true".equals(disconnectionPolicy));
-        
+        waitOnClose = ("true".equals(waitOnClosePar));
         
         InetSocketAddress serverTCPAddress = new InetSocketAddress(serverIPAddress, serverTCPPort);
 
@@ -121,19 +122,18 @@ public class MosaicSimulation extends Application
             {
                 lockstepClient.join();
                 LOG.info("Lockstep client closed");
-                System.exit(1);
+                if(!waitOnClose)
+                    System.exit(1);
             }
-            catch(Exception e)
+            catch(InterruptedException e)
             {
                 //nothing
             }
         });
         
-        stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
-            @Override
-            public void handle(WindowEvent t) {
-                lockstepClient.abort();
-            }
+        stage.setOnCloseRequest((WindowEvent t) ->
+        {
+            lockstepClient.abort();
         });
         
         closeThread.start();

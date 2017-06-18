@@ -5,13 +5,16 @@
  */
 package lockstep.messages.simulation;
 
+import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
-public class DisconnectionSignal implements LockstepCommand
+/**
+ * Command indicating that the sending client disconnected from the simulation.
+ */
+public class DisconnectionSignal implements LockstepCommand, Externalizable
 {
-
     @Override
     public void writeExternal(ObjectOutput out) throws IOException
     {

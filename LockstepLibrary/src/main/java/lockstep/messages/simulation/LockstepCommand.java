@@ -5,9 +5,9 @@
  */
 package lockstep.messages.simulation;
 
-import java.io.Externalizable;
+import java.io.Serializable;
 
-public interface LockstepCommand extends Externalizable
+public interface LockstepCommand extends Serializable
 {
     
 }

@@ -27,7 +27,7 @@ public class LockstepTransmitter extends Thread
 {
     DatagramSocket dgramSocket;
     Map<Integer, TransmissionQueue> transmissionQueues;
-    ACKQueue ackQueue;
+    ACKSet ackQueue;
     
     long interTransmissionTimeout;
     static final int maxPayloadLength = 300;
@@ -44,7 +44,7 @@ public class LockstepTransmitter extends Thread
 
         private DatagramSocket dgramSocket;
         private Map<Integer,TransmissionQueue> transmissionQueues;
-        private ACKQueue ackQueue;
+        private ACKSet ackQueue;
         private String name;
         private int tickrate;
         private int keepAliveTimeout;
@@ -62,7 +62,7 @@ public class LockstepTransmitter extends Thread
             return this;
         }
 
-        public Builder ackQueue(final ACKQueue value) {
+        public Builder ackSet(final ACKSet value) {
             this.ackQueue = value;
             return this;
         }
@@ -93,7 +93,7 @@ public class LockstepTransmitter extends Thread
         return new LockstepTransmitter.Builder();
     }
     
-    public LockstepTransmitter(DatagramSocket socket, int tickrate, int keepAliveTimeout, Map<Integer, TransmissionQueue> transmissionQueues, String name, ACKQueue ackQueue)
+    public LockstepTransmitter(DatagramSocket socket, int tickrate, int keepAliveTimeout, Map<Integer, TransmissionQueue> transmissionQueues, String name, ACKSet ackQueue)
     {
         if(socket.isClosed())
             throw new IllegalArgumentException("Socket is closed");

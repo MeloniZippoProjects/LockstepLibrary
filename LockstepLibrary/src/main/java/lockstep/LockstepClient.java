@@ -23,6 +23,15 @@ import lockstep.messages.simulation.LockstepCommand;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
+/**
+ * Main thread for a client.
+ * It handles the handshake with the server, setting up data structures and
+ * child threads.
+ * Then it loops obtaining inputs from all other clients and, only if in order,
+ * sends them to the application for execution.
+ * The thread blocks on a semaphore, suspending the application, each time the
+ * in order inputs are not ready.
+ */
 public class LockstepClient extends LockstepCoreThread
 {
     int framerate;
@@ -31,7 +40,7 @@ public class LockstepClient extends LockstepCoreThread
     int currentExecutionFrame;
     int currentUserFrame;
     int frameExecutionDistance;
-    int hostID;
+    int localClientID;
     
     ConcurrentSkipListMap<Integer, ClientReceivingQueue> executionFrameQueues; 
     TransmissionQueue transmissionFrameQueue;
@@ -43,15 +52,12 @@ public class LockstepClient extends LockstepCoreThread
     
     private DatagramSocket udpSocket;
     
-    private static final Logger LOG = LogManager.getLogger(LockstepClient.class);
-        
-    /**
-     * Used for synchronization between server and executionFrameQueues
-     */
     Semaphore executionSemaphore;
     private int clientsNumber;
     private final int tickrate;
     private final LockstepApplication lockstepApplication;
+
+    private static final Logger LOG = LogManager.getLogger(LockstepClient.class);
     
     public LockstepClient(InetSocketAddress serverTCPAddress, int framerate, 
             int tickrate, int fillTimeout, 
@@ -156,7 +162,7 @@ public class LockstepClient extends LockstepCoreThread
             }
             catch(InterruptedException intEx)
             {
-                otherNetworkShutdown();
+                networkShutdown();
                 return;
             }           
         }
@@ -164,13 +170,12 @@ public class LockstepClient extends LockstepCoreThread
 
     private void handshake() throws ClassNotFoundException, IOException
     {
-        LOG.debug("Start of handshake");
+        LOG.info("Starting handshake");
 
         Socket tcpSocket = new Socket(serverTCPAddress.getAddress(), serverTCPAddress.getPort());
         ObjectOutputStream oout = new ObjectOutputStream(tcpSocket.getOutputStream());                        
         
         oout.flush();
-        LOG.debug("oout flushed");
         ObjectInputStream oin = new ObjectInputStream(tcpSocket.getInputStream());
             
         //Bind own UDP socket
@@ -186,15 +191,15 @@ public class LockstepClient extends LockstepCoreThread
         //Receive and process first server reply
         LOG.info("Waiting for helloReply from server");
         ServerHelloReply helloReply = (ServerHelloReply) oin.readObject();
-        hostID = helloReply.assignedHostID;
-        LOG.info("ID assigned = " + hostID);
+        localClientID = helloReply.assignedHostID;
+        LOG.info("ID assigned = " + localClientID);
         currentExecutionFrame = helloReply.firstFrameNumber;
         currentUserFrame = helloReply.firstFrameNumber;
 
         clientsNumber = helloReply.clientsNumber;
         executionSemaphore = new Semaphore(0);
         executionFrameQueues = new ConcurrentSkipListMap<>();
-        executionFrameQueues.put(hostID, new ClientReceivingQueue(helloReply.firstFrameNumber, hostID, executionSemaphore));
+        executionFrameQueues.put(localClientID, new ClientReceivingQueue(helloReply.firstFrameNumber, localClientID, executionSemaphore));
 
         //Network setup
         LOG.info("Setting up network threads and stub frames");
@@ -204,21 +209,21 @@ public class LockstepClient extends LockstepCoreThread
 
         udpSocket.setSoTimeout(5000);
 
-        Map<Integer, ReceivingQueue> receivingExecutionQueues = new ConcurrentHashMap<>();
-        transmissionFrameQueue = new TransmissionQueue(helloReply.firstFrameNumber, hostID);
-        HashMap<Integer,TransmissionQueue> transmissionQueueWrapper = new HashMap<>();
-        transmissionQueueWrapper.put(hostID, transmissionFrameQueue);
+        ConcurrentHashMap<Integer, ReceivingQueue> receivingExecutionQueues = new ConcurrentHashMap<>();
+        transmissionFrameQueue = new TransmissionQueue(helloReply.firstFrameNumber, localClientID);
+        ConcurrentHashMap<Integer,TransmissionQueue> transmissionQueueWrapper = new ConcurrentHashMap<>();
+        transmissionQueueWrapper.put(localClientID, transmissionFrameQueue);
 
-        ACKQueue ackQueue = new ACKQueue();
+        ACKSet ackSet = new ACKSet();
         
         receiver = LockstepReceiver.builder()
                 .dgramSocket(udpSocket)
                 .coreThread(this)
                 .receivingQueues(receivingExecutionQueues)
                 .transmissionQueues(transmissionQueueWrapper)
-                .name("Receiver-to-"+hostID)
+                .name("Receiver-to-"+localClientID)
                 .receiverID(LockstepReceiver.RECEIVER_FROM_SERVER_ID)
-                .ackQueue(ackQueue)
+                .ackSet(ackSet)
                 .build();
         
 
@@ -227,11 +232,10 @@ public class LockstepClient extends LockstepCoreThread
                 .tickrate(tickrate)
                 .keepAliveTimeout(1000)
                 .transmissionQueues(transmissionQueueWrapper)
-                .name("Transmitter-from-"+hostID)
-                .ackQueue(ackQueue)
+                .name("Transmitter-from-"+localClientID)
+                .ackSet(ackSet)
                 .build();
-        
-        
+                
         insertBootstrapCommands(lockstepApplication.bootstrapCommands());
 
         transmitter.start();
@@ -242,7 +246,7 @@ public class LockstepClient extends LockstepCoreThread
 
         for(int clientID : clientsAnnouncement.hostIDs)
         {
-            if(clientID != hostID)
+            if(clientID != localClientID)
             {
                 ClientReceivingQueue executionFrameQueue = new ClientReceivingQueue(helloReply.firstFrameNumber, clientID, executionSemaphore);
                 executionFrameQueues.put(clientID, executionFrameQueue);
@@ -269,7 +273,7 @@ public class LockstepClient extends LockstepCoreThread
         for (LockstepCommand cmd : fillCommands)
         {
             FrameInput newFrame = new FrameInput(currentUserFrame++, cmd);
-            executionFrameQueues.get(this.hostID).push(newFrame);
+            executionFrameQueues.get(this.localClientID).push(newFrame);
             if(transmissionFrameQueue != null)
                 transmissionFrameQueue.push(newFrame);
         }
@@ -279,19 +283,13 @@ public class LockstepClient extends LockstepCoreThread
     {
         LockstepCommand cmd = lockstepApplication.readInput();
         FrameInput newFrame = new FrameInput(currentUserFrame++, cmd);
-        executionFrameQueues.get(this.hostID).push(newFrame);
+        executionFrameQueues.get(this.localClientID).push(newFrame);
         if(transmissionFrameQueue != null)
             transmissionFrameQueue.push(newFrame);
     }
     
     private void executeInputs() throws InterruptedException
     {
-        
-        for(ClientReceivingQueue exQ : executionFrameQueues.values())
-                LOG.debug(exQ);
-
-        LOG.debug(transmissionFrameQueue);
-        
         if(!executionSemaphore.tryAcquire(clientsNumber))
         {
             lockstepApplication.suspendSimulation();
@@ -329,30 +327,15 @@ public class LockstepClient extends LockstepCoreThread
         return commands;
     }
 
-    private void debugSimulation()
-    {
-        LOG.debug("---------------------------------------------");
-        LOG.debug("SIMULAZIONE SOSPESA, STAMPA STATO SIMULAZIONE");
-        
-        LOG.debug("Stato execution frame queues");
-        for(ClientReceivingQueue exeFrameQueue : this.executionFrameQueues.values())
-            LOG.debug(exeFrameQueue);
-        
-        LOG.debug("Stato transmission frame queue");
-        LOG.debug(transmissionFrameQueue);
-        
-        LOG.debug("Stato numero frame");
-        LOG.debug("Current User Frame: " + currentUserFrame);
-        LOG.debug("Current Execution Frame: " + currentExecutionFrame);
-        LOG.debug("FrameExecutionDistance: " + frameExecutionDistance);
-    }
-
     @Override
     public void disconnectTransmittingQueues(int nodeID)
     {
-        LOG.info(nodeID);
+        LOG.info("Disconnecting node: " + nodeID);
         if(nodeID == LockstepReceiver.RECEIVER_FROM_SERVER_ID)
+        {
             transmissionFrameQueue = null;
+            LOG.info("Disconnected trasmission queue");
+        }
     }
 
     @Override
@@ -365,27 +348,8 @@ public class LockstepClient extends LockstepCoreThread
         lockstepApplication.signalDisconnection(clientsNumber);
     }
     
-    void otherNetworkShutdown()
-    {
-        transmitter.interrupt();
-        
-        try
-        {
-            receiver.join();
-            transmitter.join();
-        }
-        catch(InterruptedException intEx)
-        {
-           //you should not get interrupted here:
-           //what to do? retry joining or just ignore?
-           LOG.fatal("Interrupted during termination!!");
-           LOG.fatal(intEx);
-        }
-    }
-    
     void networkShutdown()
     {
-        receiver.interrupt();
         transmitter.interrupt();
         
         try
@@ -395,13 +359,9 @@ public class LockstepClient extends LockstepCoreThread
         }
         catch(InterruptedException intEx)
         {
-           //you should not get interrupted here:
-           //what to do? retry joining or just ignore?
-           LOG.fatal("Interrupted during termination!!");
+           LOG.fatal("Interrupted during termination, child threads may be still running");
            LOG.fatal(intEx);
         }
-        
-        udpSocket.close();
     }
     
     @Override
