@@ -35,7 +35,7 @@ import org.apache.logging.log4j.LogManager;
 
 public class LockstepServer extends LockstepCoreThread
 {
-    ConcurrentSkipListSet<Integer> hostIDs;
+    ConcurrentSkipListSet<Integer> clientIDs;
     
     /**
      * Used without interframe times. As soon as all inputs for a frame are 
@@ -146,7 +146,7 @@ public class LockstepServer extends LockstepCoreThread
         receivingQueues = new ConcurrentHashMap<>();
         transmissionFrameQueueTree = new ConcurrentHashMap<>();
         ackQueues = new HashMap<>();
-        hostIDs = new ConcurrentSkipListSet<>();
+        clientIDs = new ConcurrentSkipListSet<>();
         openSockets = new ArrayList<>();
     }
 
@@ -347,37 +347,33 @@ public class LockstepServer extends LockstepCoreThread
                 //TO DO: review timeout settings
                 udpSocket.setSoTimeout(5000);
 
-                int assignedHostID;
+                int assignedClientID;
                 do{
-                    assignedHostID = (new Random()).nextInt(100000) + 10000;
-                    LOG.debug("Extracted ID is " + assignedHostID);
-                }while(!this.hostIDs.add(assignedHostID));
+                    assignedClientID = (new Random()).nextInt(100000) + 10000;
+                }while(!this.clientIDs.add(assignedClientID));
 
-                LOG.info("Assigned hostID " + assignedHostID + " to " + tcpSocket.getInetAddress().getHostAddress() + ", sending helloReply");
-                ServerHelloReply helloReply = new ServerHelloReply(udpSocket.getLocalPort(), assignedHostID, clientsNumber, firstFrameNumber);
+                LOG.info("Assigned hostID " + assignedClientID + " to " + tcpSocket.getInetAddress().getHostAddress() + ", sending helloReply");
+                ServerHelloReply helloReply = new ServerHelloReply(udpSocket.getLocalPort(), assignedClientID, clientsNumber, firstFrameNumber);
                 oout.writeObject(helloReply);
 
                 ConcurrentHashMap<Integer, TransmissionQueue> clientTransmissionFrameQueues = new ConcurrentHashMap<>();
-                this.transmissionFrameQueueTree.put(assignedHostID, clientTransmissionFrameQueues);
+                this.transmissionFrameQueueTree.put(assignedClientID, clientTransmissionFrameQueues);
                 
                 ACKSet clientAckQueue = new ACKSet();
-                ackQueues.put(assignedHostID, clientAckQueue);
+                ackQueues.put(assignedClientID, clientAckQueue);
                 
-                clientReceiveSetup(assignedHostID, udpSocket, firstFrameNumber, clientTransmissionFrameQueues);
+                clientReceiveSetup(assignedClientID, udpSocket, firstFrameNumber, clientTransmissionFrameQueues);
 
-                LOG.debug("Waiting at first barrier for " + assignedHostID);
                 barrier.await();
 
                 //Send second reply
                 ClientsAnnouncement announcement = new ClientsAnnouncement();
-                announcement.hostIDs = ArrayUtils.toPrimitive(this.hostIDs.toArray(new Integer[0]));
-                LOG.debug("Sending clientsAnnouncement for " + assignedHostID);
+                announcement.clientIDs = ArrayUtils.toPrimitive(this.clientIDs.toArray(new Integer[0]));
                 oout.writeObject(announcement);
                 
-                clientTransmissionSetup(assignedHostID, firstFrameNumber, udpSocket, clientTransmissionFrameQueues);
+                clientTransmissionSetup(assignedClientID, firstFrameNumber, udpSocket, clientTransmissionFrameQueues);
 
                 //Wait for other handshakes to reach final step
-                LOG.debug("Waiting at second barrier for " + assignedHostID);
                 barrier.await();
                 oout.writeObject(new SimulationStart());   
 
@@ -387,7 +383,7 @@ public class LockstepServer extends LockstepCoreThread
         } 
         catch (IOException | ClassNotFoundException ioEx)
         {
-            LOG.fatal("Exception at clientHandshake");
+            LOG.fatal("Exception at handshake with client");
             LOG.fatal(ioEx);
             server.interrupt();
         }
@@ -403,7 +399,6 @@ public class LockstepServer extends LockstepCoreThread
         this.receivingQueues.put(clientID, receivingQueue);
         ConcurrentHashMap<Integer,ReceivingQueue> receivingQueueWrapper = new ConcurrentHashMap<>();
         receivingQueueWrapper.put(clientID, receivingQueue);
-        //LockstepReceiver receiver = new LockstepReceiver(clientUDPSocket, this, receivingQueueWrapper, transmissionFrameQueues, "Receiver-from-"+clientID, clientID,ackQueues.get(clientID));
         
         LOG.info("Receiver AckQueue("+clientID+"): " + ackQueues.get(clientID));
         
@@ -423,7 +418,7 @@ public class LockstepServer extends LockstepCoreThread
     
     private void clientTransmissionSetup(int clientID, int firstFrameNumber, DatagramSocket udpSocket, Map<Integer, TransmissionQueue> clientTransmissionFrameQueues)
     {
-        for(int hostID : hostIDs)
+        for(int hostID : clientIDs)
         {
             if(hostID != clientID)
             {
@@ -431,7 +426,6 @@ public class LockstepServer extends LockstepCoreThread
                 clientTransmissionFrameQueues.put(hostID, transmissionFrameQueue);
             }
         }
-        //LockstepTransmitter transmitter = new LockstepTransmitter(udpSocket, tickrate, 0, clientTransmissionFrameQueues, "Transmitter-to-"+clientID, ackQueues.get(clientID));
 
         LOG.info("Transmitter AckQueue("+clientID+"): " + ackQueues.get(clientID));
         
@@ -445,8 +439,7 @@ public class LockstepServer extends LockstepCoreThread
                 .build();
         
         transmitters.put(clientID, transmitter);
-        transmitter.start();
-        
+        transmitter.start();        
     }
     
     private Map<Integer, FrameInput> collectFrameInputs()
@@ -517,31 +510,7 @@ public class LockstepServer extends LockstepCoreThread
     protected void atHandshakeEnded()
     {
     }
-    
-    /**
-     * TO REMOVE
-     */
-    public void debugSimulation()
-    {
-        
-        LOG.debug("EXECUTION QUEUES");
-        for(Entry<Integer, ServerReceivingQueue> exeFrameQueues : receivingQueues.entrySet())
-        {
-            LOG.debug(exeFrameQueues);
-        }
-        
-        LOG.debug("TRANSMISSION QUEUES");
-        for(Entry<Integer, Map<Integer, TransmissionQueue>> transmissionMap : transmissionFrameQueueTree.entrySet())
-        {
-            LOG.debug("Transmission Queues to " + transmissionMap.getKey());
-            
-            for(Entry<Integer, TransmissionQueue> txQ : transmissionMap.getValue().entrySet())
-            {
-                LOG.debug(txQ);
-            }
-        }
-    }
-
+ 
     /**
      * First step of a client disconnection.
      * The transmitting queues are removed as no other frame needs to be sent

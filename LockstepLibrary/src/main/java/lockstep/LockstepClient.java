@@ -139,7 +139,7 @@ public class LockstepClient extends LockstepCoreThread
     public void run()
     {
         try{
-            handshake();
+            clientHandshakeProtocol();
         } catch( ClassNotFoundException | IOException ex)
         {
             LOG.fatal("Handshake failed");
@@ -168,7 +168,7 @@ public class LockstepClient extends LockstepCoreThread
         }
     }
 
-    private void handshake() throws ClassNotFoundException, IOException
+    private void clientHandshakeProtocol() throws ClassNotFoundException, IOException
     {
         LOG.info("Starting handshake");
 
@@ -191,7 +191,7 @@ public class LockstepClient extends LockstepCoreThread
         //Receive and process first server reply
         LOG.info("Waiting for helloReply from server");
         ServerHelloReply helloReply = (ServerHelloReply) oin.readObject();
-        localClientID = helloReply.assignedHostID;
+        localClientID = helloReply.assignedClientID;
         LOG.info("ID assigned = " + localClientID);
         currentExecutionFrame = helloReply.firstFrameNumber;
         currentUserFrame = helloReply.firstFrameNumber;
@@ -224,8 +224,7 @@ public class LockstepClient extends LockstepCoreThread
                 .name("Receiver-to-"+localClientID)
                 .receiverID(LockstepReceiver.RECEIVER_FROM_SERVER_ID)
                 .ackSet(ackSet)
-                .build();
-        
+                .build();        
 
         transmitter = LockstepTransmitter.builder()
                 .dgramSocket(udpSocket)
@@ -244,7 +243,7 @@ public class LockstepClient extends LockstepCoreThread
         LOG.info("Waiting for list of clients from server");
         ClientsAnnouncement clientsAnnouncement = (ClientsAnnouncement) oin.readObject();
 
-        for(int clientID : clientsAnnouncement.hostIDs)
+        for(int clientID : clientsAnnouncement.clientIDs)
         {
             if(clientID != localClientID)
             {

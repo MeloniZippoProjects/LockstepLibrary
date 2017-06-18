@@ -8,10 +8,10 @@ package lockstep.messages.handshake;
 import java.io.Serializable;
 
 /**
- *
- * @author Raff
+ * Third message of the handshake protocol, from server to client.
+ * It contains the IDs of all the clients partecipating.
  */
 public class ClientsAnnouncement implements Serializable
 {
-    public int[] hostIDs;
+    public int[] clientIDs;
 }
