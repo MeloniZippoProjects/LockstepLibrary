@@ -28,14 +28,14 @@ public class XeviousVSLockstepServer extends LockstepServer
      * @param clientsNumber
      * @param tickrate 
      */
-    private XeviousVSLockstepServer(int tcpPort, int clientsNumber, int tickrate)
+    private XeviousVSLockstepServer(int tcpPort, int clientsNumber, int tickrate, int connectionTimeout)
     {
-        super(tcpPort, clientsNumber, tickrate);
+        super(tcpPort, clientsNumber, tickrate, connectionTimeout);
     }    
     
-    public XeviousVSLockstepServer(String serverAddress, int tcpPort, int tickrate)
+    public XeviousVSLockstepServer(String serverAddress, int tcpPort, int tickrate, int connectionTimeout)
     {
-        super(tcpPort, 2, tickrate);
+        super(tcpPort, 2, tickrate, connectionTimeout);
         this.serverAddress = serverAddress;
         this.tcpPort = tcpPort;
         Random rnd = new Random();

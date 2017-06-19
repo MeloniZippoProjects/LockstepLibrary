@@ -9,7 +9,6 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.Random;
 import javafx.application.Application;
-import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -83,6 +82,8 @@ public class MosaicSimulation extends Application
         int tickrate = Integer.parseInt(namedParameters.get("tickrate"));
         int fillTimeout = Integer.parseInt(namedParameters.get("fillTimeout"));
         int fillSize = Integer.parseInt(namedParameters.get("fillSize"));
+        int connectionTimeout = Integer.parseInt(namedParameters.get("connectionTimeout"));
+        int frameLimit = Integer.parseInt(namedParameters.get("frameLimit"));
         String disconnectionPolicy = namedParameters.get("abortOnDisconnect");
         String waitOnClosePar = namedParameters.get("waitOnClose");
         
@@ -107,11 +108,19 @@ public class MosaicSimulation extends Application
                 .currentFrameLabel(currentFrameLabel)
                 .abortOnDisconnect(abortOnDisconnect)
                 .fillSize(fillSize)
+                .frameLimit(frameLimit)
                 .build();
         
-        LockstepClient lockstepClient = new LockstepClient(serverTCPAddress, framerate, tickrate, fillTimeout, mosaicLockstepApplication);
+        LockstepClient lockstepClient = LockstepClient.builder()
+                .serverTCPAddress(serverTCPAddress)
+                .framerate(framerate)
+                .tickrate(tickrate)
+                .fillTimeout(fillTimeout)
+                .lockstepApplication(mosaicLockstepApplication)
+                .connectionTimeout(connectionTimeout)
+                .build();
         
-        mosaicLockstepApplication.setClientThread(lockstepClient);
+        mosaicLockstepApplication.setLockstepClient(lockstepClient);
         
         lockstepClient.setName("main-client-thread");
         lockstepClient.start();

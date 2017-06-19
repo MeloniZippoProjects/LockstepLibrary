@@ -24,6 +24,7 @@ public class XeviousVS_Server
         opts.addOption("d", "databaseAddress", true, "IP address of the matchmaking database");
         opts.addOption("f", "databasePort", true, "Listening port of the matchmaking database");
         opts.addOption("t", "tickrate", true, "Number of transmission session to execute per second");
+        opts.addOption("c", "connectionTimeout", true, "Timeout for UDP connections");
         
         DefaultParser parser = new DefaultParser();
         CommandLine commandLine = null;
@@ -43,10 +44,11 @@ public class XeviousVS_Server
         String serverAddress = commandLine.getOptionValue("serverAddress");
         int serverPort = Integer.parseInt(commandLine.getOptionValue("serverPort"));
         int tickrate = Integer.parseInt(commandLine.getOptionValue("tickrate"));
+        int connectionTimeout = Integer.parseInt(commandLine.getOptionValue("connectionTimeout"));
         
         LOG.debug("Server started, command line parsed");
         
-        XeviousVSLockstepServer lockstepServer =new XeviousVSLockstepServer(serverAddress, serverPort, tickrate);
+        XeviousVSLockstepServer lockstepServer =new XeviousVSLockstepServer(serverAddress, serverPort, tickrate, connectionTimeout);
         lockstepServer.setName("Main-server-thread");
         lockstepServer.start();
         

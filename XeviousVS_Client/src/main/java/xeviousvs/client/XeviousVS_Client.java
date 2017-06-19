@@ -44,7 +44,7 @@ public class XeviousVS_Client extends Application
     private int framerate;
     private int tickrate;
     private int delay;
-    private int timeout;
+    private int fillTimeout;
 
     private static final String TITOLO = "XeviousVS";
     private static final String USERNAME_LABEL = "Username";
@@ -271,7 +271,15 @@ public class XeviousVS_Client extends Application
                 this.impostaMessaggio(MSG_SERVER_TROVATO);
                 InetSocketAddress serverAddress = new InetSocketAddress(server.indirizzoAscolto, server.portaAscolto);
                 lockstepApplication = new XeviousVSLockstepApplication(framerate, delay, usernameGiocatore, this, modelloGioco, comandoCorrente);
-                lockstepClient = new LockstepClient(serverAddress, framerate, tickrate, timeout, lockstepApplication);
+                lockstepClient = LockstepClient.builder()
+                        .serverTCPAddress(serverAddress)
+                        .framerate(framerate)
+                        .tickrate(tickrate)
+                        .fillTimeout(fillTimeout)
+                        .connectionTimeout(2000)
+                        .lockstepApplication(lockstepApplication)
+                        .build();
+        
                 lockstepClient.start();
             }
         });
