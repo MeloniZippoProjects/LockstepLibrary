@@ -5,6 +5,7 @@
  */
 package lockstep;
 
+import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -14,7 +15,7 @@ import lockstep.messages.simulation.LockstepCommand;
  *
  * @author enric
  */
-class Command implements LockstepCommand
+class Command implements LockstepCommand, Externalizable
 {
     int up_down;
     int right_left;
