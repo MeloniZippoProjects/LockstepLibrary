@@ -1,6 +1,6 @@
-﻿$nClients = 4;
+﻿$nClients = 8;
 
-$serverAddress = "192.168.0.100";
+$serverAddress = "192.168.0.2";
 $serverPort = 8000;
 $clientFramerate = 30;
 $clientTickrate = 40;
