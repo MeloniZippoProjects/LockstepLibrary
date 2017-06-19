@@ -1,4 +1,5 @@
-﻿$nClients = 8;
+$nClients = 4;
+
 $serverPort = 8000;
 $serverTickrate = 20;
 $connectionTimeout = 2000;
