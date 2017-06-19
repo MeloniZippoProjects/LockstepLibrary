@@ -18,7 +18,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
 /**
- * This frame queue supports out of order and simultaneous insertion, amd single
+ * This frame queue supports out of order and simultaneous insertion, and single
  * extraction of the first available frame. 
  * A semaphore is released when a frame input is available.
  * 
@@ -33,10 +33,7 @@ public class ServerReceivingQueue implements ReceivingQueue {
         
     AtomicInteger lastInOrderACK;
     ConcurrentSkipListSet<Integer> selectiveACKsSet;
-    
-    //AtomicInteger lastInOrderProcessed;
-    //ConcurrentSkipListSet<Integer> selectiveProcessedSet;
-    
+        
     private static final Logger LOG = LogManager.getLogger(ClientReceivingQueue.class);
     
     /**
@@ -60,10 +57,7 @@ public class ServerReceivingQueue implements ReceivingQueue {
 
         this.lastInOrderACK = new AtomicInteger(initialFrameNumber - 1);
         this.selectiveACKsSet = new ConcurrentSkipListSet<>();
-        
-        //this.lastInOrderProcessed = new AtomicInteger(initialFrameNumber - 1);
-        //this.selectiveProcessedSet = new ConcurrentSkipListSet<>();
-        
+                
         LOG.debug("BufferHead["+senderID+"] initialized at " + initialFrameNumber);
     }
     
@@ -80,17 +74,6 @@ public class ServerReceivingQueue implements ReceivingQueue {
         
         if( firstFrameEntry != null )
         {
-//            if(firstFrameEntry.getKey() == this.lastInOrderProcessed.get() + 1)
-//            {
-//                lastInOrderProcessed.incrementAndGet();
-//                
-//                while(!selectiveProcessedSet.isEmpty() && selectiveProcessedSet.first() == (lastInOrderProcessed.get() + 1))
-//                {
-//                    lastInOrderProcessed.incrementAndGet();
-//                    selectiveProcessedSet.removeAll(selectiveProcessedSet.headSet(lastInOrderProcessed.get(), true));
-//                }
-//            }
-            
             if(commandBuffer.firstEntry() != null)
                 executionSemaphore.release();
             
@@ -172,10 +155,6 @@ public class ServerReceivingQueue implements ReceivingQueue {
                 this.selectiveACKsSet.add(input.getFrameNumber());
             }
         }
-        else
-        {
-            LOG.debug("Duplicate frame arrived");
-        }        
     }
         
     @Override

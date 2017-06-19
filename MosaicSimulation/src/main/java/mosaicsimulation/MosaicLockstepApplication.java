@@ -5,7 +5,6 @@
  */
 package mosaicsimulation;
 
-import java.net.InetSocketAddress;
 import java.util.Random;
 import javafx.application.Platform;
 import javafx.scene.control.Label;
@@ -13,16 +12,10 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import lockstep.LockstepApplication;
 import lockstep.LockstepClient;
-import lockstep.LockstepCoreThread;
 import lockstep.messages.simulation.LockstepCommand;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
-/**
- *
- * @author enric
- */
 public class MosaicLockstepApplication implements LockstepApplication {
     private final Rectangle[][] mosaic;
     private final Color clientColor;

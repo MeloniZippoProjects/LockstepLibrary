@@ -8,8 +8,8 @@ package lockstep;
 import java.io.IOException;
 
 /**
- *
- * @author Raff
+ * Used inside a Transmitter to catch the event where, after an interruption
+ * has been received, the transmissionQueue becomes empty
  */
 public class TransmissionCompletedException extends IOException
 {

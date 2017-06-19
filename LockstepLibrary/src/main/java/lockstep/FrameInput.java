@@ -8,6 +8,10 @@ package lockstep;
 import java.io.Serializable;
 import lockstep.messages.simulation.LockstepCommand;
 
+/**
+ * Data strucure wrapping a single LockstepCommand and the frame at which it
+ * should be executed
+ */
 public class FrameInput implements Serializable 
 {
     private final int frameNumber;

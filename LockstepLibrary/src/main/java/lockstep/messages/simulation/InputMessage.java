@@ -8,6 +8,9 @@ package lockstep.messages.simulation;
 import java.io.Serializable;
 import lockstep.FrameInput;
 
+/**
+ * Wrapper for a frameInput and the id of the sender
+ */
 public class InputMessage implements Serializable
 {
     public final int senderID;

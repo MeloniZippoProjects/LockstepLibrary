@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import lockstep.messages.simulation.FrameACK;
 import lockstep.messages.simulation.LockstepCommand;
 import org.apache.commons.lang3.ArrayUtils;
@@ -18,9 +19,9 @@ import org.apache.logging.log4j.LogManager;
 
 
 /**
- * This frame queue supports out of order and simultaneous insertion, but only 
- * in order single extraction. A semaphore is released when the next frame
- * input is available.
+ * A ReceivingQueue to be used inside the client.
+ * It supports out of order insertion, but only in order extraction.
+ * A semaphore is used to signal when the next in order frame is available.
  * 
  * It is thread safe.
  */
@@ -32,14 +33,14 @@ class ClientReceivingQueue implements ReceivingQueue
     ConcurrentSkipListMap<Integer, LockstepCommand> commandBuffer;
     
     Semaphore executionSemaphore;
+    ReentrantLock semaphoreCheckingLock = new ReentrantLock();
         
     AtomicInteger lastInOrderACK;
     ConcurrentSkipListSet<Integer> selectiveACKsSet;
         
     private static final Logger LOG = LogManager.getLogger(ClientReceivingQueue.class);
     
-    
-    /**
+        /**
      * Constructor.
      * 
      * @param initialFrameNumber First frame's number. Must be the same for all 
@@ -61,8 +62,6 @@ class ClientReceivingQueue implements ReceivingQueue
         
         this.lastInOrderACK = new AtomicInteger(initialFrameNumber - 1);
         this.selectiveACKsSet = new ConcurrentSkipListSet<>();
-        
-        LOG.debug("BufferHead initialized at " + initialFrameNumber);
     }
     
     /**
@@ -81,19 +80,19 @@ class ClientReceivingQueue implements ReceivingQueue
         if( nextCommand != null )
         {
             frameInput = new FrameInput(frame, nextCommand);
-            nextFrame.incrementAndGet();
+        
+            try{
+                semaphoreCheckingLock.lock();
+                nextFrame.incrementAndGet();
+                if(commandBuffer.get(nextFrame.get()) != null)
+                    executionSemaphore.release();
+            }
+            finally{
+                semaphoreCheckingLock.unlock();
+            }
+            
             for(Integer key : commandBuffer.headMap(nextFrame.get()).keySet())
                 commandBuffer.remove(key);
-            
-            if(commandBuffer.get(nextFrame.get()) != null)
-            {
-                //LOG.debug("Countdown to " + ( executionSemaphore.getCount() - 1) + "made by " + senderID);
-                executionSemaphore.release();
-            }
-        }
-        else
-        {
-            LOG.debug("ExecutionFrameQueue " + senderID + ": FrameInput missing for current frame");
         }
         return frameInput;
     }
@@ -135,16 +134,13 @@ class ClientReceivingQueue implements ReceivingQueue
     public FrameACK push(FrameInput input)
     {
         _push(input);
-        
         return getACK();
     }
         
     /**
      * Internal method to push a single input into the queue.
-     * As it's accessed via the push methods, the command can only be a Command
-     * or a DisconnectionSignal.
      * It checks if the input is not a duplicate before insertion, and updates
-     * ACK data after insertion.
+     * ACK data.
      * 
      * @param input the input to push into the queue
      */
@@ -152,20 +148,24 @@ class ClientReceivingQueue implements ReceivingQueue
     {      
         if(input.getFrameNumber() > lastInOrderACK.get() && !selectiveACKsSet.contains(input.getFrameNumber())) 
         {
-            commandBuffer.putIfAbsent(input.getFrameNumber(), input.getCommand());
+            try{
+                semaphoreCheckingLock.lock();
+                commandBuffer.putIfAbsent(input.getFrameNumber(), input.getCommand());
+                if(input.getFrameNumber() == this.nextFrame.get())
+                    executionSemaphore.release();
+            } finally
+            {
+                semaphoreCheckingLock.unlock();
+            }
+            
             if(input.getFrameNumber() == this.lastInOrderACK.get() + 1)
             {
                 lastInOrderACK.incrementAndGet();
-
+            
                 while(!this.selectiveACKsSet.isEmpty() && this.selectiveACKsSet.first() == (this.lastInOrderACK.get() + 1))
                 {
                     this.lastInOrderACK.incrementAndGet();
                     this.selectiveACKsSet.removeAll(this.selectiveACKsSet.headSet(lastInOrderACK.get(), true));
-                }
-                
-                if(input.getFrameNumber() == this.nextFrame.get())
-                {
-                    executionSemaphore.release();
                 }
             }
             else
@@ -173,10 +173,6 @@ class ClientReceivingQueue implements ReceivingQueue
                 this.selectiveACKsSet.add(input.getFrameNumber());
             }
         }
-        else
-        {
-            LOG.debug("Duplicate frame arrived");
-        }       
     }
 
     @Override

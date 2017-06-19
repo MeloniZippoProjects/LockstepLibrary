@@ -8,20 +8,21 @@ package lockstep.messages.handshake;
 import java.io.Serializable;
 
 /**
- *
- * @author Raff
+ * Second message of the handshake protocol, from server to client.
+ * It contains the udp port to use during simulation, the assigned clientID,
+ * the number of clients that will partecipate and the initial frame number
  */
 public class ServerHelloReply implements Serializable
 {
     public int serverUDPPort;
-    public int assignedHostID;
+    public int assignedClientID;
     public int clientsNumber;
     public int firstFrameNumber;
 
-    public ServerHelloReply(int serverUDPPort, int assignedHostID, int clientsNumber, int firstFrameNumber)
+    public ServerHelloReply(int serverUDPPort, int assignedClientID, int clientsNumber, int firstFrameNumber)
     {
         this.serverUDPPort = serverUDPPort;
-        this.assignedHostID = assignedHostID;
+        this.assignedClientID = assignedClientID;
         this.clientsNumber = clientsNumber;
         this.firstFrameNumber = firstFrameNumber;
     }

@@ -5,6 +5,10 @@
  */
 package lockstep;
 
+/**
+ * Common ancestor for LockstepClient and LockstepServer.
+ * Provides a common interface for disconnection handling and termination.
+ */
 abstract public class LockstepCoreThread extends Thread
 {
     abstract public void disconnectTransmittingQueues(int nodeID);

@@ -12,7 +12,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.SocketException;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.zip.GZIPInputStream;
 import lockstep.messages.simulation.DisconnectionSignal;
 import lockstep.messages.simulation.FrameACK;
@@ -20,30 +22,35 @@ import lockstep.messages.simulation.KeepAlive;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
+/**
+ * Thread used both by client and server to listen to incoming messages.
+ * Received FrameInputs are pushed in the appropriate queues, while the respective
+ * FrameACKs are passed to the ACKSet for the Transmitter.
+ */
 public class LockstepReceiver extends Thread
 {
     public static final int RECEIVER_FROM_SERVER_ID = 0;
     
-    volatile DatagramSocket dgramSocket;
-    volatile Map<Integer, ReceivingQueue> receivingQueues;
-    volatile Map<Integer, TransmissionQueue> transmissionQueues;
-    volatile ACKQueue ackQueue;
+    int receiverID;
+        
+    DatagramSocket dgramSocket;
+    ConcurrentMap<Integer, ReceivingQueue> receivingQueues;
+    ConcurrentMap<Integer, TransmissionQueue> transmissionQueues;
+    volatile ACKSet ackSet;
     static final int MAX_PAYLOAD_LENGTH = 300;
+    private int connectionTimeout;
+    private boolean firstPacketReceived = false;
+    
+    private final LockstepCoreThread coreThread;
+    private final String name;
     
     private static final Logger LOG = LogManager.getLogger(LockstepReceiver.class);
     
-    private final LockstepCoreThread coreThread;
-    
-    private final String name;
-    
-    int receiverID;
-        
     public LockstepReceiver(DatagramSocket socket, LockstepCoreThread coreThread, 
-            Map<Integer, ReceivingQueue> receivingQueues, 
-            Map<Integer, TransmissionQueue> transmissionQueues, 
-            String name, int ownID, ACKQueue ackQueue)
+            ConcurrentMap<Integer, ReceivingQueue> receivingQueues, 
+            ConcurrentMap<Integer, TransmissionQueue> transmissionQueues, 
+            String name, int ownID, ACKSet ackQueue, int connectionTimeout)
     {
-        
         if(socket.isClosed())
             throw new IllegalArgumentException("Socket is closed");
         else
@@ -77,18 +84,24 @@ public class LockstepReceiver extends Thread
         if(ackQueue == null)
             throw new IllegalArgumentException("Ack Queue cannot be null");
         else
-            this.ackQueue = ackQueue;
+            this.ackSet = ackQueue;
+        
+        if(connectionTimeout < 0)
+            throw new IllegalArgumentException("Connection timeout must be greater or equal than zero");
+        else
+            this.connectionTimeout = connectionTimeout;
     }
 
     public static class Builder {
 
         private DatagramSocket dgramSocket;
-        private Map<Integer,ReceivingQueue> receivingQueues;
-        private Map<Integer,TransmissionQueue> transmissionFrameQueues;
-        private ACKQueue ackQueue;
+        private ConcurrentMap<Integer,ReceivingQueue> receivingQueues;
+        private ConcurrentMap<Integer,TransmissionQueue> transmissionFrameQueues;
+        private ACKSet ackQueue;
         private LockstepCoreThread coreThread;
         private String name;
         private int receiverID;
+        private int connectionTimeout;
 
         private Builder() {
         }
@@ -98,17 +111,17 @@ public class LockstepReceiver extends Thread
             return this;
         }
 
-        public Builder receivingQueues(final Map<Integer,ReceivingQueue> value) {
+        public Builder receivingQueues(final ConcurrentMap<Integer,ReceivingQueue> value) {
             this.receivingQueues = value;
             return this;
         }
 
-        public Builder transmissionQueues(final Map<Integer,TransmissionQueue> value) {
+        public Builder transmissionQueues(final ConcurrentMap<Integer,TransmissionQueue> value) {
             this.transmissionFrameQueues = value;
             return this;
         }
 
-        public Builder ackQueue(final ACKQueue value) {
+        public Builder ackSet(final ACKSet value) {
             this.ackQueue = value;
             return this;
         }
@@ -127,11 +140,17 @@ public class LockstepReceiver extends Thread
             this.receiverID = value;
             return this;
         }
+        
+        public Builder connectionTimeout(final int value)
+        {
+            this.connectionTimeout = value;
+            return this;
+        }
 
         public LockstepReceiver build() {
             return new lockstep.LockstepReceiver(dgramSocket, receivingQueues, 
                     transmissionFrameQueues, ackQueue, 
-                    coreThread, name, receiverID);
+                    coreThread, name, receiverID, connectionTimeout);
         }
     }
 
@@ -139,20 +158,39 @@ public class LockstepReceiver extends Thread
         return new LockstepReceiver.Builder();
     }
 
-    private LockstepReceiver(final DatagramSocket dgramSocket, final Map<Integer, ReceivingQueue> receivingQueues, final Map<Integer, TransmissionQueue> transmissionFrameQueues, final ACKQueue ackQueue, final LockstepCoreThread coreThread, final String name, final int receiverID) {
+    private LockstepReceiver(final DatagramSocket dgramSocket, final ConcurrentMap<Integer,
+            ReceivingQueue> receivingQueues, final ConcurrentMap<Integer,
+            TransmissionQueue> transmissionFrameQueues, final ACKSet ackQueue,
+            final LockstepCoreThread coreThread, final String name,
+            final int receiverID, final int connectionTimeout) 
+    {
         this.dgramSocket = dgramSocket;
         this.receivingQueues = receivingQueues;
         this.transmissionQueues = transmissionFrameQueues;
-        this.ackQueue = ackQueue;
+        this.ackSet = ackQueue;
         this.coreThread = coreThread;
         this.name = name;
         this.receiverID = receiverID;
+        this.connectionTimeout = connectionTimeout;
     }
     
     @Override
     public void run()
     {
         Thread.currentThread().setName(name);
+        
+        try{
+            dgramSocket.setSoTimeout(connectionTimeout * 10);
+        }
+        catch(SocketException soEx)
+        {
+            LOG.info("Recevier entering termination phase: socket failure at startup");
+            dgramSocket.close();
+            signalDisconnection();
+            handleDisconnection(receiverID);
+            LOG.info("Receiver terminated");
+            return;
+        }
         
         while(true)
         {            
@@ -163,6 +201,13 @@ public class LockstepReceiver extends Thread
                 
                 DatagramPacket p = new DatagramPacket(new byte[MAX_PAYLOAD_LENGTH], MAX_PAYLOAD_LENGTH);
                 this.dgramSocket.receive(p);
+                
+                if(!firstPacketReceived)
+                {
+                    dgramSocket.setSoTimeout(connectionTimeout);
+                    firstPacketReceived = true;
+                }
+                
                 try(
                     ByteArrayInputStream bain = new ByteArrayInputStream(p.getData());
                     GZIPInputStream gzin = new GZIPInputStream(bain);
@@ -231,7 +276,7 @@ public class LockstepReceiver extends Thread
         ReceivingQueue receivingQueue = this.receivingQueues.get(input.senderID);
         FrameACK frameACK = receivingQueue.push(input.frame);
         frameACK.setSenderID(input.senderID);
-        ackQueue.pushACKs(frameACK);
+        ackSet.pushACK(frameACK);
 
         if(input.frame.getCommand() instanceof DisconnectionSignal)
             handleDisconnection(input.senderID);
@@ -246,7 +291,7 @@ public class LockstepReceiver extends Thread
         ReceivingQueue receivingQueue = this.receivingQueues.get(inputs.senderID);
         FrameACK frameACK = receivingQueue.push(inputs.frames);
         frameACK.setSenderID(inputs.senderID);
-        ackQueue.pushACKs(frameACK);
+        ackSet.pushACK(frameACK);
         
         if(inputs.frames[inputs.frames.length - 1].getCommand() instanceof DisconnectionSignal)
             handleDisconnection(inputs.senderID);

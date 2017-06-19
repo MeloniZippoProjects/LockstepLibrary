@@ -5,12 +5,10 @@
  */
 package lockstep;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import lockstep.messages.simulation.FrameACK;
 import lockstep.messages.simulation.LockstepCommand;
@@ -52,7 +50,7 @@ public class TransmissionQueue
      * Inserts the input passed, provided it is in the interval currently
      * accepted. Otherwise it's discarded.
      * 
-     * @param command input the FrameInput to insert
+     * @param frameInput the FrameInput to be transmitted
      */
     public void push(FrameInput frameInput)
     {
@@ -62,7 +60,7 @@ public class TransmissionQueue
     /**
      * Inserts all inputs passed, provided it is in the interval currently 
      * accepted. Otherwise it is discarded.
-     * @param commands array of inputs to be transmitted
+     * @param frameInputs array of inputs to be transmitted
      */
     public void push(FrameInput[] frameInputs)
     {
@@ -128,10 +126,9 @@ public class TransmissionQueue
                 acked++;
             }
         }
-                
-        LOG.debug("" + acked + " ACKs received");
     }
     
+    @Override
     public String toString()
     {
         String string = new String();

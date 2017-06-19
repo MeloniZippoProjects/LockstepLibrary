@@ -9,8 +9,7 @@ import java.io.Serializable;
 import lockstep.FrameInput;
 
 /**
- *
- * @author Raff
+ * Wrapper for an array of FrameInputs and the id of the sender
  */
 public class InputMessageArray implements Serializable
 {

@@ -8,8 +8,9 @@ package lockstep.messages.handshake;
 import java.io.Serializable;
 
 /**
- *
- * @author enric
+ * First message of the handshake protocol, from client to server.
+ * It contains the udp port for the client, while the IP address
+ * is derived from the connection.
  */
 public class ClientHello implements Serializable
 {

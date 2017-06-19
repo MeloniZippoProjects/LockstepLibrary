@@ -7,6 +7,10 @@ package lockstep.messages.simulation;
 
 import java.io.Serializable;
 
+/**
+ * Void message to be sent in order to keep the connection alive while there is
+ * nothing else to send
+ */
 public class KeepAlive implements Serializable {
     
 }
