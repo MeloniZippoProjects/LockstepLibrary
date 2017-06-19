@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.SocketException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.zip.GZIPInputStream;
@@ -37,22 +38,19 @@ public class LockstepReceiver extends Thread
     ConcurrentMap<Integer, TransmissionQueue> transmissionQueues;
     volatile ACKSet ackSet;
     static final int MAX_PAYLOAD_LENGTH = 300;
-    
-    
+    private int connectionTimeout;
+    private boolean firstPacketReceived = false;
     
     private final LockstepCoreThread coreThread;
-    
     private final String name;
-    
     
     private static final Logger LOG = LogManager.getLogger(LockstepReceiver.class);
     
     public LockstepReceiver(DatagramSocket socket, LockstepCoreThread coreThread, 
             ConcurrentMap<Integer, ReceivingQueue> receivingQueues, 
             ConcurrentMap<Integer, TransmissionQueue> transmissionQueues, 
-            String name, int ownID, ACKSet ackQueue)
+            String name, int ownID, ACKSet ackQueue, int connectionTimeout)
     {
-        
         if(socket.isClosed())
             throw new IllegalArgumentException("Socket is closed");
         else
@@ -87,6 +85,11 @@ public class LockstepReceiver extends Thread
             throw new IllegalArgumentException("Ack Queue cannot be null");
         else
             this.ackSet = ackQueue;
+        
+        if(connectionTimeout < 0)
+            throw new IllegalArgumentException("Connection timeout must be greater or equal than zero");
+        else
+            this.connectionTimeout = connectionTimeout;
     }
 
     public static class Builder {
@@ -98,6 +101,7 @@ public class LockstepReceiver extends Thread
         private LockstepCoreThread coreThread;
         private String name;
         private int receiverID;
+        private int connectionTimeout;
 
         private Builder() {
         }
@@ -136,11 +140,17 @@ public class LockstepReceiver extends Thread
             this.receiverID = value;
             return this;
         }
+        
+        public Builder connectionTimeout(final int value)
+        {
+            this.connectionTimeout = value;
+            return this;
+        }
 
         public LockstepReceiver build() {
             return new lockstep.LockstepReceiver(dgramSocket, receivingQueues, 
                     transmissionFrameQueues, ackQueue, 
-                    coreThread, name, receiverID);
+                    coreThread, name, receiverID, connectionTimeout);
         }
     }
 
@@ -148,7 +158,12 @@ public class LockstepReceiver extends Thread
         return new LockstepReceiver.Builder();
     }
 
-    private LockstepReceiver(final DatagramSocket dgramSocket, final ConcurrentMap<Integer, ReceivingQueue> receivingQueues, final ConcurrentMap<Integer, TransmissionQueue> transmissionFrameQueues, final ACKSet ackQueue, final LockstepCoreThread coreThread, final String name, final int receiverID) {
+    private LockstepReceiver(final DatagramSocket dgramSocket, final ConcurrentMap<Integer,
+            ReceivingQueue> receivingQueues, final ConcurrentMap<Integer,
+            TransmissionQueue> transmissionFrameQueues, final ACKSet ackQueue,
+            final LockstepCoreThread coreThread, final String name,
+            final int receiverID, final int connectionTimeout) 
+    {
         this.dgramSocket = dgramSocket;
         this.receivingQueues = receivingQueues;
         this.transmissionQueues = transmissionFrameQueues;
@@ -156,12 +171,26 @@ public class LockstepReceiver extends Thread
         this.coreThread = coreThread;
         this.name = name;
         this.receiverID = receiverID;
+        this.connectionTimeout = connectionTimeout;
     }
     
     @Override
     public void run()
     {
         Thread.currentThread().setName(name);
+        
+        try{
+            dgramSocket.setSoTimeout(connectionTimeout * 10);
+        }
+        catch(SocketException soEx)
+        {
+            LOG.info("Recevier entering termination phase: socket failure at startup");
+            dgramSocket.close();
+            signalDisconnection();
+            handleDisconnection(receiverID);
+            LOG.info("Receiver terminated");
+            return;
+        }
         
         while(true)
         {            
@@ -172,6 +201,13 @@ public class LockstepReceiver extends Thread
                 
                 DatagramPacket p = new DatagramPacket(new byte[MAX_PAYLOAD_LENGTH], MAX_PAYLOAD_LENGTH);
                 this.dgramSocket.receive(p);
+                
+                if(!firstPacketReceived)
+                {
+                    dgramSocket.setSoTimeout(connectionTimeout);
+                    firstPacketReceived = true;
+                }
+                
                 try(
                     ByteArrayInputStream bain = new ByteArrayInputStream(p.getData());
                     GZIPInputStream gzin = new GZIPInputStream(bain);

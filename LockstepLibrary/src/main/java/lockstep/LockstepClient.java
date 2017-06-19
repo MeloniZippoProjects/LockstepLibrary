@@ -13,7 +13,6 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -55,12 +54,13 @@ public class LockstepClient extends LockstepCoreThread
     Semaphore executionSemaphore;
     private int clientsNumber;
     private final int tickrate;
+    private final int connectionTimeout;
     private final LockstepApplication lockstepApplication;
 
     private static final Logger LOG = LogManager.getLogger(LockstepClient.class);
     
     public LockstepClient(InetSocketAddress serverTCPAddress, int framerate, 
-            int tickrate, int fillTimeout, 
+            int tickrate, int fillTimeout, int connectionTimeout,
             LockstepApplication lockstepApplication)
     {
         if(serverTCPAddress.isUnresolved()) 
@@ -83,6 +83,11 @@ public class LockstepClient extends LockstepCoreThread
         else
             this.fillTimeout = fillTimeout;
         
+        if(connectionTimeout < 0)
+            throw new IllegalArgumentException("Connection timeout timeout must greater or equal than zero");
+        else
+            this.connectionTimeout = connectionTimeout;
+        
         if(lockstepApplication == null)
             throw new NullPointerException("LockstepApplication cannot be null");
         else
@@ -95,6 +100,7 @@ public class LockstepClient extends LockstepCoreThread
         private int fillTimeout;
         private InetSocketAddress serverTCPAddress;
         private int tickrate;
+        private int connectionTimeout;
         private LockstepApplication lockstepApplication;
 
         private Builder() {
@@ -107,6 +113,11 @@ public class LockstepClient extends LockstepCoreThread
 
         public Builder fillTimeout(final int value) {
             this.fillTimeout = value;
+            return this;
+        }
+        
+        public Builder connectionTimeout(final int value) {
+            this.connectionTimeout = value;
             return this;
         }
 
@@ -126,7 +137,7 @@ public class LockstepClient extends LockstepCoreThread
         }
 
         public LockstepClient build() {
-            return new lockstep.LockstepClient(serverTCPAddress, framerate, tickrate, fillTimeout, lockstepApplication);
+            return new lockstep.LockstepClient(serverTCPAddress, framerate, tickrate, fillTimeout, connectionTimeout, lockstepApplication);
         }
     }
 
@@ -207,8 +218,6 @@ public class LockstepClient extends LockstepCoreThread
         InetSocketAddress serverUDPAddress = new InetSocketAddress(serverTCPAddress.getAddress(), helloReply.serverUDPPort);
         udpSocket.connect(serverUDPAddress);
 
-        udpSocket.setSoTimeout(5000);
-
         ConcurrentHashMap<Integer, ReceivingQueue> receivingExecutionQueues = new ConcurrentHashMap<>();
         transmissionFrameQueue = new TransmissionQueue(helloReply.firstFrameNumber, localClientID);
         ConcurrentHashMap<Integer,TransmissionQueue> transmissionQueueWrapper = new ConcurrentHashMap<>();
@@ -224,6 +233,7 @@ public class LockstepClient extends LockstepCoreThread
                 .name("Receiver-to-"+localClientID)
                 .receiverID(LockstepReceiver.RECEIVER_FROM_SERVER_ID)
                 .ackSet(ackSet)
+                .connectionTimeout(connectionTimeout)
                 .build();        
 
         transmitter = LockstepTransmitter.builder()

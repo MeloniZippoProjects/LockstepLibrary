@@ -42,49 +42,7 @@ public class LockstepServer extends LockstepCoreThread
      * available, they're forwarded to all the clients
      */
     ConcurrentHashMap<Integer, ServerReceivingQueue> receivingQueues;
-
-    public static class Builder {
-
-        private ConcurrentSkipListSet<Integer> hostIDs;
-        private ConcurrentHashMap<Integer,ServerReceivingQueue> receivingQueues;
-        private ConcurrentHashMap<Integer,Map<Integer,TransmissionQueue>> transmissionFrameQueueTree;
-        private Map<Integer,ACKSet> ackQueues;
-        private Map<Integer,Thread> receivers;
-        private Map<Integer,Thread> transmitters;
-        private Map<Integer,Boolean> executionQueuesHeadsAvailability;
-        private Semaphore executionSemaphore;
-        private int tcpPort;
-        private int clientsNumber;
-        private int tickrate;
-        private List<DatagramSocket> openSockets;
-
-        private Builder() {
-        }
-        
-        public Builder tcpPort(final int value) {
-            this.tcpPort = value;
-            return this;
-        }
-
-        public Builder clientsNumber(final int value) {
-            this.clientsNumber = value;
-            return this;
-        }
-
-        public Builder tickrate(final int value) {
-            this.tickrate = value;
-            return this;
-        }
-
-        public LockstepServer build() {
-            return new lockstep.LockstepServer(tcpPort, clientsNumber, tickrate);
-        }
-    }
-
-    public static LockstepServer.Builder builder() {
-        return new LockstepServer.Builder();
-    }
-    
+    private int connectionTimeout;
     
     /**
      * Buffers for frame input to send to clients. 
@@ -107,11 +65,6 @@ public class LockstepServer extends LockstepCoreThread
      * The key is the ID of the host to which the frames are transmitted
      */
     HashMap<Integer, Thread> transmitters;
-
-    /**
-     * Used for synchronization between server and executionFrameQueues
-     */
-    volatile Map<Integer, Boolean> executionQueuesHeadsAvailability;
     
     //volatile CyclicCountDownLatch cyclicExecutionLatch;
     Semaphore executionSemaphore;
@@ -123,8 +76,47 @@ public class LockstepServer extends LockstepCoreThread
     private final int tickrate;
     
     private final List<DatagramSocket> openSockets;
+  
+    public static class Builder {
+
+        private int tcpPort;
+        private int clientsNumber;
+        private int tickrate;
+        private int connectionTimeout;
+
+        private Builder() {
+        }
+        
+        public Builder tcpPort(final int value) {
+            this.tcpPort = value;
+            return this;
+        }
+
+        public Builder clientsNumber(final int value) {
+            this.clientsNumber = value;
+            return this;
+        }
+
+        public Builder tickrate(final int value) {
+            this.tickrate = value;
+            return this;
+        }
+        
+        public Builder connectionTimeout(final int value) {
+            this.connectionTimeout = value;
+            return this;
+        }
+
+        public LockstepServer build() {
+            return new lockstep.LockstepServer(tcpPort, clientsNumber, tickrate, connectionTimeout);
+        }
+    }
+
+    public static LockstepServer.Builder builder() {
+        return new LockstepServer.Builder();
+    }
     
-    public LockstepServer(int tcpPort, int clientsNumber, int tickrate)
+    public LockstepServer(int tcpPort, int clientsNumber, int tickrate, int connectionTimeout)
     {
         //late fail left to Socket class
         this.tcpPort = tcpPort;
@@ -138,6 +130,11 @@ public class LockstepServer extends LockstepCoreThread
             throw new IllegalArgumentException("Tickrate must be an integer greater than 0");
         else
             this.tickrate = tickrate;
+        
+        if(connectionTimeout < 0)
+            throw new IllegalArgumentException("Connection timeout must be greater or equal than zero");
+        else
+            this.connectionTimeout = connectionTimeout;
         
         receivers = new HashMap<>();
         transmitters = new HashMap<>();
@@ -344,8 +341,6 @@ public class LockstepServer extends LockstepCoreThread
                 openSockets.add(udpSocket);
                 InetSocketAddress clientUDPAddress = new InetSocketAddress(tcpSocket.getInetAddress().getHostAddress(), hello.clientUDPPort);
                 udpSocket.connect(clientUDPAddress);
-                //TO DO: review timeout settings
-                udpSocket.setSoTimeout(5000);
 
                 int assignedClientID;
                 do{
@@ -410,6 +405,7 @@ public class LockstepServer extends LockstepCoreThread
                 .transmissionQueues(transmissionFrameQueues)
                 .name("Receiver-from-"+clientID)
                 .ackSet(ackQueues.get(clientID))
+                .connectionTimeout(connectionTimeout)
                 .build();
         
         receivers.put(clientID, receiver);
