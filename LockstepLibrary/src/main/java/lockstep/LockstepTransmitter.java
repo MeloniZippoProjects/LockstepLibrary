@@ -151,12 +151,7 @@ public class LockstepTransmitter extends Thread
                 
                 if(dgramSocket.isClosed())
                     throw new SocketException();
-                                    
-                for(TransmissionQueue txQ : transmissionQueues.values())
-                {   
-                    LOG.debug(txQ);
-                }
-                
+                                
                 boolean sentCommands = processCommands();
                 boolean sentACKs = processACKs();
                 
@@ -225,21 +220,12 @@ public class LockstepTransmitter extends Thread
                 sentSomething = true;
                 int senderID = transmissionQueueEntry.getKey();
                 
-                LOG.debug("Entry " + senderID);
                 FrameInput[] frames = transmissionQueueEntry.getValue().pop();
-                
-                LOG.debug("txq " + senderID + "has to send: ");
-                for(int i = 0; i < frames.length; ++i)
-                {
-                    LOG.debug("Frame " + i + ": " + frames[i].getFrameNumber());
-                }
-                
                 
                 if(frames.length == 1)
                 {
                     InputMessage msg = new InputMessage(senderID, frames[0]);
                     this.send(msg);
-                    LOG.debug("1 message sent for " + senderID);
                 }
                 else if(frames.length > 1)
                 {
@@ -288,8 +274,6 @@ public class LockstepTransmitter extends Thread
             gzout.finish();
             byte[] data = baout.toByteArray();
             this.dgramSocket.send(new DatagramPacket(data, data.length));
-            LOG.debug("Single ACK sent, payload size:" + data.length);
-            LOG.debug("["+frameACK.senderID+"] I just ACKed ("+data.length+"): up to " + frameACK.cumulativeACK + " and " + ArrayUtils.toString(frameACK.selectiveACKs));
         } catch (IOException ioEx)
         {
             throw ioEx;
@@ -346,8 +330,6 @@ public class LockstepTransmitter extends Thread
             gzout.finish();
             byte[] data = baout.toByteArray();
             this.dgramSocket.send(new DatagramPacket(data, data.length));
-            LOG.debug("Payload size " + data.length);
-            LOG.debug("["+msg.senderID+"] I just sent ("+data.length+"): " + msg);
         }
         catch(IOException ioEx)
         {

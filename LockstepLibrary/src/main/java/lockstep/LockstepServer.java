@@ -325,11 +325,9 @@ public class LockstepServer extends LockstepCoreThread
      */
     private void serverHandshakeProtocol(Socket tcpSocket, int firstFrameNumber, CyclicBarrier barrier, CountDownLatch latch, LockstepServer server)
     {
-        LOG.debug("ClientHandshake started");
         try(ObjectOutputStream oout = new ObjectOutputStream(tcpSocket.getOutputStream());)
         {
             oout.flush();
-            LOG.debug("oout flushed");
             try(ObjectInputStream oin = new ObjectInputStream(tcpSocket.getInputStream());)
             {
                 //Receive hello message from client and reply

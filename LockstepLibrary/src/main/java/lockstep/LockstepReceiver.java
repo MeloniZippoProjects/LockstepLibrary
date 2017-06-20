@@ -272,7 +272,6 @@ public class LockstepReceiver extends Thread
     
     private void processInput(InputMessage input)
     {
-        LOG.debug("1 InputMessage received from " + input.senderID + ": " + input.frame.getFrameNumber());
         ReceivingQueue receivingQueue = this.receivingQueues.get(input.senderID);
         FrameACK frameACK = receivingQueue.push(input.frame);
         frameACK.setSenderID(input.senderID);
@@ -284,10 +283,6 @@ public class LockstepReceiver extends Thread
 
     private void processInput(InputMessageArray inputs)
     {
-        String numbers = "";
-        for(FrameInput frame : inputs.frames)
-            numbers += frame.getFrameNumber() + ", ";
-        LOG.debug("" + inputs.frames.length + " InputMessages received from " + inputs.senderID + ": [ " + numbers + "]");
         ReceivingQueue receivingQueue = this.receivingQueues.get(inputs.senderID);
         FrameACK frameACK = receivingQueue.push(inputs.frames);
         frameACK.setSenderID(inputs.senderID);

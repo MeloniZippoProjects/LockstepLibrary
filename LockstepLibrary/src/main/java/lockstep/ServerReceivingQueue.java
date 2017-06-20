@@ -57,8 +57,6 @@ public class ServerReceivingQueue implements ReceivingQueue {
 
         this.lastInOrderACK = new AtomicInteger(initialFrameNumber - 1);
         this.selectiveACKsSet = new ConcurrentSkipListSet<>();
-                
-        LOG.debug("BufferHead["+senderID+"] initialized at " + initialFrameNumber);
     }
     
     /**
