@@ -41,8 +41,7 @@ public class MosaicLockstepApplication implements LockstepApplication {
             Color clientColor, Label currentFrameLabel,
             Label currentFPSLabel, boolean abortOnDisconnect, int fillsize, int frameLimit)
     {
-        //super(serverTCPAddress, framerate, tickrate, fillTimeout);
-         this.mosaic = mosaic;
+        this.mosaic = mosaic;
         this.clientColor = clientColor;
         this.rows = rows;
         this.columns = columns;
@@ -52,6 +51,15 @@ public class MosaicLockstepApplication implements LockstepApplication {
         this.abortOnDisconnect = abortOnDisconnect;
         this.fillSize = fillsize;
         this.frameLimit = frameLimit;
+    }
+
+    private void computeHash() {
+        String mosaicState = "";
+        for(Rectangle[] row : mosaic)
+            for(Rectangle cell : row)
+                mosaicState = mosaicState + ((Color) cell.getFill()).toString();
+        
+        System.out.println("Hash of the final mosaic state: " + mosaicState.hashCode());
     }
 
     public static class Builder {
@@ -191,7 +199,10 @@ public class MosaicLockstepApplication implements LockstepApplication {
             Platform.runLater(()-> currentFrameLabel.setText(Integer.toString(cmd.ownFrame)));
             
             if(frameLimit > 0 && cmd.ownFrame == frameLimit)
+            {
                 lockstepClient.abort();
+                computeHash();
+            }
         }  
         catch(NullPointerException e)
         {
@@ -234,7 +245,11 @@ public class MosaicLockstepApplication implements LockstepApplication {
     public void signalDisconnection(int remainingClients)
     {
         if(abortOnDisconnect)
+        {
             lockstepClient.abort();
+            computeHash();
+        }
+        
     }
 
     void setLockstepClient(LockstepClient lockstepClient) {
