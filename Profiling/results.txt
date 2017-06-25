@@ -1,0 +1,2 @@
+We see that most of the time both the transmitter and the receiver are idle doing nothing.
+This means that we can use that time to better encode commands to minimize network utilization.

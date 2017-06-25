@@ -51,7 +51,7 @@ public interface LockstepApplication {
     /**
      * Provides the first commands to bootstrap the simulation.
      * 
-     * @return 
+     * @return commands to bootstrap the simulation
      */
     abstract LockstepCommand[] bootstrapCommands();
 

@@ -24,7 +24,7 @@ import org.apache.logging.log4j.LogManager;
  * 
  * It is thread safe.
  */
-public class ServerReceivingQueue implements ReceivingQueue {
+class ServerReceivingQueue implements ReceivingQueue {
     
     private final int senderID;
     
@@ -131,7 +131,6 @@ public class ServerReceivingQueue implements ReceivingQueue {
      * Internal method to push a single input into the queue.
      * 
      * @param input the input to push into the queue
-     * @return A boolean indicating whether the input should be selectively ACKed
      */
     private void _push(FrameInput input)
     {

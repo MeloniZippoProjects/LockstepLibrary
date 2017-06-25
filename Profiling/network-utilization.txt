@@ -1,0 +1,5 @@
+4 clients: 2 Mbps : out 1.1 + 0.8 in
+
+8 clients: 7.5 Mbps : out 5 + in 2.3
+
+12 clients: 15 Mbps : out 10 + in 3.5
