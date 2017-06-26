@@ -26,7 +26,6 @@ import org.apache.logging.log4j.LogManager;
 public class TransmissionQueue
 {    
     ConcurrentSkipListMap<Integer, LockstepCommand> commandsBuffer;
-    AtomicInteger lastFrame;
     AtomicInteger lastACKed;
         
     private static final Logger LOG = LogManager.getLogger(TransmissionQueue.class);
@@ -40,7 +39,6 @@ public class TransmissionQueue
      */
     public TransmissionQueue(int initialFrameNumber, int senderID)
     {
-        this.lastFrame = new AtomicInteger(initialFrameNumber - 1);
         this.commandsBuffer = new ConcurrentSkipListMap<>();
         this.lastACKed = new AtomicInteger(initialFrameNumber - 1);
         this.senderID = senderID;

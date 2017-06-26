@@ -398,6 +398,13 @@ public class LockstepClient extends LockstepCoreThread
     
     void networkShutdown()
     {
+        if(transmissionFrameQueue!=null)
+        {
+            DisconnectionSignal disconnectionSignal= new DisconnectionSignal();
+            FrameInput disconnectionFrame = new FrameInput(currentUserFrame++, disconnectionSignal);
+            executionFrameQueues.get(this.localClientID).push(disconnectionFrame);
+        }
+        
         transmitter.interrupt();
         
         try

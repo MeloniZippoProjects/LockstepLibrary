@@ -9,7 +9,7 @@ $fillTimeout = 5000;
 $maxExecutionDistance = 30;
 $fillSize = 5;
 $connectionTimeout = 2000;
-$frameLimit = 3600;
+$frameLimit = 900;
 $abortOnDisconnect = "true";
 $waitOnClose = "true";
 

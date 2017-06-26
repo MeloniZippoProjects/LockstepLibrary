@@ -232,7 +232,7 @@ public class LockstepServer extends LockstepCoreThread
             LOG.fatal(intEx);
         }
     }
-        
+            
     /**
      * This method puts the server in waiting for client connections. It returns
      * when the expected number of clients have successfully completed the 
@@ -455,7 +455,6 @@ public class LockstepServer extends LockstepCoreThread
                         if(receivingQueues.containsKey(senderID))
                             disconnectReceivingQueues(senderID);
                     }
-                        
                 }
             }
         }
