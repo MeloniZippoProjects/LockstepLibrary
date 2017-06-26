@@ -53,7 +53,7 @@ public class MosaicLockstepApplication implements LockstepApplication {
         this.frameLimit = frameLimit;
     }
 
-    private void computeHash() {
+    public void printMosaicHash() {
         String mosaicState = "";
         for(Rectangle[] row : mosaic)
             for(Rectangle cell : row)
@@ -164,12 +164,12 @@ public class MosaicLockstepApplication implements LockstepApplication {
 
     @Override
     public void suspendSimulation() {
-        LOG.debug("Simulation suspended");
+        LOG.info("Simulation suspended");
     }
 
     @Override
     public void resumeSimulation() {
-        LOG.debug("Simulation resumed");
+        LOG.info("Simulation resumed");
     }
 
     @Override
@@ -191,7 +191,6 @@ public class MosaicLockstepApplication implements LockstepApplication {
                 double measure = throughputMeasureInterval*1000/(System.currentTimeMillis() - throughputTimer);
                 throughput = alpha*throughput + (1 - alpha)*measure;
                 
-                LOG.debug("Throughput = " + throughput);
                 Platform.runLater(()-> currentFPSLabel.setText( Double.toString( throughput ).substring( 0, Integer.min( 4, Double.toString( throughput ).length() ) ) ) );
                 throughputFramesProcessed = 0;
                 throughputTimer = System.currentTimeMillis();
@@ -199,10 +198,7 @@ public class MosaicLockstepApplication implements LockstepApplication {
             Platform.runLater(()-> currentFrameLabel.setText(Integer.toString(cmd.ownFrame)));
             
             if(frameLimit > 0 && cmd.ownFrame == frameLimit)
-            {
                 lockstepClient.abort();
-                computeHash();
-            }
         }  
         catch(NullPointerException e)
         {
@@ -247,7 +243,7 @@ public class MosaicLockstepApplication implements LockstepApplication {
         if(abortOnDisconnect)
         {
             lockstepClient.abort();
-            computeHash();
+            printMosaicHash();
         }
         
     }

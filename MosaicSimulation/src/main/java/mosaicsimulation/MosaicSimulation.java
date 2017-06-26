@@ -95,10 +95,7 @@ public class MosaicSimulation extends Application
         Label currentFrameLabel = (Label) scene.lookup("#currentFrameLabel");
         
         Label currentFPSLabel = (Label) scene.lookup("#frameRate");
-        
-        LOG.debug("Creation of lockstep client");
-        //MosaicLockstepApplication mosaicLockstepClient = new MosaicLockstepApplication(mosaic, rows, columns, clientColor, currentFrameLabel, currentFPSLabel, abortOnDisconnect, fillSize);
-        
+                
         MosaicLockstepApplication mosaicLockstepApplication = MosaicLockstepApplication.builder()
                 .mosaic(mosaic)
                 .rows(rows)
@@ -131,6 +128,7 @@ public class MosaicSimulation extends Application
             {
                 lockstepClient.join();
                 LOG.info("Lockstep client closed");
+                mosaicLockstepApplication.printMosaicHash();
                 if(!waitOnClose)
                     System.exit(1);
             }

@@ -9,7 +9,7 @@ $fillSize = 30;
 $connectionTimeout = 2000;
 $frameLimit = 3600;
 $abortOnDisconnect = "true";
-$waitOnClose = "false";
+$waitOnClose = "true";
 
 $log = gci -Filter "logs";
 Remove-Item $log -Recurse;
