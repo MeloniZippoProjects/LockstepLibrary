@@ -14,6 +14,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Semaphore;
@@ -306,7 +307,7 @@ public class LockstepClient extends LockstepCoreThread
             lockstepApplication.resumeSimulation();
         }
         
-        HashMap<Integer, LockstepCommand> commands = collectCommands();
+        TreeMap<Integer, LockstepCommand> commands = collectCommands();
         for(Entry<Integer, LockstepCommand> commandEntry : commands.entrySet())
         {
             LockstepCommand command = commandEntry.getValue();
@@ -319,9 +320,9 @@ public class LockstepClient extends LockstepCoreThread
         }
     }
 
-    private HashMap<Integer, LockstepCommand> collectCommands()
+    private TreeMap<Integer, LockstepCommand> collectCommands()
     {        
-        HashMap<Integer, LockstepCommand> commands = new HashMap<>();
+        TreeMap<Integer, LockstepCommand> commands = new TreeMap<>();
         
         for(Entry<Integer, ClientReceivingQueue> frameQueueEntry : this.executionFrameQueues.entrySet())
         {
