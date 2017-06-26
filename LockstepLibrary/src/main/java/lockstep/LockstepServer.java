@@ -148,7 +148,7 @@ public class LockstepServer extends LockstepCoreThread
     }
 
     /**
-     * The server simply cycles collecting a complete set of frame inputs and
+     * The server cycles collecting a complete set of frame inputs and
      * forwarding them to all the clients. Differently from the clients, it doesn't
      * wait any interframe time to process the executionFrameQueues.
      * If a frame lacks any input from any client, the server stops and waits for
