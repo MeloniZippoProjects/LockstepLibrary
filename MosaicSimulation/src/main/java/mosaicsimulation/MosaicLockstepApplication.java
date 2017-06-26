@@ -164,12 +164,12 @@ public class MosaicLockstepApplication implements LockstepApplication {
 
     @Override
     public void suspendSimulation() {
-        LOG.info("Simulation suspended");
+        //LOG.info("Simulation suspended");
     }
 
     @Override
     public void resumeSimulation() {
-        LOG.info("Simulation resumed");
+        //LOG.info("Simulation resumed");
     }
 
     @Override

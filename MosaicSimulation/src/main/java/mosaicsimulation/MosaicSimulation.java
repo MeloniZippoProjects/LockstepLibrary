@@ -81,6 +81,7 @@ public class MosaicSimulation extends Application
         int framerate = Integer.parseInt(namedParameters.get("framerate"));
         int tickrate = Integer.parseInt(namedParameters.get("tickrate"));
         int fillTimeout = Integer.parseInt(namedParameters.get("fillTimeout"));
+        int maxExecutionDistance = Integer.parseInt(namedParameters.get("maxExecutionDistance"));
         int fillSize = Integer.parseInt(namedParameters.get("fillSize"));
         int connectionTimeout = Integer.parseInt(namedParameters.get("connectionTimeout"));
         int frameLimit = Integer.parseInt(namedParameters.get("frameLimit"));
@@ -113,6 +114,7 @@ public class MosaicSimulation extends Application
                 .framerate(framerate)
                 .tickrate(tickrate)
                 .fillTimeout(fillTimeout)
+                .maxExecutionDistance(maxExecutionDistance)
                 .lockstepApplication(mosaicLockstepApplication)
                 .connectionTimeout(connectionTimeout)
                 .build();

@@ -17,6 +17,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import lockstep.messages.simulation.DisconnectionSignal;
 import lockstep.messages.simulation.LockstepCommand;
 import org.apache.logging.log4j.Logger;
@@ -38,7 +39,8 @@ public class LockstepClient extends LockstepCoreThread
     
     int currentExecutionFrame;
     int currentUserFrame;
-    int frameExecutionDistance;
+    int frameExecutionDistance = 0;
+    int maxExecutionDistance;
     int localClientID;
     
     ConcurrentSkipListMap<Integer, ClientReceivingQueue> executionFrameQueues; 
@@ -60,8 +62,8 @@ public class LockstepClient extends LockstepCoreThread
     private static final Logger LOG = LogManager.getLogger(LockstepClient.class);
     
     public LockstepClient(InetSocketAddress serverTCPAddress, int framerate, 
-            int tickrate, int fillTimeout, int connectionTimeout,
-            LockstepApplication lockstepApplication)
+            int tickrate, int fillTimeout, int maxExecutionDistance,
+            int connectionTimeout, LockstepApplication lockstepApplication)
     {
         if(serverTCPAddress.isUnresolved()) 
             throw new IllegalArgumentException("Server hostname is unresolved");
@@ -83,6 +85,11 @@ public class LockstepClient extends LockstepCoreThread
         else
             this.fillTimeout = fillTimeout;
         
+        if(maxExecutionDistance <= 0)
+            throw new IllegalArgumentException("Max execution distance must be an integer greater than 0");
+        else
+            this.maxExecutionDistance = maxExecutionDistance;
+        
         if(connectionTimeout < 0)
             throw new IllegalArgumentException("Connection timeout timeout must greater or equal than zero");
         else
@@ -98,6 +105,7 @@ public class LockstepClient extends LockstepCoreThread
 
         private int framerate;
         private int fillTimeout;
+        private int maxExecutionDistance;
         private InetSocketAddress serverTCPAddress;
         private int tickrate;
         private int connectionTimeout;
@@ -113,6 +121,11 @@ public class LockstepClient extends LockstepCoreThread
 
         public Builder fillTimeout(final int value) {
             this.fillTimeout = value;
+            return this;
+        }
+        
+        public Builder maxExecutionDistance(final int value) {
+            this.maxExecutionDistance = value;
             return this;
         }
         
@@ -135,9 +148,9 @@ public class LockstepClient extends LockstepCoreThread
             this.lockstepApplication = value;
             return this;
         }
-
+        
         public LockstepClient build() {
-            return new lockstep.LockstepClient(serverTCPAddress, framerate, tickrate, fillTimeout, connectionTimeout, lockstepApplication);
+            return new lockstep.LockstepClient(serverTCPAddress, framerate, tickrate, fillTimeout, maxExecutionDistance, connectionTimeout, lockstepApplication);
         }
     }
 
@@ -245,7 +258,7 @@ public class LockstepClient extends LockstepCoreThread
                 .ackSet(ackSet)
                 .build();
                 
-        insertBootstrapCommands(lockstepApplication.bootstrapCommands());
+        insertFillCommands(lockstepApplication.bootstrapCommands());
 
         transmitter.start();
 
@@ -271,20 +284,20 @@ public class LockstepClient extends LockstepCoreThread
         LOG.info("Simulation started");
     }
     
-    private void insertBootstrapCommands(LockstepCommand[] bootstrapCommands)
-    {
-        insertFillCommands(bootstrapCommands);
-        this.frameExecutionDistance = bootstrapCommands.length;
-    }
-    
     private void insertFillCommands(LockstepCommand[] fillCommands)
     {
         for (LockstepCommand cmd : fillCommands)
         {
-            FrameInput newFrame = new FrameInput(currentUserFrame++, cmd);
-            executionFrameQueues.get(this.localClientID).push(newFrame);
-            if(transmissionFrameQueue != null)
-                transmissionFrameQueue.push(newFrame);
+            if(frameExecutionDistance < maxExecutionDistance)
+            {
+                FrameInput newFrame = new FrameInput(currentUserFrame++, cmd);
+                executionFrameQueues.get(this.localClientID).push(newFrame);
+                if(transmissionFrameQueue != null)
+                    transmissionFrameQueue.push(newFrame);
+                frameExecutionDistance++;
+            }
+            else
+                return;
         }
     }
     
@@ -302,7 +315,18 @@ public class LockstepClient extends LockstepCoreThread
         if(!executionSemaphore.tryAcquire(clientsNumber))
         {
             lockstepApplication.suspendSimulation();
-            executionSemaphore.acquire(clientsNumber);
+
+            if(fillTimeout > 0 && frameExecutionDistance < maxExecutionDistance)
+            {
+                if(!executionSemaphore.tryAcquire(clientsNumber, fillTimeout, TimeUnit.MILLISECONDS))
+                {
+                    insertFillCommands(lockstepApplication.fillCommands());
+                    executionSemaphore.acquire(clientsNumber);
+                }
+            }
+            else
+                executionSemaphore.acquire(clientsNumber);
+
             lockstepApplication.resumeSimulation();
         }
         

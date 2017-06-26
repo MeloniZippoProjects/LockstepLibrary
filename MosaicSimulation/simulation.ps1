@@ -5,7 +5,8 @@ $clientFramerate = 60;
 $clientTickrate = 60;
 $serverTickrate = 20;
 $fillTimeout = 5000;
-$fillSize = 30;
+$maxExecutionDistance = 30;
+$fillSize = 5;
 $connectionTimeout = 2000;
 $frameLimit = 3600;
 $abortOnDisconnect = "true";
@@ -20,5 +21,6 @@ for($i = 0; $i -lt $nClients; $i++)
 {
     start -FilePath powershell -ArgumentList ("java", "-Dlogfile=client_$i", "-cp", ".\target\mosaic-1-jar-with-dependencies.jar", "mosaicsimulation.MosaicSimulation",
      "--serverIPAddress=$serverAddress", "--serverTCPPort=$serverPort", "--framerate=$clientFramerate","--tickrate=$clientTickrate", "--fillTimeout=$fillTimeout", 
-     "--fillSize=$fillSize", "--frameLimit=$frameLimit", "--connectionTimeout=$connectionTimeout", "--abortOnDisconnect=$abortOnDisconnect", "--waitOnClose=$waitOnClose") 
+     "--maxExecutionDistance=$maxExecutionDistance", "--fillSize=$fillSize", "--frameLimit=$frameLimit", "--connectionTimeout=$connectionTimeout",
+     "--abortOnDisconnect=$abortOnDisconnect", "--waitOnClose=$waitOnClose") 
 }
