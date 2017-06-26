@@ -5,7 +5,6 @@
  */
 package mosaicsimulation;
 
-import java.util.logging.Level;
 import lockstep.LockstepServer;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -24,8 +23,9 @@ public class MosaicLockstepServer {
         opts.addOption("s", "serverPort", true, "Listening TCP port used to initiate handshakes");
         opts.addOption("n", "nClients", true, "Number of clients that will participate in the session");
         opts.addOption("t", "tickrate", true, "Number of transmission session to execute per second");
+        opts.addOption("m", "maxUDPPayloadLength", true, "Max number of bytes per UDP packet");
         opts.addOption("c", "connectionTimeout", true, "Timeout for UDP connections");
-        
+                
         DefaultParser parser = new DefaultParser();
         CommandLine commandLine = null;
         try
@@ -40,12 +40,14 @@ public class MosaicLockstepServer {
         int serverPort = Integer.parseInt(commandLine.getOptionValue("serverPort"));
         int nClients = Integer.parseInt(commandLine.getOptionValue("nClients"));
         int tickrate = Integer.parseInt(commandLine.getOptionValue("tickrate"));
+        int maxUDPPayloadLength = Integer.parseInt(commandLine.getOptionValue("maxUDPPayloadLength"));
         int connectionTimeout = Integer.parseInt(commandLine.getOptionValue("connectionTimeout"));
         
         Thread serverThread = LockstepServer.builder()
                 .clientsNumber(nClients)
                 .tcpPort(serverPort)
                 .tickrate(tickrate)
+                .maxUDPPayloadLength(maxUDPPayloadLength)
                 .connectionTimeout(connectionTimeout)
                 .build();
         

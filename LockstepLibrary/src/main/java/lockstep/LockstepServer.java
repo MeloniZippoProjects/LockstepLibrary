@@ -42,7 +42,6 @@ public class LockstepServer extends LockstepCoreThread
      * available, they're forwarded to all the clients
      */
     ConcurrentHashMap<Integer, ServerReceivingQueue> receivingQueues;
-    private int connectionTimeout;
     
     /**
      * Buffers for frame input to send to clients. 
@@ -66,22 +65,26 @@ public class LockstepServer extends LockstepCoreThread
      */
     HashMap<Integer, Thread> transmitters;
     
-    //volatile CyclicCountDownLatch cyclicExecutionLatch;
     Semaphore executionSemaphore;
+
+    private final List<DatagramSocket> openSockets;
     
     int tcpPort;
     int clientsNumber;
     
-    private static final Logger LOG = LogManager.getLogger(LockstepServer.class);
     private final int tickrate;
+    private final int maxUDPPayloadLength;
+    private int connectionTimeout;
     
-    private final List<DatagramSocket> openSockets;
   
+    private static final Logger LOG = LogManager.getLogger(LockstepServer.class);
+
     public static class Builder {
 
         private int tcpPort;
         private int clientsNumber;
         private int tickrate;
+        private int maxUDPPayloadLength;
         private int connectionTimeout;
 
         private Builder() {
@@ -101,6 +104,11 @@ public class LockstepServer extends LockstepCoreThread
             this.tickrate = value;
             return this;
         }
+
+        public Builder maxUDPPayloadLength(final int value) {
+            this.maxUDPPayloadLength = value;
+            return this;
+        }
         
         public Builder connectionTimeout(final int value) {
             this.connectionTimeout = value;
@@ -108,7 +116,8 @@ public class LockstepServer extends LockstepCoreThread
         }
 
         public LockstepServer build() {
-            return new lockstep.LockstepServer(tcpPort, clientsNumber, tickrate, connectionTimeout);
+            return new lockstep.LockstepServer(tcpPort, clientsNumber, tickrate,
+                    maxUDPPayloadLength, connectionTimeout);
         }
     }
 
@@ -116,7 +125,8 @@ public class LockstepServer extends LockstepCoreThread
         return new LockstepServer.Builder();
     }
     
-    public LockstepServer(int tcpPort, int clientsNumber, int tickrate, int connectionTimeout)
+    public LockstepServer(int tcpPort, int clientsNumber, int tickrate,
+            int maxUDPPayloadLength, int connectionTimeout)
     {
         //late fail left to Socket class
         this.tcpPort = tcpPort;
@@ -130,6 +140,11 @@ public class LockstepServer extends LockstepCoreThread
             throw new IllegalArgumentException("Tickrate must be an integer greater than 0");
         else
             this.tickrate = tickrate;
+        
+        if(maxUDPPayloadLength <= 0)
+            throw new IllegalArgumentException("Max UDP payload length must be an integer greater than 0");
+        else
+            this.maxUDPPayloadLength = maxUDPPayloadLength;
         
         if(connectionTimeout < 0)
             throw new IllegalArgumentException("Connection timeout must be greater or equal than zero");
@@ -185,35 +200,7 @@ public class LockstepServer extends LockstepCoreThread
         }
         catch(InterruptedException intEx)
         {
-            otherCloseResources();
-        }
-    }
-    
-    /**
-     * 
-     */
-    private void otherCloseResources()
-    {
-        for(Thread transmitter : transmitters.values())
-            transmitter.interrupt();
-        
-        try
-        {
-            for(Thread receiver : receivers.values())
-            {
-                receiver.join();
-            }
-
-            for(Thread transmitter : transmitters.values())
-            {
-                transmitter.join();
-            }
-        }
-        catch(InterruptedException intEx)
-        {
-            //shouldn't be interrupted
-            LOG.fatal("Interrupted during termination!!");
-            LOG.fatal(intEx);
+            closeResources();
         }
     }
     
@@ -223,18 +210,9 @@ public class LockstepServer extends LockstepCoreThread
      */
     private void closeResources()
     {
-        //Interrupts all network thread, causing their termination        
-        for(Thread receiver : receivers.values())
-        {
-            receiver.interrupt();
-        }
-        
         for(Thread transmitter : transmitters.values())
-        {
             transmitter.interrupt();
-        }
         
-        //Then waits for their effective termination
         try
         {
             for(Thread receiver : receivers.values())
@@ -253,16 +231,8 @@ public class LockstepServer extends LockstepCoreThread
             LOG.fatal("Interrupted during termination!!");
             LOG.fatal(intEx);
         }
-        finally
-        {
-            //Eventually, close all sockets freeing their ports
-            for(DatagramSocket udpSocket : openSockets)
-            {
-                udpSocket.close();
-            }
-        }
     }
-    
+        
     /**
      * This method puts the server in waiting for client connections. It returns
      * when the expected number of clients have successfully completed the 
@@ -426,7 +396,7 @@ public class LockstepServer extends LockstepCoreThread
         LockstepTransmitter transmitter = LockstepTransmitter.builder()
                 .dgramSocket(udpSocket)
                 .tickrate(tickrate)
-                .keepAliveTimeout(0)
+                .maxUDPPayloadLength(maxUDPPayloadLength)
                 .transmissionQueues(clientTransmissionFrameQueues)
                 .name("Transmitter-to-"+clientID)
                 .ackSet(ackQueues.get(clientID))

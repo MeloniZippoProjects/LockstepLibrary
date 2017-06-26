@@ -29,14 +29,12 @@ public class LockstepTransmitter extends Thread
     ACKSet ackQueue;
     
     long interTransmissionTimeout;
-    static final int MAX_PAYLOAD_LENGTH = 300;
+    int maxUDPPayloadLength;
     final String name;
     
     private static final Logger LOG = LogManager.getLogger(LockstepTransmitter.class);
     private final int tickrate;
     
-    final boolean sendKeepAliveSwitch;
-    final int keepAliveTicksTimeout;
     boolean terminationPhase = false;
     
     public static class Builder {
@@ -46,7 +44,7 @@ public class LockstepTransmitter extends Thread
         private ACKSet ackQueue;
         private String name;
         private int tickrate;
-        private int keepAliveTimeout;
+        private int maxUDPPayloadLength;
 
         private Builder() {
         }
@@ -65,6 +63,7 @@ public class LockstepTransmitter extends Thread
             this.ackQueue = value;
             return this;
         }
+
         public Builder name(final String value) {
             this.name = value;
             return this;
@@ -75,16 +74,15 @@ public class LockstepTransmitter extends Thread
             return this;
         }
 
-        public Builder keepAliveTimeout(final int keepAliveTimeout)
+        public Builder maxUDPPayloadLength(final int value)
         {
-            this.keepAliveTimeout = keepAliveTimeout;
+            this.maxUDPPayloadLength = value;
             return this;
         }
-
+        
         public LockstepTransmitter build() {
-            return new LockstepTransmitter(dgramSocket, tickrate,
-                    keepAliveTimeout, transmissionQueues,
-                    name, ackQueue);
+            return new LockstepTransmitter(dgramSocket, tickrate, maxUDPPayloadLength,
+                transmissionQueues, name, ackQueue);
         }
     }
 
@@ -92,7 +90,7 @@ public class LockstepTransmitter extends Thread
         return new LockstepTransmitter.Builder();
     }
     
-    public LockstepTransmitter(DatagramSocket socket, int tickrate, int keepAliveTimeout, Map<Integer, TransmissionQueue> transmissionQueues, String name, ACKSet ackQueue)
+    public LockstepTransmitter(DatagramSocket socket, int tickrate, int maxUDPPayloadLength, Map<Integer, TransmissionQueue> transmissionQueues, String name, ACKSet ackQueue)
     {
         if(socket.isClosed())
             throw new IllegalArgumentException("Socket is closed");
@@ -104,7 +102,11 @@ public class LockstepTransmitter extends Thread
         else
             this.tickrate = tickrate;
         
-        
+        if(maxUDPPayloadLength <= 0)
+            throw new IllegalArgumentException("Max UDP payload length must be an integer greater than 0");
+        else
+            this.maxUDPPayloadLength = maxUDPPayloadLength;
+                
         if(transmissionQueues == null)
             throw new IllegalArgumentException("Transmission Queues Map cannot be null");
         else
@@ -122,18 +124,6 @@ public class LockstepTransmitter extends Thread
         
         
         this.interTransmissionTimeout = 3*(1000/tickrate);
-        
-        if(keepAliveTimeout <= 0)
-        {
-            this.sendKeepAliveSwitch = false;
-            keepAliveTicksTimeout = 0;
-        }
-        else
-        {
-            this.sendKeepAliveSwitch = true;
-            int tempKeepAliveTicksTimeout = Math.round(keepAliveTimeout / (1000/tickrate));
-            this.keepAliveTicksTimeout = (tempKeepAliveTicksTimeout > 1) ? tempKeepAliveTicksTimeout : 1;
-        }
     }
     
     @Override
@@ -156,7 +146,7 @@ public class LockstepTransmitter extends Thread
                 
                 boolean sentSomething = sentCommands || sentACKs;
                 
-                if(sendKeepAliveSwitch && !sentSomething)
+                if(!sentSomething)
                     sendKeepAlive();
                 
                 Thread.sleep(1000/tickrate);
@@ -224,11 +214,11 @@ public class LockstepTransmitter extends Thread
                 if(frames.length == 1)
                 {
                     InputMessage msg = new InputMessage(senderID, frames[0]);
-                    this.send(msg);
+                    this.sendInput(msg);
                 }
                 else if(frames.length > 1)
                 {
-                    this.send(senderID, frames);
+                    this.sendInputs(senderID, frames);
                 }
             }
         }
@@ -281,11 +271,11 @@ public class LockstepTransmitter extends Thread
     
     private void sendSplitACKs(FrameACK frameACK) throws IOException
     {
-        int payloadLength = MAX_PAYLOAD_LENGTH + 1;
+        int payloadLength = maxUDPPayloadLength + 1;
         int[] selectiveACKs = frameACK.selectiveACKs;
         int selectiveACKsToInclude = frameACK.selectiveACKs.length + 1;
         byte[] payload = null;
-        while( payloadLength > MAX_PAYLOAD_LENGTH && selectiveACKsToInclude > 0)
+        while( payloadLength > maxUDPPayloadLength && selectiveACKsToInclude > 0)
         {
             try(
                 ByteArrayOutputStream baout = new ByteArrayOutputStream();
@@ -316,7 +306,7 @@ public class LockstepTransmitter extends Thread
         }
     }
     
-    private void send(InputMessage msg) throws IOException
+    private void sendInput(InputMessage msg) throws IOException
     {
         try(
                 ByteArrayOutputStream baout = new ByteArrayOutputStream();
@@ -336,13 +326,13 @@ public class LockstepTransmitter extends Thread
         }
     }       
 
-    private void send(int senderID, FrameInput[] frames) throws IOException
+    private void sendInputs(int senderID, FrameInput[] frames) throws IOException
     {
-        int payloadLength = MAX_PAYLOAD_LENGTH + 1;
+        int payloadLength = maxUDPPayloadLength + 1;
         int framesToInclude = frames.length + 1;
         byte[] payload = null;
         InputMessageArray inputMessageArray;
-        while( payloadLength > MAX_PAYLOAD_LENGTH && framesToInclude > 0)
+        while( payloadLength > maxUDPPayloadLength && framesToInclude > 0)
         {
             try(
                 ByteArrayOutputStream baout = new ByteArrayOutputStream();
@@ -370,7 +360,7 @@ public class LockstepTransmitter extends Thread
         if(framesToInclude < frames.length)
         {
             frames = Arrays.copyOfRange(frames, framesToInclude, frames.length);
-            send(senderID, frames);
+            sendInputs(senderID, frames);
         }
     }
 }

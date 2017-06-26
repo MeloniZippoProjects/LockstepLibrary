@@ -80,6 +80,7 @@ public class MosaicSimulation extends Application
         int serverTCPPort = Integer.parseInt(namedParameters.get("serverTCPPort"));
         int framerate = Integer.parseInt(namedParameters.get("framerate"));
         int tickrate = Integer.parseInt(namedParameters.get("tickrate"));
+        int maxUDPPayloadLength = Integer.parseInt(namedParameters.get("maxUDPPayloadLength"));
         int fillTimeout = Integer.parseInt(namedParameters.get("fillTimeout"));
         int maxExecutionDistance = Integer.parseInt(namedParameters.get("maxExecutionDistance"));
         int fillSize = Integer.parseInt(namedParameters.get("fillSize"));
@@ -113,6 +114,7 @@ public class MosaicSimulation extends Application
                 .serverTCPAddress(serverTCPAddress)
                 .framerate(framerate)
                 .tickrate(tickrate)
+                .maxUDPPayloadLength(maxUDPPayloadLength)
                 .fillTimeout(fillTimeout)
                 .maxExecutionDistance(maxExecutionDistance)
                 .lockstepApplication(mosaicLockstepApplication)

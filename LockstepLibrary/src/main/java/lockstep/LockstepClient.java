@@ -36,6 +36,7 @@ public class LockstepClient extends LockstepCoreThread
 {
     int framerate;
     int fillTimeout;
+    int maxUDPPayloadLength;
     
     int currentExecutionFrame;
     int currentUserFrame;
@@ -62,8 +63,9 @@ public class LockstepClient extends LockstepCoreThread
     static final Logger LOG = LogManager.getLogger(LockstepClient.class);
     
     public LockstepClient(InetSocketAddress serverTCPAddress, int framerate, 
-            int tickrate, int fillTimeout, int maxExecutionDistance,
-            int connectionTimeout, LockstepApplication lockstepApplication)
+            int tickrate, int fillTimeout, int maxUDPPayloadLength,
+            int maxExecutionDistance, int connectionTimeout,
+            LockstepApplication lockstepApplication)
     {
         if(serverTCPAddress.isUnresolved()) 
             throw new IllegalArgumentException("Server hostname is unresolved");
@@ -85,6 +87,11 @@ public class LockstepClient extends LockstepCoreThread
         else
             this.fillTimeout = fillTimeout;
         
+        if(maxUDPPayloadLength <= 0)
+            throw new IllegalArgumentException("Max UDP payload length must be an integer greater than 0");
+        else
+            this.maxUDPPayloadLength = maxUDPPayloadLength;
+        
         if(maxExecutionDistance <= 0)
             throw new IllegalArgumentException("Max execution distance must be an integer greater than 0");
         else
@@ -105,6 +112,7 @@ public class LockstepClient extends LockstepCoreThread
 
         private int framerate;
         private int fillTimeout;
+        private int maxUDPPayloadLength;
         private int maxExecutionDistance;
         private InetSocketAddress serverTCPAddress;
         private int tickrate;
@@ -124,6 +132,11 @@ public class LockstepClient extends LockstepCoreThread
             return this;
         }
         
+        public Builder maxUDPPayloadLength(final int value) {
+            this.maxUDPPayloadLength = value;
+            return this;
+        }
+                
         public Builder maxExecutionDistance(final int value) {
             this.maxExecutionDistance = value;
             return this;
@@ -150,7 +163,9 @@ public class LockstepClient extends LockstepCoreThread
         }
         
         public LockstepClient build() {
-            return new lockstep.LockstepClient(serverTCPAddress, framerate, tickrate, fillTimeout, maxExecutionDistance, connectionTimeout, lockstepApplication);
+            return new lockstep.LockstepClient(serverTCPAddress, framerate,
+                    tickrate, fillTimeout, maxUDPPayloadLength, maxExecutionDistance,
+                    connectionTimeout, lockstepApplication);
         }
     }
 
@@ -252,7 +267,7 @@ public class LockstepClient extends LockstepCoreThread
         transmitter = LockstepTransmitter.builder()
                 .dgramSocket(udpSocket)
                 .tickrate(tickrate)
-                .keepAliveTimeout(1000)
+                .maxUDPPayloadLength(maxUDPPayloadLength)
                 .transmissionQueues(transmissionQueueWrapper)
                 .name("Transmitter-from-"+localClientID)
                 .ackSet(ackSet)
