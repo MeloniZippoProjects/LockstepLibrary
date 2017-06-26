@@ -51,15 +51,15 @@ public class LockstepClient extends LockstepCoreThread
     LockstepReceiver receiver;
     LockstepTransmitter transmitter;
     
-    private DatagramSocket udpSocket;
+    DatagramSocket udpSocket;
     
     Semaphore executionSemaphore;
-    private int clientsNumber;
-    private final int tickrate;
-    private final int connectionTimeout;
-    private final LockstepApplication lockstepApplication;
+    int clientsNumber;
+    final int tickrate;
+    final int connectionTimeout;
+    final LockstepApplication lockstepApplication;
 
-    private static final Logger LOG = LogManager.getLogger(LockstepClient.class);
+    static final Logger LOG = LogManager.getLogger(LockstepClient.class);
     
     public LockstepClient(InetSocketAddress serverTCPAddress, int framerate, 
             int tickrate, int fillTimeout, int maxExecutionDistance,
@@ -359,7 +359,7 @@ public class LockstepClient extends LockstepCoreThread
                 
         return commands;
     }
-
+    
     @Override
     public void disconnectTransmittingQueues(int nodeID)
     {

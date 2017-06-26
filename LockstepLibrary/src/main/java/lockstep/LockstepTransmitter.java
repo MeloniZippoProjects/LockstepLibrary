@@ -19,7 +19,6 @@ import lockstep.messages.simulation.FrameACK;
 import lockstep.messages.simulation.InputMessage;
 import lockstep.messages.simulation.InputMessageArray;
 import lockstep.messages.simulation.KeepAlive;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -30,7 +29,7 @@ public class LockstepTransmitter extends Thread
     ACKSet ackQueue;
     
     long interTransmissionTimeout;
-    static final int maxPayloadLength = 300;
+    static final int MAX_PAYLOAD_LENGTH = 300;
     final String name;
     
     private static final Logger LOG = LogManager.getLogger(LockstepTransmitter.class);
@@ -282,11 +281,11 @@ public class LockstepTransmitter extends Thread
     
     private void sendSplitACKs(FrameACK frameACK) throws IOException
     {
-        int payloadLength = maxPayloadLength + 1;
+        int payloadLength = MAX_PAYLOAD_LENGTH + 1;
         int[] selectiveACKs = frameACK.selectiveACKs;
         int selectiveACKsToInclude = frameACK.selectiveACKs.length + 1;
         byte[] payload = null;
-        while( payloadLength > maxPayloadLength && selectiveACKsToInclude > 0)
+        while( payloadLength > MAX_PAYLOAD_LENGTH && selectiveACKsToInclude > 0)
         {
             try(
                 ByteArrayOutputStream baout = new ByteArrayOutputStream();
@@ -339,11 +338,11 @@ public class LockstepTransmitter extends Thread
 
     private void send(int senderID, FrameInput[] frames) throws IOException
     {
-        int payloadLength = maxPayloadLength + 1;
+        int payloadLength = MAX_PAYLOAD_LENGTH + 1;
         int framesToInclude = frames.length + 1;
         byte[] payload = null;
         InputMessageArray inputMessageArray;
-        while( payloadLength > maxPayloadLength && framesToInclude > 0)
+        while( payloadLength > MAX_PAYLOAD_LENGTH && framesToInclude > 0)
         {
             try(
                 ByteArrayOutputStream baout = new ByteArrayOutputStream();

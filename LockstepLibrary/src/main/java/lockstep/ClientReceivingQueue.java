@@ -14,9 +14,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import lockstep.messages.simulation.FrameACK;
 import lockstep.messages.simulation.LockstepCommand;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
-
 
 /**
  * A ReceivingQueue to be used inside the client.
@@ -37,10 +34,8 @@ class ClientReceivingQueue implements ReceivingQueue
         
     AtomicInteger lastInOrderACK;
     ConcurrentSkipListSet<Integer> selectiveACKsSet;
-        
-    private static final Logger LOG = LogManager.getLogger(ClientReceivingQueue.class);
-    
-        /**
+            
+     /**
      * Constructor.
      * 
      * @param initialFrameNumber First frame's number. Must be the same for all 
@@ -175,6 +170,9 @@ class ClientReceivingQueue implements ReceivingQueue
         }
     }
 
+    /**
+     * @return the FrameACK to send back
+     */
     @Override
     public FrameACK getACK()
     {
