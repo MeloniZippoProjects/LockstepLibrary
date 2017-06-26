@@ -101,31 +101,21 @@ public class TransmissionQueue
      * delivered from the transmitting queue.
      *
      * Calls to this method may conflict with concurrent calls to pop().
-     * However, we assume that sending innecessary frames creates no issues
+     * However, we assume that sending unnecessary frames creates no issues
      * and has acceptable cost vs synchronization overhead.
      * 
      * @param ack the ACKwnoledgement received
      */
     public void processACK(FrameACK ack)
     {
-        int acked = 0;
-        
         for(Integer key : commandsBuffer.headMap(ack.cumulativeACK, true).keySet())
-        {
             commandsBuffer.remove(key);
-            acked++;
-        }
         
         lastACKed.set(ack.cumulativeACK);
         
         if(ack.selectiveACKs != null)
-        {
             for(int frameNumber : ack.selectiveACKs)
-            {
                 commandsBuffer.remove(frameNumber);
-                acked++;
-            }
-        }
     }
     
     @Override
