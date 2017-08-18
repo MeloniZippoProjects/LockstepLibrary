@@ -15,7 +15,6 @@ Two example applications are included which use the library:
   Each client is assigned a random color at initialization and then, at each frame, paints a random cell with its color.
   As the library guarantees synchronization, all clients have a consistent view of the mosaic when the simulation ends.
   
-- XeviousVS, which is actually an adaptation of [link to rzippo github] which uses the library to avoid desynchronization issues.
-  It must be noted that such issues are not completely solved in the current state of the repository, because of the algorithms used for
-  computing damage which can be affected by local computational delays. 
+- XeviousVS, which is actually an adaptation of https://github.com/rzippo/XeviousVS which uses the library to avoid desynchronization issues.
+  It must be noted that such issues are not completely solved in the current state of the repository, because of the algorithms used for computing damage which can be affected by local computational delays. 
   In fact, split-second dodges are rarely correctly seen by the other client because of this.
