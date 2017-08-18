@@ -1,0 +1,6 @@
+Il gioco non è propriamente deterministico: si basa sulle animazioni grafiche per determinare gli eventi.
+	È quindi facile sperimentare desincronizzazioni a causa di differenti timing nel processare le animazioni
+Le query al database sono fatte direttamente dal client
+	Si potrebbe aggiungere una applicazione di matchmaking, che fa da tramite tra client e database e si occupa 
+	di mantenere server disponibili (pool + a richiesta)
+	
